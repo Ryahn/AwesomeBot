@@ -19,6 +19,8 @@ function doAdminSetup() {
     $("#translated-body").collapse("show");
     switchCommands();
     $("#commands-body").collapse("show");
+    switchPublic();
+    $("#public-body").collapse("show");
     switchManage();
     $("#manage-body").collapse("show");
     switchTriviaSets();
@@ -31,7 +33,7 @@ function doAdminSetup() {
 
 function configNickname() {
     if(!document.getElementById("botnameinput")) {
-        document.getElementById("botname").innerHTML = "<div class=\"col-xs-4 input-group\"><span class=\"input-group-addon btn btn-danger\" onclick=\"config('nickname', '.', configNickname);\" data-toggle=\"tooltip\" data-placement=\"bottom\" title=\"Clear nickname and use username\">Remove</span><input id=\"botnameinput\" class=\"form-control\" onkeydown=\"if(event.keyCode==13){config('nickname', this.value, configNickname)}else if(event.keyCode==27){configNickname()}\" value=\"" + botData.botnm + "\"></input></div>";
+        document.getElementById("botname").innerHTML = "<div class=\"col-xs-4 input-group\"><span class=\"input-group-addon btn btn-danger\" onclick=\"config('nickname', '.', configNickname);\" data-toggle=\"tooltip\" data-placement=\"bottom\" title=\"Clear nickname and use username\"><span class=\"glyphicon glyphicon-remove\" aria-hidden=\"true\"></span> Remove</span><input id=\"botnameinput\" class=\"form-control\" onkeydown=\"if(event.keyCode==13){config('nickname', this.value, configNickname)}else if(event.keyCode==27){configNickname()}\" value=\"" + botData.botnm + "\"></input></div>";
         document.getElementById("botname").onclick = "";
         document.getElementById("botnameinput").focus();
     } else {
@@ -47,7 +49,7 @@ function switchAdmins() {
     var adminstablebody = "";
     for(var i=0; i<botData.configs.admins.length; i++) {
         blacklist.push(botData.configs.admins[i][2]);
-        adminstablebody += "<tr id=\"adminsentry-" + botData.configs.admins[i][2] + "\"><td><img class=\"profilepic\" width=25 src=\"" + botData.configs.admins[i][0] + "\" /></td><td>" + botData.configs.admins[i][1] + "</td><td>" + botData.configs.admins[i][2] + "</td><td><button type=\"button\" class=\"btn btn-danger btn-xs\" onclick=\"javascript:config('admins', this.parentNode.parentNode.id.substring(12), function() {switchAdmins();switchBlocked();switchStrikes();});\">Remove</button></td></tr>";
+        adminstablebody += "<tr id=\"adminsentry-" + botData.configs.admins[i][2] + "\"><td><img class=\"profilepic\" width=25 src=\"" + botData.configs.admins[i][0] + "\" /></td><td>" + botData.configs.admins[i][1] + "</td><td>" + botData.configs.admins[i][2] + "</td><td><button type=\"button\" class=\"btn btn-danger btn-xs\" onclick=\"javascript:config('admins', this.parentNode.parentNode.id.substring(12), function() {switchAdmins();switchBlocked();switchStrikes();});\"><span class=\"glyphicon glyphicon-remove\" aria-hidden=\"true\"></span> Remove</button></td></tr>";
     }
     document.getElementById("adminstablebody").innerHTML = adminstablebody;
     if(botData.configs.admins.length==0) {
@@ -58,7 +60,7 @@ function switchAdmins() {
         blacklist.push(botData.configs.blocked[i][2]);
     }
     filterMembers(blacklist, function(possibleAdmins) {
-        var adminsselector = "<option value=\"\">Select Member</option>";
+        var adminsselector = "";
         for(var i=0; i<possibleAdmins.data.length; i++) {
             adminsselector += "<option value=\"" + possibleAdmins.data[i][1] + "\"" + (possibleAdmins.data[i][2] ? (" data-tokens=\"" + possibleAdmins.data[i][2] + "\"") : "" ) + ">" + possibleAdmins.data[i][0] + "</option>";
         }
@@ -74,7 +76,7 @@ function switchBlocked() {
     var blockedtablebody = "";
     for(var i=0; i<botData.configs.blocked.length; i++) {
         blacklist.push(botData.configs.blocked[i][2]);
-        blockedtablebody += "<tr id=\"blockedentry-" + botData.configs.blocked[i][2] + "\"><td><img class=\"profilepic\" width=25 src=\"" + botData.configs.blocked[i][0] + "\" /></td><td>" + botData.configs.blocked[i][1] + "</td><td>" + botData.configs.blocked[i][2] + "</td><td><button type=\"button\" class=\"btn btn-primary btn-xs blockedmute\" id=\"blockedentry-"+ i + "-mute\">Mute</button>&nbsp;" + (botData.configs.blocked[i][3] ? "" : "<button type=\"button\" class=\"btn btn-danger btn-xs\" onclick=\"javascript:config('blocked', this.parentNode.parentNode.id.substring(13), function() {switchAdmins();switchBlocked();switchStrikes();});\">Unblock</button>") + "</td></tr>";
+        blockedtablebody += "<tr id=\"blockedentry-" + botData.configs.blocked[i][2] + "\"><td><img class=\"profilepic\" width=25 src=\"" + botData.configs.blocked[i][0] + "\" /></td><td>" + botData.configs.blocked[i][1] + "</td><td>" + botData.configs.blocked[i][2] + "</td><td><button type=\"button\" class=\"btn btn-primary btn-xs blockedmute\" id=\"blockedentry-"+ i + "-mute\"><span class=\"glyphicon glyphicon-volume-off\" aria-hidden=\"true\"></span> Mute</button>&nbsp;" + (botData.configs.blocked[i][3] ? "" : "<button type=\"button\" class=\"btn btn-danger btn-xs\" onclick=\"javascript:config('blocked', this.parentNode.parentNode.id.substring(13), function() {switchAdmins();switchBlocked();switchStrikes();});\"><span class=\"glyphicon glyphicon-remove\" aria-hidden=\"true\"></span> Unblock</button>") + "</td></tr>";
     }
     document.getElementById("blockedtablebody").innerHTML = blockedtablebody;
     if(botData.configs.blocked.length==0) {
@@ -105,7 +107,7 @@ function switchBlocked() {
         blacklist.push(botData.configs.admins[i][2]);
     }
     filterMembers(blacklist, function(possibleBlocked) {
-        var blockedselector = "<option value=\"\">Select Member</option>";
+        var blockedselector = "";
         for(var i=0; i<possibleBlocked.data.length; i++) {
             blockedselector += "<option value=\"" + possibleBlocked.data[i][1] + "\"" + (possibleBlocked.data[i][2] ? (" data-tokens=\"" + possibleBlocked.data[i][2] + "\"") : "" ) + ">" + possibleBlocked.data[i][0] + "</option>";
         }
@@ -125,7 +127,7 @@ function switchStrikes() {
     var blacklist = [];
     var strikestablebody = "";
     for(var i=botData.strikes.length-1; i>=0; i--) {
-        strikestablebody += "<tr id=\"strikesentry-" + botData.strikes[i][0] + "\"><td><img class=\"profilepic\" width=25 src=\"" + botData.strikes[i][1] + "\" /></td><td>" + botData.strikes[i][2] + "</td><td>" + botData.strikes[i][3].length + "</td><td><button type=\"button\" id=\"strikesentry-" + i + "-view\" class=\"btn btn-default btn-xs strikesview\">View</button>&nbsp;<button type=\"button\" id=\"strikesentry-" + i + "-add\" class=\"btn btn-primary btn-xs strikesadd\">Add</button>&nbsp;<button type=\"button\" class=\"btn btn-danger btn-xs\" onclick=\"javascript:removeStrike(this.parentNode.parentNode.id.substring(13), " + i + ");\">Remove All</button></td></tr>";
+        strikestablebody += "<tr id=\"strikesentry-" + botData.strikes[i][0] + "\"><td><img class=\"profilepic\" width=25 src=\"" + botData.strikes[i][1] + "\" /></td><td>" + botData.strikes[i][2] + "</td><td>" + botData.strikes[i][3].length + "</td><td><button type=\"button\" id=\"strikesentry-" + i + "-view\" class=\"btn btn-default btn-xs strikesview\"><span class=\"glyphicon glyphicon-eye-open\" aria-hidden=\"true\"></span> View</button>&nbsp;<button type=\"button\" id=\"strikesentry-" + i + "-add\" class=\"btn btn-primary btn-xs strikesadd\"><span class=\"glyphicon glyphicon-plus\" aria-hidden=\"true\"></span> Add</button>&nbsp;<button type=\"button\" class=\"btn btn-danger btn-xs\" onclick=\"javascript:removeStrike(this.parentNode.parentNode.id.substring(13), " + i + ");\"><span class=\"glyphicon glyphicon-remove\" aria-hidden=\"true\"></span> Remove All</button></td></tr>";
     }
     document.getElementById("strikestablebody").innerHTML = strikestablebody;
     if(botData.strikes.length==0) {
@@ -142,7 +144,7 @@ function switchStrikes() {
             i = parseInt(this.id.substring(this.id.indexOf("-")+1, this.id.lastIndexOf("-")));
             var popovercontent = "<div class=\"table-responsive\"><table class=\"table table-striped\"><thead><tr><th>#</th><th>Reason</th><th>From</th><th>Date</th><th>Action</th></tr></thead><tbody>";
             for(var j=0; j<botData.strikes[i][3].length; j++) {
-                popovercontent += "<tr id=\"" + j + "-" + botData.strikes[i][0] + "-strikesentry\"><td>" + (j+1) + "</td><td>" + botData.strikes[i][3][j][1] + "</td><td>@" + botData.strikes[i][3][j][0] + "</td><td>" + botData.strikes[i][3][j][2] + "</td><td><button type=\"button\" class=\"btn btn-danger btn-xs\" onclick=\"javascript:removeStrike('" + botData.strikes[i][0] + "', " + i + ", this.parentNode.parentNode.id.substring(0, this.parentNode.parentNode.id.indexOf('-')));\">Remove</button></td></tr>";
+                popovercontent += "<tr id=\"" + j + "-" + botData.strikes[i][0] + "-strikesentry\"><td>" + (j+1) + "</td><td>" + botData.strikes[i][3][j][1] + "</td><td>@" + botData.strikes[i][3][j][0] + "</td><td>" + botData.strikes[i][3][j][2] + "</td><td><button type=\"button\" class=\"btn btn-danger btn-xs\" onclick=\"javascript:removeStrike('" + botData.strikes[i][0] + "', " + i + ", this.parentNode.parentNode.id.substring(0, this.parentNode.parentNode.id.indexOf('-')));\"><span class=\"glyphicon glyphicon-remove\" aria-hidden=\"true\"></span> Remove</button></td></tr>";
             }
             popovercontent += "</tbody></table></div>";
             return popovercontent;
@@ -160,7 +162,7 @@ function switchStrikes() {
         },
         content: function() {
             i = parseInt(this.id.substring(this.id.indexOf("-")+1, this.id.lastIndexOf("-")));
-            return "<div class=\"input-group\"><input type=\"text\" id=\"" + botData.strikes[i][0] + "-strikesadd\" class=\"form-control\" placeholder=\"Reason for strike\" onkeydown=\"if(event.keyCode==13){addStrike('" + botData.strikes[i][0] + "', this.value, " + i + ");}\"><span class=\"input-group-addon btn btn-primary\" onclick=\"javascript:addStrike('" + botData.strikes[i][0] + "', document.getElementById('" + botData.strikes[i][0] + "-strikesadd').value, " + i + ");\">Add</span></div><script>document.getElementById(\"" + botData.strikes[i][0] + "-strikesadd\").parentNode.parentNode.parentNode.style.maxWidth = \"350px\";</script>";
+            return "<div class=\"input-group\"><input type=\"text\" id=\"" + botData.strikes[i][0] + "-strikesadd\" class=\"form-control\" placeholder=\"Reason for strike\" onkeydown=\"if(event.keyCode==13){addStrike('" + botData.strikes[i][0] + "', this.value, " + i + ");}\"><span class=\"input-group-addon btn btn-primary\" onclick=\"javascript:addStrike('" + botData.strikes[i][0] + "', document.getElementById('" + botData.strikes[i][0] + "-strikesadd').value, " + i + ");\"><span class=\"glyphicon glyphicon-plus\" aria-hidden=\"true\"></span> Add</span></div><script>document.getElementById(\"" + botData.strikes[i][0] + "-strikesadd\").parentNode.parentNode.parentNode.style.maxWidth = \"350px\";</script>";
         },
         selector: ".strikesadd",
         placement: "bottom",
@@ -172,7 +174,7 @@ function switchStrikes() {
         blacklist.push(botData.configs.admins[i][2]);
     }
     filterMembers(blacklist, function(possibleStrikes) {
-        var strikesselector = "<option value=\"\">Select Member</option>";
+        var strikesselector = "";
         for(var i=0; i<possibleStrikes.data.length; i++) {
             strikesselector += "<option value=\"" + possibleStrikes.data[i][1] + "\"" + (possibleStrikes.data[i][2] ? (" data-tokens=\"" + possibleStrikes.data[i][2] + "\"") : "" ) + ">" + possibleStrikes.data[i][0] + "</option>";
         }
@@ -227,7 +229,7 @@ function switchRss() {
     
     var rsstablebody = "";
     for(var i=0; i<botData.configs.rss[1].length; i++) {
-        rsstablebody += "<tr id=\"rssentry-" + i + "\"><td>" + botData.configs.rss[2][i] + "</td><td><a href=\"" + botData.configs.rss[1][i] + "\">" + botData.configs.rss[1][i] + "</a></td><td><button type=\"button\" class=\"btn btn-danger btn-xs\" onclick=\"javascript:config('rss', this.parentNode.parentNode.id.substring(9), switchRss);\">Remove</button></td></tr>";
+        rsstablebody += "<tr id=\"rssentry-" + i + "\"><td>" + botData.configs.rss[2][i] + "</td><td><a href=\"" + botData.configs.rss[1][i] + "\">" + botData.configs.rss[1][i] + "</a></td><td><button type=\"button\" class=\"btn btn-danger btn-xs\" onclick=\"javascript:config('rss', this.parentNode.parentNode.id.substring(9), switchRss);\"><span class=\"glyphicon glyphicon-remove\" aria-hidden=\"true\"></span> Remove</button></td></tr>";
     }
     document.getElementById("rsstablebody").innerHTML = rsstablebody;
     if(botData.configs.rss[1].length==0) {
@@ -263,7 +265,7 @@ function switchTranslated() {
     var translatedtablebody = "";
     for(var i=0; i<botData.configs.translated.length; i++) {
         blacklist.push(botData.configs.translated[i][2]);
-        translatedtablebody += "<tr id=\"translatedentry-" + botData.configs.translated[i][2] + "\"><td><img class=\"profilepic\" width=25 src=\"" + botData.configs.translated[i][0] + "\" /></td><td>" + botData.configs.translated[i][1] + "</td><td>" + botData.configs.translated[i][3] + "</td><td><button type=\"button\" class=\"btn btn-danger btn-xs\" onclick=\"javascript:config('translated', [this.parentNode.parentNode.id.substring(16)], switchTranslated);\">Remove</button></td></tr>";
+        translatedtablebody += "<tr id=\"translatedentry-" + botData.configs.translated[i][2] + "\"><td><img class=\"profilepic\" width=25 src=\"" + botData.configs.translated[i][0] + "\" /></td><td>" + botData.configs.translated[i][1] + "</td><td>" + botData.configs.translated[i][3] + "</td><td><button type=\"button\" class=\"btn btn-danger btn-xs\" onclick=\"javascript:config('translated', [this.parentNode.parentNode.id.substring(16)], switchTranslated);\"><span class=\"glyphicon glyphicon-remove\" aria-hidden=\"true\"></span> Remove</button></td></tr>";
     }
     document.getElementById("translatedtablebody").innerHTML = translatedtablebody;
     if(botData.configs.translated.length==0) {
@@ -274,7 +276,7 @@ function switchTranslated() {
         blacklist.push(botData.configs.blocked[i][2]);
     }
     filterMembers(blacklist, function(possibleTranslated) {
-        var translatedselector = "<option value=\"\">Select Member</option>";
+        var translatedselector = "";
         for(var i=0; i<possibleTranslated.data.length; i++) {
             translatedselector += "<option value=\"" + possibleTranslated.data[i][1] + "\"" + (possibleTranslated.data[i][2] ? (" data-tokens=\"" + possibleTranslated.data[i][2] + "\"") : "" ) + ">" + possibleTranslated.data[i][0] + "</option>";
         }
@@ -336,11 +338,15 @@ function switchCommands() {
         "joke": "Tells a random joke!", 
         "translate": "Uses Microsoft Translate to translate a word/phrase into another language", 
         "emoji": "Fetches the large version of an emoji", 
-        "time": "Gets the time in a city or country"
+        "time": "Gets the time in a city or country",
+        "avatar": "Posts a user's profile picture",
+        "list": "Admin-only to-do list",
+        "kick": "Removes a member from the server",
+        "ban": "Removes a member from the server and prevents them from coming back"
     }
     var commands = [];
     for(var cmd in botData.configs) {
-        if(["admins", "blocked", "extensions", "newgreeting", "nsfwfilter", "servermod", "spamfilter", "customroles", "customcolors", "customkeys", "cmdtag", "newmembermsg", "onmembermsg", "offmembermsg", "changemembermsg", "rmmembermsg", "banmembermsg", "unbanmembermsg", "triviasets", "newrole", "showpub", "defaultcount", "autoprune", "translated", "filter"].indexOf(cmd)==-1) {
+        if(["admins", "blocked", "extensions", "newgreeting", "nsfwfilter", "servermod", "spamfilter", "customroles", "customcolors", "customkeys", "cmdtag", "newmembermsg", "onmembermsg", "offmembermsg", "changemembermsg", "twitchmembermsg", "rmmembermsg", "banmembermsg", "unbanmembermsg", "triviasets", "newrole", "showpub", "defaultcount", "autoprune", "translated", "filter", "usenicks", "usediscriminators", "listsrc", "listing"].indexOf(cmd)==-1) {
             commands.push("<div class=\"checkbox\"><input style=\"height: auto;\" id=\"commandsentry-" + cmd + "\" type=\"checkbox\" onclick=\"javascript:config(this.id.substring(14), this.checked, switchCommands);\" " + ((cmd=="rss" ? botData.configs[cmd][0] : botData.configs[cmd]) ? "checked " : "") + "/><label for=\"commandsentry-" + cmd + "\">" + cmd + "&nbsp;&nbsp;<p class=\"help-block\" style=\"display:inline\">" + descs[cmd] + "</p></label></div>");
         }
     }
@@ -399,7 +405,7 @@ function switchManage() {
         $("#manageentry-select-autoprune").selectpicker("refresh");
     }
     
-    var membermsg = ["newmembermsg", "onmembermsg", "offmembermsg", "changemembermsg", "rmmembermsg", "banmembermsg", "unbanmembermsg"];
+    var membermsg = ["newmembermsg", "onmembermsg", "offmembermsg", "changemembermsg", "twitchmembermsg", "rmmembermsg", "banmembermsg", "unbanmembermsg"];
     for(var i=0; i<membermsg.length; i++) {
         document.getElementById("manageentry-" + membermsg[i]).checked = botData.configs[membermsg[i]][0];
         if(botData.configs[membermsg[i]][0]) {
@@ -408,11 +414,11 @@ function switchManage() {
                 manageentry_select += "<option value=\"" + botData.channels[j][1] + "\">#" + botData.channels[j][0] + "</option>";
             }
             document.getElementById("manageentry-select-" + membermsg[i]).innerHTML = manageentry_select;
-            document.getElementById("manageentry-select-" + membermsg[i]).value = (membermsg[i]=="changemembermsg" ? botData.configs[membermsg[i]][1] : botData.configs[membermsg[i]][2]);
+            document.getElementById("manageentry-select-" + membermsg[i]).value = (["changemembermsg", "twitchmembermsg"].indexOf(membermsg[i])>-1 ? botData.configs[membermsg[i]][1] : botData.configs[membermsg[i]][2]);
             document.getElementById("manageentry-select-" + membermsg[i]).removeAttribute("disabled");
             $("#manageentry-select-" + membermsg[i]).selectpicker("refresh");
             
-            if(membermsg[i]!="changemembermsg") {
+            if(["changemembermsg", "twitchmembermsg"].indexOf(membermsg[i])==-1) {
                 var current_block = "";
                 for(var j=0; j<botData.configs[membermsg[i]][1].length; j++) {
                     current_block += "<div class=\"checkbox\">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type=\"checkbox\" onclick=\"javascript:config('" + membermsg[i] + "', this.value, function() {});\" id=\"manageentry-" + membermsg[i] + "-" + j + "\" value=\"" + botData.configs[membermsg[i]][1][j] + "\" checked><label for=\"manageentry-" + membermsg[i] + "-" + j + "\">" + botData.configs[membermsg[i]][1][j].replace("++", "<b>@user</b>") + "</label></div>";
@@ -431,13 +437,13 @@ function switchManage() {
     }
     
     if(!document.getElementById("manageentry-select-newrole").innerHTML) {
-        var newrole = "<option id=\"newroleentry-null\">Select role for new members</option>";
+        var newrole = "";
         for(var i=botData.roles.length-1; i>=0; i--) {
             newrole += "<option id=\"newroleentry-" + botData.roles[i][1] + "\" value=\"" + botData.roles[i][1] + "\" style=\"color: " + botData.roles[i][3] + ";\">" + botData.roles[i][0] + "</option>";
         }
         document.getElementById("manageentry-select-newrole").innerHTML = newrole;
     }
-    document.getElementById("manageentry-select-newrole").value = botData.configs.newrole;
+    $("#manageentry-select-newrole").val(botData.configs.newrole);
     $("#manageentry-select-newrole").selectpicker("refresh");
     
     document.getElementById("manageentry-spamfilter").checked = botData.configs.spamfilter[0];
@@ -464,6 +470,8 @@ function switchManage() {
             document.getElementById("manageentry-spamfilter-selector").value = "high";
             break;
     }
+    document.getElementById("manageentry-spamfilter-action").value = botData.configs.spamfilter[3] ? "block" : "kick";
+    
     
     document.getElementById("manageentry-nsfwfilter").checked = botData.configs.nsfwfilter[0];
     if(botData.configs.nsfwfilter[0]) {
@@ -478,17 +486,25 @@ function switchManage() {
     } else {
         $("#manageentry-nsfwfilter-body").collapse("hide");
     }
+    document.getElementById("manageentry-nsfwfilter-action").value = botData.configs.nsfwfilter[2] ? "block" : "kick";
+    
     
     disableBlock("servermod", !botData.configs.servermod);
     if(!botData.configs.servermod) {
         document.getElementById("manageentry-spamfilter-selector").setAttribute("disabled", "disable");
+        document.getElementById("manageentry-spamfilter-action").setAttribute("disabled", "disable");
+        document.getElementById("manageentry-nsfwfilter-action").setAttribute("disabled", "disable");
     } else {
         document.getElementById("manageentry-spamfilter-selector").removeAttribute("disabled");
+        document.getElementById("manageentry-spamfilter-action").removeAttribute("disabled");
+        document.getElementById("manageentry-nsfwfilter-action").removeAttribute("disabled");
     }
     $("#manageentry-spamfilter-selector").selectpicker("refresh");
+    $("#manageentry-spamfilter-action").selectpicker("refresh");
+    $("#manageentry-nsfwfilter-action").selectpicker("refresh");
     
+    document.getElementById("manageentry-newgreeting").style.display = "";
     if(botData.configs.newgreeting && botData.configs.servermod) {
-        document.getElementById("manageentry-newgreeting").style.display = "";
         document.getElementById("newgreetingremove").style.display = "";
         document.getElementById("newgreetinginput").value = botData.configs.newgreeting;
     } else if(!botData.configs.servermod) {
@@ -498,9 +514,11 @@ function switchManage() {
         document.getElementById("newgreetinginput").value = "";
     }
     
-    var filterstr = filterToString(botData.configs.filter);
+    var filterstr = filterToString(botData.configs.filter[0]);
+    document.getElementById("manageentry-filter").style.display = "";
+    document.getElementById("manageentry-filter-action").value = botData.configs.filter[1] ? "block" : "kick";
+    $("#manageentry-filter-action").selectpicker("refresh");
     if(filterstr && botData.configs.servermod) {
-        document.getElementById("manageentry-filter").style.display = "";
         document.getElementById("filterremove").style.display = "";
         document.getElementById("filterinput").value = filterstr;
     } else if(!botData.configs.servermod) {
@@ -510,6 +528,9 @@ function switchManage() {
         document.getElementById("filterinput").value = "";
     }
     
+    document.getElementById("manageentry-usenicks").checked = botData.configs.usenicks;
+    document.getElementById("manageentry-usediscriminators").checked = botData.configs.usediscriminators;
+
     document.getElementById("manageentry-customcolors").checked = botData.configs.customcolors;
     document.getElementById("manageentry-customroles").checked = botData.configs.customroles[0];
     if(botData.configs.customroles[0]) {
@@ -556,8 +577,17 @@ function switchManage() {
         document.getElementById("caselector").innerHTML = caselector;
         $("#caselector").selectpicker("refresh");
     }
-    
-    document.getElementById("manageentry-showpub").checked = botData.configs.showpub;
+}
+
+function switchPublic() {
+    document.getElementById("publicentry-showpub").checked = botData.configs.showpub;
+
+    document.getElementById("publicentry-enable-listing").checked = botData.configs.listing.enabled;
+    document.getElementById("publicentry-description-listing").value = botData.configs.listing.description;
+    document.getElementById("publicentry-description").style.display = "";
+    if(!botData.configs.listing.enabled) {
+        document.getElementById("publicentry-description").style.display = "none";
+    }
 }
 
 function disableBlock(blockname, disable) {
@@ -641,7 +671,7 @@ function switchTriviaSets() {
     
     var triviasetstablebody = "";
     for(var i=0; i<botData.configs.triviasets.length; i++) {
-        triviasetstablebody += "<tr id=\"triviasetsentry-" + encodeURI(botData.configs.triviasets[i][0]) + "\"><td>" + botData.configs.triviasets[i][0] + "</td><td>" + botData.configs.triviasets[i][1] + "</td><td><button type=\"button\" class=\"btn btn-default btn-xs\" onclick=\"javascript:showTriviaSet(" + i + ");\">View</button>&nbsp;<button type=\"button\" class=\"btn btn-danger btn-xs\" onclick=\"javascript:config('triviasets', this.parentNode.parentNode.id.substring(16), switchTriviaSets);\">Remove</button></td></tr>";
+        triviasetstablebody += "<tr id=\"triviasetsentry-" + encodeURI(botData.configs.triviasets[i][0]) + "\"><td>" + botData.configs.triviasets[i][0] + "</td><td>" + botData.configs.triviasets[i][1] + "</td><td><button type=\"button\" class=\"btn btn-default btn-xs\" onclick=\"javascript:showTriviaSet(" + i + ");\"><span class=\"glyphicon glyphicon-eye-open\" aria-hidden=\"true\"></span> View</button>&nbsp;<button type=\"button\" class=\"btn btn-danger btn-xs\" onclick=\"javascript:config('triviasets', this.parentNode.parentNode.id.substring(16), switchTriviaSets);\"><span class=\"glyphicon glyphicon-remove\" aria-hidden=\"true\"></span> Remove</button></td></tr>";
     }
     document.getElementById("triviasetstablebody").innerHTML = triviasetstablebody;
     if(botData.configs.triviasets.length==0) {
@@ -694,7 +724,7 @@ function switchExtensions() {
         } else {
             info += "All";
         }
-        info += "</td><td><button type=\"button\" class=\"btn btn-default btn-xs\" onclick=\"javascript:showExtension(" + i + ");\">View Code</button>&nbsp;<button type=\"button\" class=\"btn btn-danger btn-xs\" onclick=\"javascript:config('extensions', this.parentNode.parentNode.id.substring(16), switchExtensions);\">Delete</button></td></tr>";
+        info += "</td><td><button type=\"button\" class=\"btn btn-default btn-xs\" onclick=\"javascript:showExtension(" + i + ");\"><span class=\"glyphicon glyphicon-eye-open\" aria-hidden=\"true\"></span> View Code</button>&nbsp;<button type=\"button\" class=\"btn btn-danger btn-xs\" onclick=\"javascript:config('extensions', this.parentNode.parentNode.id.substring(16), switchExtensions);\"><span class=\"glyphicon glyphicon-remove\" aria-hidden=\"true\"></span> Delete</button></td></tr>";
         extensionstablebody += info;
     }
     document.getElementById("extensionstablebody").innerHTML = extensionstablebody;

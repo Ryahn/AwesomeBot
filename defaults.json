@@ -36,6 +36,13 @@
             "rip": "(✖╭╮✖)",
             "wink": "ಠ‿↼"
         },
+        "tagcommands": [],
+        "listing": {
+            "enabled": false,
+            "description": "",
+            "invite": ""
+        },
+        "listsrc": [],
         "triviasets": {},
         "extensions": {},
         "cmdtag": "tag",
@@ -53,7 +60,7 @@
             ],
             null
         ],
-        "newrole": "",
+        "newrole": [],
         "onmembermsg": [
             false,
             [
@@ -71,6 +78,10 @@
             null
         ],
         "changemembermsg": [
+            false,
+            null
+        ],
+        "twitchmembermsg": [
             false,
             null
         ],
@@ -103,7 +114,10 @@
             null
         ],
         "muted": {},
-        "filter": [],
+        "filter": [
+            [],
+            true
+        ],
         "customkeys": {
             "google_api_key": "",
             "custom_search_id": ""
@@ -111,18 +125,24 @@
         "autoprune": [
             false,
             172800
-        ]
+        ],
+        "usenicks": true,
+        "usediscriminators": false
     },
     "full": {
         "servermod": true,
+        "kick": true,
+        "ban": true,
         "spamfilter": [
             true,
             [],
-            5
+            5,
+            true
         ],
         "nsfwfilter": [
             true,
-            []
+            [],
+            true
         ],
         "customroles": [
             true,
@@ -137,6 +157,7 @@
         "stats": true,
         "points": true,
         "messages": true,
+        "avatar": true,
         "lottery": true,
         "chatterbot": true,
         "linkme": true,
@@ -165,18 +186,24 @@
         "shorten": true,
         "emoji": true,
         "time": true,
-        "showpub": true
+        "list": true,
+        "showpub": true,
+        "defaultcount": 5
     },
     "lite": {
         "servermod": true,
+        "kick": true,
+        "ban": true,
         "spamfilter": [
             false,
             [],
-            5
+            5,
+            true
         ],
         "nsfwfilter": [
             true,
-            []
+            [],
+            true
         ],
         "customroles": [
             false,
@@ -191,6 +218,7 @@
         "stats": false,
         "points": false,
         "messages": false,
+        "avatar": false,
         "lottery": false,
         "chatterbot": false,
         "linkme": false,
@@ -219,18 +247,24 @@
         "shorten": false,
         "emoji": false,
         "time": false,
-        "showpub": false
+        "list": false,
+        "showpub": false,
+        "defaultcount": 1
     },
     "sense": {
         "servermod": true,
+        "kick": true,
+        "ban": true,
         "spamfilter": [
-            false,
+            true,
             [],
-            5
+            5,
+            true
         ],
         "nsfwfilter": [
-            false,
-            []
+            true,
+            [],
+            true
         ],
         "customroles": [
             false,
@@ -245,6 +279,7 @@
         "stats": true,
         "points": true,
         "messages": true,
+        "avatar": true,
         "lottery": false,
         "chatterbot": true,
         "linkme": true,
@@ -273,6 +308,8 @@
         "shorten": false,
         "emoji": false,
         "time": true,
-        "showpub": false
+        "list": false,
+        "showpub": false,
+        "defaultcount": 3
     }  
 }

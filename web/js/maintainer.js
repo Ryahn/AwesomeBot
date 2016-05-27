@@ -46,7 +46,7 @@ function switchUsage() {
 function switchServers() {
     var servertablebody = "";
     for(var i=0; i<botData.servers.length; i++) {
-        servertablebody += "<tr id=\"serverentry-" + botData.servers[i][2] + "\"><td><img class=\"profilepic\" width=25 src=\"" + botData.servers[i][0] + "\" class=\"img-responsive img-circle\" /></td><td>" + botData.servers[i][1] + "</td><td>" + botData.servers[i][2] + "</td><td>" + botData.servers[i][3] + "</td><td><button type=\"button\" id=\"serverentry-" + i + "-msg\" class=\"btn btn-primary btn-xs servermsg\">Message</button>&nbsp;<button type=\"button\" class=\"btn btn-warning btn-xs\" onclick=\"javascript:config('clearstats', this.parentNode.parentNode.id.substring(12), function(err) {if(!err) {switchUsage()}});\">Clear Stats</button>&nbsp;<button type=\"button\" class=\"btn btn-warning btn-xs\" onclick=\"javascript:config('resetconfigs', this.parentNode.parentNode.id.substring(12), function() {});\">Reset Configs</button>&nbsp;<button type=\"button\" class=\"btn btn-danger btn-xs\" onclick=\"javascript:removeServer(this.parentNode.parentNode.id)\">Leave</button></td></tr>";
+        servertablebody += "<tr id=\"serverentry-" + botData.servers[i][2] + "\"><td><img class=\"profilepic\" width=25 src=\"" + botData.servers[i][0] + "\" class=\"img-responsive img-circle\" /></td><td>" + botData.servers[i][1] + "</td><td>" + botData.servers[i][2] + "</td><td>" + botData.servers[i][3] + "</td><td><button type=\"button\" id=\"serverentry-" + i + "-msg\" class=\"btn btn-primary btn-xs servermsg\"><span class=\"glyphicon glyphicon-envelope\" aria-hidden=\"true\"></span> Message</button>&nbsp;<button type=\"button\" class=\"btn btn-warning btn-xs\" onclick=\"javascript:config('clearstats', this.parentNode.parentNode.id.substring(12), function(err) {if(!err) {switchUsage()}});\"><span class=\"glyphicon glyphicon-remove-sign\" aria-hidden=\"true\"></span> Clear Stats</button>&nbsp;<button type=\"button\" class=\"btn btn-warning btn-xs\" onclick=\"javascript:config('resetconfigs', this.parentNode.parentNode.id.substring(12), function() {});\"><span class=\"glyphicon glyphicon-remove-sign\" aria-hidden=\"true\"></span> Reset Configs</button>&nbsp;<button type=\"button\" class=\"btn btn-danger btn-xs\" onclick=\"javascript:removeServer(this.parentNode.parentNode.id)\"><span class=\"glyphicon glyphicon-exclamation-sign\" aria-hidden=\"true\"></span> Leave</button></td></tr>";
     }
     
     $("#servertablebody").popover({
@@ -57,7 +57,7 @@ function switchServers() {
         },
         content: function() {
             i = parseInt(this.id.substring(this.id.indexOf("-")+1, this.id.lastIndexOf("-")));
-            return "<div class=\"input-group\"><input type=\"text\" id=\"" + botData.servers[i][2] + "-msgserver\" class=\"form-control\" placeholder=\"Message in markdown\" onkeydown=\"if(event.keyCode==13){sendMessage('" + botData.servers[i][2] + "', this.value, " + i + ");}\"><span class=\"input-group-addon btn btn-primary\" onclick=\"javascript:sendMessage('" + botData.servers[i][2] + "', document.getElementById('" + botData.servers[i][2] + "-msgserver').value, " + i + ");\">Send</span></div><script>document.getElementById(\"" + botData.servers[i][2] + "-msgserver\").parentNode.parentNode.parentNode.style.maxWidth = \"350px\";</script>";
+            return "<div class=\"input-group\"><input type=\"text\" id=\"" + botData.servers[i][2] + "-msgserver\" class=\"form-control\" placeholder=\"Message in markdown\" onkeydown=\"if(event.keyCode==13){sendMessage('" + botData.servers[i][2] + "', this.value, " + i + ");}\"><span class=\"input-group-addon btn btn-primary\" onclick=\"javascript:sendMessage('" + botData.servers[i][2] + "', document.getElementById('" + botData.servers[i][2] + "-msgserver').value, " + i + ");\"><span class=\"glyphicon glyphicon-send\" aria-hidden=\"true\"></span> Send</span></div><script>document.getElementById(\"" + botData.servers[i][2] + "-msgserver\").parentNode.parentNode.parentNode.style.maxWidth = \"350px\";</script>";
         },
         selector: ".servermsg",
         placement: "bottom",
@@ -95,7 +95,7 @@ function switchBotBlocked() {
     var botblockedtablebody = "";
     for(var i=0; i<botData.botblocked.length; i++) {
         blacklist.push(botData.botblocked[i][2]);
-        botblockedtablebody += "<tr id=\"botblockedentry-" + botData.botblocked[i][2] + "\"><td><img class=\"profilepic\" width=25 src=\"" + botData.botblocked[i][0] + "\" /></td><td>" + botData.botblocked[i][1] + "</td><td>" + botData.botblocked[i][2] + "</td><td><button type=\"button\" class=\"btn btn-danger btn-xs\" onclick=\"javascript:config('botblocked', this.parentNode.parentNode.id.substring(16), switchBotBlocked);\">Unblock</button></td></tr>";
+        botblockedtablebody += "<tr id=\"botblockedentry-" + botData.botblocked[i][2] + "\"><td><img class=\"profilepic\" width=25 src=\"" + botData.botblocked[i][0] + "\" /></td><td>" + botData.botblocked[i][1] + "</td><td>" + botData.botblocked[i][2] + "</td><td><button type=\"button\" class=\"btn btn-danger btn-xs\" onclick=\"javascript:config('botblocked', this.parentNode.parentNode.id.substring(16), switchBotBlocked);\"><span class=\"glyphicon glyphicon-remove\" aria-hidden=\"true\"></span> Unblock</button></td></tr>";
     }
     document.getElementById("botblockedtablebody").innerHTML = botblockedtablebody;
     if(botData.botblocked.length==0) {
@@ -107,7 +107,8 @@ function switchBotBlocked() {
         for(var i=0; i<possibleBotBlocked.data.length; i++) {
             botblockedselector += "<option value=\"" + possibleBotBlocked.data[i][1] + "\">" + possibleBotBlocked.data[i][0] + "</option>";
         }
-        $("#botblockedselector").html(botblockedselector).selectpicker("refresh");
+        document.getElementById("botblockedselector").innerHTML = botblockedselector;
+        $("#botblockedselector").selectpicker("refresh");
     });
 }
 

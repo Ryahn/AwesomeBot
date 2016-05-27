@@ -8,9 +8,9 @@
     <meta name="author" content="BitQuote">
     <title>Bot Status</title>
 
-    <link id="theme" href="./../bootstrap-default.min.css" rel="stylesheet">
-    <link href="./../bootstrap-select.min.css" rel="stylesheet">
-    <link href="./../navbar-fixed-top.css" rel="stylesheet">
+    <link id="theme" href="./css/bootstrap-default.min.css" rel="stylesheet">
+    <link href="./css/bootstrap-select.min.css" rel="stylesheet">
+    <link href="./css/navbar-fixed-top.css" rel="stylesheet">
     <style type="text/css">
     :root #content > #right > .dose > .dosesingle,
     :root #content > #center > .dose > .dosesingle {
@@ -25,10 +25,11 @@
         overflow-x: hidden;
     }
     </style>
-    <script src="./../jquery.min.js"></script>
-    <script src="./../bootstrap.min.js"></script>
-    <script src="./../bootstrap-select.min.js"></script>
-    <script src="./../index.js"></script>
+    <script src="./js/jquery.min.js"></script>
+    <script src="./js/bootstrap.min.js"></script>
+    <script src="./js/bootstrap-select.min.js"></script>
+    <script src="./js/micromarkdown.min.js"></script>
+    <script src="./js/index.js"></script>
 </head>
 <body onload="switchColors();doSetup();" data-spy="scroll" data-target="#navbar">
     <!-- Navbar -->
@@ -50,21 +51,21 @@
             <div id="navbar" class="navbar-collapse collapse">
                 <ul class="nav navbar-nav">
                     <li>
-                        <a href="#stats">Stats</a>
+                        <a href="#stats"><span class="glyphicon glyphicon-stats" aria-hidden="true"></span> Stats</a>
                     </li>
                     <li>
-                        <a href="#activity">Activity</a>
+                        <a href="#activity"><span class="glyphicon glyphicon-time" aria-hidden="true"></span> Activity</a>
                     </li>
                     <li>
-                        <a href="#servers">Servers</a>
+                        <a href="#servers"><span class="glyphicon glyphicon-tasks" aria-hidden="true"></span> Servers</a>
                     </li>
                 </ul>
                 <ul class="nav navbar-nav navbar-right">
                     <li>
-                        <a id="addserverlink" target="_blank" href="">Add To Server</a>
+                        <a id="addserverlink" target="_blank" href=""><span class="glyphicon glyphicon-plus" aria-hidden="true"></span> Add To Server</a>
                     </li>
                     <li class="dropdown">
-                        <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Theme <span class="caret"></span></a>
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false"><span class="glyphicon glyphicon-tint" aria-hidden="true"></span> Theme <span class="caret"></span></a>
                         <ul class="dropdown-menu">
                             <li><a id="theme-default" href="javascript:switchColors('default');">Default</a></li>
                             <li><a id="theme-cyborg" href="javascript:switchColors('cyborg');">Cyborg</a></li>
@@ -74,7 +75,7 @@
                         </ul>
                     </li>
                     <li>
-                        <a id="nav-auth" href="#">Config</a>
+                        <a id="nav-auth" href="#"><span class="glyphicon glyphicon-wrench" aria-hidden="true"></span> Config</a>
                         <div id="nav-auth-popover-content" class="hide">
                             <div class="input-group">
                                 <input type="text" class="form-control" id="nav-authinput" onkeydown="if(event.keyCode==13){checkAuth(this.value);}" placeholder="Auth code">
@@ -132,16 +133,20 @@
             <div class="col-lg-12">
                 <h2 id="servers">Servers <span id="servers-badge" class="badge"></span></h2>
                 <div id="servers-body">
-                    <p class="help-block">Some servers excluded for privacy. Message count is only for the past 24 hours.</p>
+                    <p class="help-block col-xs-9" style="margin-left: -15px;">Some servers excluded for privacy. Message count is only for the past 24 hours.&nbsp;
+                    <span id="loading"><b>Loading<span id="wait"></span></b></span></p>
+                    <div class="input-group col-xs-3">
+                        <input type="text" id="server-search" class="form-control" onkeydown="if(event.keyCode==13){switchServers('svrnm', this.value);}" style="min-width:200px;" placeholder="Search">
+                        <span class="input-group-addon btn btn-primary" onclick="switchServers('svrnm', document.getElementById('server-search').value);"><span class="glyphicon glyphicon-search" aria-hidden="true"></span></span>
+                    </div>
+                    <br>
                     <div class="table-responsive">
                         <table id="servertable" class="table table-striped">
                             <thead>
                                 <tr>
-                                    <th>Icon</th>
-                                    <th onclick="$('#loading-modal').modal('show');switchServers('svrnm', function() {$('#loading-modal').modal('hide');});">Name</th>
-                                    <th onclick="$('#loading-modal').modal('show');switchServers('ownernm', function() {$('#loading-modal').modal('hide');});">Owner</th>
-                                    <th onclick="$('#loading-modal').modal('show');switchServers('messages', function() {$('#loading-modal').modal('hide');});">Messages</th>
-                                    <th onclick="$('#loading-modal').modal('show');switchServers('members', function() {$('#loading-modal').modal('hide');});">Members</th>
+                                    <th onclick="switchServers('svrnm', null);">Name</th>
+                                    <th onclick="switchServers('messages', null);">Messages</th>
+                                    <th onclick="switchServers('members', null);">Members</th>
                                 </tr>
                             </thead>
                             <tbody id="servertablebody"></tbody>
@@ -191,7 +196,7 @@
             if(this.hash!="#navbar") {
                 var target = this.hash, $target = $(target);
                 $('html, body').stop().animate({
-                    'scrollTop': $target.offset().top
+                    'scrollTop': $target.offset().top - 60
                 }, 900, 'swing', function() {
                     window.location.hash = target;
                 });

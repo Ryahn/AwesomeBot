@@ -8,15 +8,15 @@
     <meta name="author" content="BitQuote">
     <title>Maintainer Console</title>
     
-    <link id="theme" href="./../bootstrap-default.min.css" rel="stylesheet">
-    <link href="./../simple-sidebar.css" rel="stylesheet">
-    <link href="./../bootstrap-select.min.css" rel="stylesheet">
-    <script src="./../jquery.min.js"></script>
-    <script src="./../bootstrap.min.js"></script>
-    <script src="./../bootstrap-select.min.js"></script>
-    <script src="./../index.js"></script>
-    <script src="./../config.js"></script>
-    <script src="./maintainer/maintainer.js"></script>
+    <link id="theme" href="./../css/bootstrap-default.min.css" rel="stylesheet">
+    <link href="./../css/simple-sidebar.css" rel="stylesheet">
+    <link href="./../css/bootstrap-select.min.css" rel="stylesheet">
+    <script src="./../js/jquery.min.js"></script>
+    <script src="./../js/bootstrap.min.js"></script>
+    <script src="./../js/bootstrap-select.min.js"></script>
+    <script src="./../js/index.js"></script>
+    <script src="./../js/config.js"></script>
+    <script src="./../js/maintainer.js"></script>
 </head>
 <body onload="switchColors();doAuth();">
     <div id="wrapper" class="">
@@ -54,7 +54,7 @@
             <div class="container-fluid">
                 <div class="row">
                     <div class="col-xs-2">
-                        <a style="position:fixed;z-index:1000;" href="#menu-toggle" class="btn btn-default" id="menu-toggle">&#9776;</a>
+                        <a style="position:fixed;z-index:1000;" href="#menu-toggle" class="btn btn-default" id="menu-toggle"><span class="glyphicon glyphicon-menu-hamburger" aria-hidden="true"></span></a>
                     </div>
                     <div class="col-xs-10" style="text-align:right;">
                         <select id="themeswitcher" class="selectpicker" data-width="fit" onChange="javascript:switchColors(this.value);">
@@ -64,8 +64,8 @@
                             <option id="theme-slate" value="slate">Slate</option>
                             <option id="theme-superhero" value="superhero">Superhero</option>
                         </select>&nbsp;
-                        <a target="_blank" href="https://github.com/BitQuote/AwesomeBot/wiki/Configuration#maintainer-console" class="btn btn-default" id="help-button" data-toggle="tooltip" data-placement="bottom" title="Maintainer console wiki page">Help</a>&nbsp;
-                        <a href="#menu-toggle" class="btn btn-primary" id="logout-button" data-toggle="modal" data-target="#logout-modal">Logout</a>
+                        <a target="_blank" href="https://github.com/BitQuote/AwesomeBot/wiki/Configuration#maintainer-console" class="btn btn-default" id="help-button" data-toggle="tooltip" data-placement="bottom" title="Maintainer console wiki page"><span class="glyphicon glyphicon-question-sign" aria-hidden="true"></span> Help</a>&nbsp;
+                        <a href="#menu-toggle" class="btn btn-primary" id="logout-button" data-toggle="modal" data-target="#logout-modal"><span class="glyphicon glyphicon-question-log-out" aria-hidden="true"></span> Logout</a>
                     </div>
                 </div>
                 
@@ -81,8 +81,8 @@
                         <h4>
                             <span id="botgame" onclick="javascript:configGame();">BotGame</span>
                             &nbsp;
-                            <button type="button" id="botgamedefault" class="btn btn-default btn-sm" onclick="javascript:config('game', 'default', function(){configGame(true)});" data-toggle="tooltip" data-placement="bottom" title="Cycles through bot info/stats">Default</button>
-                            <button type="button" id="botgameremove" class="btn btn-danger btn-sm" onclick="javascript:config('game', '.', function(){configGame(true)});" data-toggle="tooltip" data-placement="bottom" title="Bot will not be playing a game">Remove</button>
+                            <button type="button" id="botgamedefault" class="btn btn-default btn-sm" onclick="javascript:config('game', 'default', function(){configGame(true)});" data-toggle="tooltip" data-placement="bottom" title="Cycles through bot info/stats"><span class="glyphicon glyphicon-remove-sign" aria-hidden="true"></span> Default</button>
+                            <button type="button" id="botgameremove" class="btn btn-danger btn-sm" onclick="javascript:config('game', '.', function(){configGame(true)});" data-toggle="tooltip" data-placement="bottom" title="Bot will not be playing a game"><span class="glyphicon glyphicon-remove" aria-hidden="true"></span> Remove</button>
                         </h4>
                     </div>
                     <div class="col-xs-3">
@@ -98,7 +98,7 @@
                             <div class="input-group">
                                 <input type="text" class="form-control" id="profilepicinput" onkeydown="if(event.keyCode==13){configAvatar();}" placeholder="Image URL">
                                 <span class="input-group-btn">
-                                    <button class="btn btn-default" onclick="configAvatar();" type="button">Submit</button>
+                                    <button class="btn btn-default" onclick="configAvatar();" type="button"><span class="glyphicon glyphicon-ok" aria-hidden="true"></span> Set</button>
                                 </span>
                                 </input>
                             </div>
@@ -133,7 +133,7 @@
                                     <tbody id="servertablebody"></tbody>
                                 </table>
                             </div>
-                            <a role="button" target="_blank" id="addserverlink" class="btn btn-default" data-toggle="tooltip" data-placement="bottom" title="Authenticate with Discord">Join A Server</a>
+                            <a role="button" target="_blank" id="addserverlink" class="btn btn-default" data-toggle="tooltip" data-placement="bottom" title="Authenticate with Discord"><span class="glyphicon glyphicon-plus" aria-hidden="true"></span> Join A Server</a>
                         </div>
                     </div>
                 </div>
@@ -177,20 +177,20 @@
                                     <br>
                                     This file is the heart of the built-in stats system, storing the number of messages, gameplay data, and last seen time for each member of each server. <code>stats.json</code> also includes a log of when users have been mentioned and the per-user PM mentions configuration.
                                     <br><br>
-                                    <a class="btn btn-default" onclick="getFile('stats');" role="button">Download stats.json</a>
+                                    <a class="btn btn-default" onclick="getFile('stats');" role="button"><span class="glyphicon glyphicon-download-alt" aria-hidden="true"></span> Download stats.json</a>
                                 </div>
                                 <div role="tabpanel" class="tab-pane fade" id="files-config">
                                     <br>
                                     All server configs are stored in this file, including commmand toggles and the admin/blocked lists. In addition, some basic bot info is stored here such as the game and maintainer ID.
                                     <br><br>
-                                    <a class="btn btn-default" onclick="getFile('config');" role="button">Download config.json</a>
+                                    <a class="btn btn-default" onclick="getFile('config');" role="button"><span class="glyphicon glyphicon-download-alt" aria-hidden="true"></span> Download config.json</a>
                                 </div>
                                 <div role="tabpanel" class="tab-pane fade" id="files-profiles">
                                     <br>
                                     <code>profiles.json</code> contains mostly point totals for each member (independent of server) as well as any custom profile fields they have added.
                                     <br><br>
                                     <form class="form-inline" id="profilesform">
-                                        <a class="btn btn-default" onclick="getFile('profiles');" role="button">Download profiles.json</a>
+                                        <a class="btn btn-default" onclick="getFile('profiles');" role="button"><span class="glyphicon glyphicon-download-alt" aria-hidden="true"></span> Download profiles.json</a>
                                         &nbsp;
                                         <div id="profilesselector-block" style="display:inline-block;">
                                             <select id="profilesselector" class="selectpicker" data-width="fit" data-live-search="true" title="Edit Points for Member" onchange="configProfiles(this.value);"></select>
@@ -205,14 +205,14 @@
                                     <br>
                                     The log file is very large, storing each and every log entry in the past week. It's there for debugging and recording purposes in case you want to know what happened with the bot a few days ago but it had restarted in between.
                                     <br><br>
-                                    <a class="btn btn-default" onclick="getFile('logs');" role="button">Download logs.json</a>
-                                    <a class="btn btn-default" onclick="config('clearlogs', true, function() {richModal('Cleared all bot logs', 'Info');});" role="button">Clear logs</a>
+                                    <a class="btn btn-default" onclick="getFile('logs');" role="button"><span class="glyphicon glyphicon-download-alt" aria-hidden="true"></span> Download logs.json</a>
+                                    <a class="btn btn-default" onclick="config('clearlogs', true, function() {richModal('Cleared all bot logs', 'Info');});" role="button"><span class="glyphicon glyphicon-remove-sign" aria-hidden="true"></span> Clear logs</a>
                                 </div>
                                 <div role="tabpanel" class="tab-pane fade" id="files-reminders">
                                     <br>
                                     <code>reminders.json</code> is usually empty. It contains ongoing reminders set by users, but they are deleted once the reminder is delivered. If this file does contain anything when you download it, it's probably a reminder set to be delivered in multiple days.
                                     <br><br>
-                                    <a class="btn btn-default" onclick="getFile('reminders');" role="button">Download reminders.json</a>
+                                    <a class="btn btn-default" onclick="getFile('reminders');" role="button"><span class="glyphicon glyphicon-download-alt" aria-hidden="true"></span> Download reminders.json</a>
                                 </div>
                             </div>
                         </div>
@@ -226,7 +226,7 @@
                             <form>
                                 <div class="input-group">
                                     <textarea id="bigmessageinput" class="form-control custom-control" rows="3" style="resize:none" placeholder="Message sent to all servers, in markdown"></textarea>
-                                    <span class="input-group-addon btn btn-primary" onclick="javascript:newBigmessage();">Send</span>
+                                    <span class="input-group-addon btn btn-primary" onclick="javascript:newBigmessage();"><span class="glyphicon glyphicon-send" aria-hidden="true"></span> Send</span>
                                 </div>
                             </form>
                         </div>

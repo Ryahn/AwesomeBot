@@ -1,6 +1,7 @@
 var statsSelect = "null";
 var logID = "null";
 var logLevel = "null";
+var svrSearch;
 
 function doSetup() {
     var param = Object.keys(getQueryParams(document.URL))[0];
@@ -72,7 +73,7 @@ function writeInterface() {
                 
                 switchLog(true);
                 
-                switchServers("svrnm", function() {
+                switchServers("svrnm", null, function() {
                     $("#loading-modal").modal("hide");
                 });
             });
@@ -80,21 +81,60 @@ function writeInterface() {
     });
 }
 
-function switchServers(sort, callback) {
+if(document.getElementById("wait")) {
+    var dots = window.setInterval( function() {
+    var wait = document.getElementById("wait");
+    if(wait.innerHTML.length > 3) 
+        wait.innerHTML = "";
+    else 
+        wait.innerHTML += ".";
+    }, 100);
+}
+
+function switchServers(sort, search, callback) {
+    document.getElementById("loading").style.display = "";
+    $(document).on('focus', ':not(.popover)', function(){
+        $('.popover').popover('hide');
+    });
+    if(search!=null) {
+        svrSearch = search.toLowerCase();
+    }
     getJSON("data?section=servers&sort=" + sort, function(data) {
         var servertablebody = "";
         for(var i=0; i<data.stream.length; i++) {
-             servertablebody += "<tr><td><img class=\"profilepic\" width=25 src=\"" + data.stream[i][0] + "\" /></td><td>" + data.stream[i][1] + "</td><td>" + data.stream[i][2] + "</td><td>" + data.stream[i][3] + "</td><td>" + data.stream[i][4] + "</td></tr>";
+            if(svrSearch && data.stream[i][1].toLowerCase().indexOf(svrSearch)==-1 && data.stream[i][2].toLowerCase().indexOf(svrSearch)==-1 && data.stream[i][5].description.toLowerCase().indexOf(svrSearch)==-1) {
+                continue;
+            }
+            servertablebody += "<tr><td id=\"serverentry-" + i + "\" class=\"serverentry\">" + data.stream[i][1] + "</td><td>" + data.stream[i][3] + "</td><td>" + data.stream[i][4] + "</td></tr>";
         }
         document.getElementById("servertablebody").innerHTML = servertablebody;
+
+        $("#servertable").popover({ 
+            html: true,
+            title: function() {
+                i = parseInt(this.id.substring(this.id.indexOf("-")+1));
+                return "<button type=\"button\" class=\"close\" id=\"serverentry-" + i + "-popoverclose\" onclick=\"$('#" + this.id + "').popover('hide');\" aria-label=\"Close\"><span aria-hidden=\"true\">&times;</span></button><h4 class=\"modal-title\">Server Info</h4>";
+            },
+            content: function() {
+                i = parseInt(this.id.substring(this.id.indexOf("-")+1));
+                return "<img style=\"width:100%;\" src=\"" + data.stream[i][0] + "\" /><br><br>Owned by <b>@" + data.stream[i][2] + "</b><br>Total: <b>" + data.stream[i][4].substring(0, data.stream[i][4].indexOf(" ")) + "</b> members<br><b>" + data.stream[i][3] + "</b> message" + (data.stream[i][3]==1 ? "" : "s") + " today" + (data.stream[i][5].enabled ? ("<hr>" + micromarkdown.parse(data.stream[i][5].description) + "<br><br><a href=\"" + data.stream[i][5].invite + "\" role=\"button\" class=\"btn btn-primary\">Join " + data.stream[i][1] + "</a>") : "") + "<script>document.getElementById(\"" + this.id + "\").parentNode.parentNode.style.maxWidth = \"350px\";</script>";
+            },
+            selector: ".serverentry",
+            placement: "top",
+            container: "body",
+            trigger: "click"
+        });
         
-        callback();
+        document.getElementById("loading").style.display = "none";
+        if(callback) {
+            callback();
+        }
     });
 }
 
 function switchColors(theme) {
     if(theme) {
-        document.getElementById("theme").href = "./../bootstrap-" + theme + ".min.css";
+        document.getElementById("theme").href = "./css/bootstrap-" + theme + ".min.css";
         localStorage.setItem("bootstrap-theme", theme);
     } else {
         if(!localStorage.getItem("bootstrap-theme")) {
@@ -104,7 +144,7 @@ function switchColors(theme) {
                 localStorage.setItem("bootstrap-theme", "default");
             }
         }
-        document.getElementById("theme").href = "./../bootstrap-" + localStorage.getItem("bootstrap-theme") + ".min.css";
+        document.getElementById("theme").href = "./css/bootstrap-" + localStorage.getItem("bootstrap-theme") + ".min.css";
         if(document.getElementById("themeswitcher")) {
             document.getElementById("themeswitcher").value = localStorage.getItem("bootstrap-theme");
             $("#themeswitcher").selectpicker("refresh");

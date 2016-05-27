@@ -63,7 +63,7 @@ function leaveConsole(msg) {
     richModal(msg);
     $("#error-modal").on("hidden.bs.modal", function(e) {
         localStorage.removeItem("auth");
-        document.location.replace("");
+        document.location.replace("index.html");
     });
 }
 

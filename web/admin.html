@@ -8,10 +8,10 @@
     <meta name="author" content="BitQuote">
     <title>Admin Console</title>
     
-    <link id="theme" href="./../bootstrap-default.min.css" rel="stylesheet">
-    <link href="./../simple-sidebar.css" rel="stylesheet">
-    <link href="./../bootstrap-select.min.css" rel="stylesheet">
-    <link href="./../awesome-bootstrap-checkbox.css" rel="stylesheet">
+    <link id="theme" href="./css/bootstrap-default.min.css" rel="stylesheet">
+    <link href="./css/simple-sidebar.css" rel="stylesheet">
+    <link href="./css/bootstrap-select.min.css" rel="stylesheet">
+    <link href="./css/awesome-bootstrap-checkbox.css" rel="stylesheet">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.1/css/font-awesome.min.css">
     <style>
     .popover {
@@ -19,12 +19,12 @@
         width: auto;
     }
     </style>
-    <script src="./../jquery.min.js"></script>
-    <script src="./../bootstrap.min.js"></script>
-    <script src="./../bootstrap-select.min.js"></script>
-    <script src="./../index.js"></script>
-    <script src="./../config.js"></script>
-    <script src="./admin/admin.js"></script>
+    <script src="./js/jquery.min.js"></script>
+    <script src="./js/bootstrap.min.js"></script>
+    <script src="./js/bootstrap-select.min.js"></script>
+    <script src="./js/index.js"></script>
+    <script src="./js/config.js"></script>
+    <script src="./js/admin.js"></script>
 </head>
 <body onload="switchColors();doAuth();">
     <div id="wrapper" class="">
@@ -58,6 +58,9 @@
                     <a href="#commands">Commands</a>
                 </li>
                 <li>
+                    <a href="#public">Public Data</a>
+                </li>
+                <li>
                     <a href="#manage">Management</a>
                 </li>
                 <li>
@@ -74,7 +77,7 @@
             <div class="container-fluid">
                 <div class="row">
                     <div class="col-xs-2">
-                        <a style="position:fixed;z-index:1000;" href="#menu-toggle" class="btn btn-default" id="menu-toggle">&#9776;</a>
+                        <a style="position:fixed;z-index:1000;" href="#menu-toggle" class="btn btn-default" id="menu-toggle"><span class="glyphicon glyphicon-menu-hamburger" aria-hidden="true"></span></a>
                     </div>
                     <div class="col-xs-10" style="text-align:right;">
                         <select id="themeswitcher" class="selectpicker" data-width="fit" onChange="javascript:switchColors(this.value);">
@@ -84,8 +87,8 @@
                             <option id="theme-slate" value="slate">Slate</option>
                             <option id="theme-superhero" value="superhero">Superhero</option>
                         </select>&nbsp;
-                        <a target="_blank" href="https://github.com/BitQuote/AwesomeBot/wiki/Configuration#admin-console" class="btn btn-default" id="help-button" data-toggle="tooltip" data-placement="bottom" title="Admin console wiki page">Help</a>&nbsp;
-                        <a href="#menu-toggle" class="btn btn-primary" id="logout-button" data-toggle="modal" data-target="#logout-modal">Logout</a>
+                        <a target="_blank" href="https://github.com/BitQuote/AwesomeBot/wiki/Configuration#admin-console" class="btn btn-default" id="help-button" data-toggle="tooltip" data-placement="bottom" title="Admin console wiki page"><span class="glyphicon glyphicon-question-sign" aria-hidden="true"></span> Help</a>&nbsp;
+                        <a href="#menu-toggle" class="btn btn-primary" id="logout-button" data-toggle="modal" data-target="#logout-modal"><span class="glyphicon glyphicon-log-out" aria-hidden="true"></span> Logout</a>
                     </div>
                 </div>
                 
@@ -98,7 +101,7 @@
                             <span id="botname" onclick="javascript:configNickname();">BotName</span>
                             <span id="botsince"> added time elapsed</span>
                             &nbsp;
-                            <button type="button" id="botgameremove" class="btn btn-danger btn-sm" onclick="javascript:leaveServer();" data-toggle="tooltip" data-placement="bottom" title="Bot will be removed from server">Leave Server</button>
+                            <button type="button" id="botgameremove" class="btn btn-danger btn-sm" onclick="javascript:leaveServer();" data-toggle="tooltip" data-placement="bottom" title="Bot will be removed from server"><span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span> Leave Server</button>
                         </h4>
                     </div>
                     <div class="col-xs-3">
@@ -218,7 +221,7 @@
                                 <button type="button" class="btn btn-default btn-sm" id="presetentry-full" onclick="javascript:config('preset', 'full', switchCommands);" data-toggle="tooltip" data-placement="bottom" title="The whole 9 yards">Full</button>
                                 <button type="button" class="btn btn-default btn-sm" id="presetentry-lite" onclick="javascript:config('preset', 'lite', switchCommands);" data-toggle="tooltip" data-placement="bottom" title="Lightweight and easy to understand">Lite</button>
                                 <button type="button" class="btn btn-default btn-sm" id="presetentry-sense" onclick="javascript:config('preset', 'sense', switchCommands);" data-toggle="tooltip" data-placement="bottom" title="Just Right&trade;">Sense</button>
-                                <button type="button" class="btn btn-danger btn-sm" id="presetentry-default" onclick="javascript:resetConfigs();" data-toggle="tooltip" data-placement="bottom" title="Resets all configs">Default</button>
+                                <button type="button" class="btn btn-danger btn-sm" id="presetentry-default" onclick="javascript:resetConfigs();" data-toggle="tooltip" data-placement="bottom" title="Resets all configs"><span class="glyphicon glyphicon-remove-sign" aria-hidden="true"></span>  Default</button>
                             </div>
                             <br><br>
 
@@ -226,7 +229,7 @@
                             &nbsp;&nbsp;
                             <div class="input-group form-inline col-xs-2">
                                 <input type="number" id="commands-defaultcount" class="form-control" min="1" max="100" onkeydown="if(event.keyCode==13){config('defaultcount', this.value, switchCommands);">
-                                <span class="input-group-addon btn btn-primary" onclick="javascript:config('defaultcount', $('#commands-defaultcount').val(), switchCommands);">Set</span>
+                                <span class="input-group-addon btn btn-primary" onclick="javascript:config('defaultcount', $('#commands-defaultcount').val(), switchCommands);"><span class="glyphicon glyphicon-ok" aria-hidden="true"></span> Set</span>
                             </div>
                             
                             <br>
@@ -235,17 +238,17 @@
                             
                             Google API key:
                             <div class="input-group col-xs-5">
-                                <span class="input-group-addon btn btn-danger" id="api-google-default" onclick="javascript:config('customkeys', ['google_api_key', 'default'], switchCommands);" data-toggle="tooltip" data-placement="bottom" title="Use bot's global API key">Default</span>
+                                <span class="input-group-addon btn btn-danger" id="api-google-default" onclick="javascript:config('customkeys', ['google_api_key', 'default'], switchCommands);" data-toggle="tooltip" data-placement="bottom" title="Use bot's global API key"><span class="glyphicon glyphicon-remove-sign" aria-hidden="true"></span>  Default</span>
                                 <input type="text" id="api-google-input" class="form-control" onkeydown="if(event.keyCode==13){config('customkey', ['google_api_key], this.value], switchCommands);" style="min-width:200px;">
-                                <span class="input-group-addon btn btn-primary" onclick="javascript:config('customkeys', ['google_api_key', $('#api-google-input').val()], switchCommands);">Set</span>
+                                <span class="input-group-addon btn btn-primary" onclick="javascript:config('customkeys', ['google_api_key', $('#api-google-input').val()], switchCommands);"><span class="glyphicon glyphicon-ok" aria-hidden="true"></span> Set</span>
                             </div>
                             
                             <br>
                             Custom search ID:
                             <div class="input-group col-xs-5">
-                                <span class="input-group-addon btn btn-danger" id="api-custom-default" onclick="javascript:config('customkeys', ['custom_search_id', 'default'], switchCommands);" data-toggle="tooltip" data-placement="bottom" title="Use bot's global API key">Default</span>
+                                <span class="input-group-addon btn btn-danger" id="api-custom-default" onclick="javascript:config('customkeys', ['custom_search_id', 'default'], switchCommands);" data-toggle="tooltip" data-placement="bottom" title="Use bot's global API key"><span class="glyphicon glyphicon-remove-sign" aria-hidden="true"></span>  Default</span>
                                 <input type="text" id="api-custom-input" class="form-control" onkeydown="if(event.keyCode==13){config('customkey', ['custom_search_id], this.value], switchCommands);" style="min-width:200px;">
-                                <span class="input-group-addon btn btn-primary" onclick="javascript:config('customkeys', ['custom_search_id', $('#api-custom-input').val()], switchCommands);">Set</span>
+                                <span class="input-group-addon btn btn-primary" onclick="javascript:config('customkeys', ['custom_search_id', $('#api-custom-input').val()], switchCommands);"><span class="glyphicon glyphicon-ok" aria-hidden="true"></span> Set</span>
                             </div>
                         </div>
                     </div>
@@ -311,6 +314,30 @@
                         </div>
                     </div>
                 </div>
+
+                <div class="row">
+                    <div class="col-lg-12">
+                        <h2 id="public" data-toggle="collapse" data-target="#public-body" aria-expanded="false" aria-controls="collapsepublic">Public Data</h2>
+                        <div id="public-body" class="collapse">
+                            <div class="checkbox">
+                                <input id="publicentry-showpub" type="checkbox" onclick="javascript:config(this.id.substring(12), this.checked, switchPublic);">
+                                <label for="publicentry-showpub">
+                                    Show logs and data for this server on public status page
+                                </label>
+                            </div>
+                            <div class="checkbox">
+                                <input id="publicentry-enable-listing" type="checkbox" onclick="javascript:config(this.id.substring(19), this.checked, switchPublic);">
+                                <label for="publicentry-enable-listing">
+                                    Allow anyone to find and join this server from the public status page
+                                </label>
+                            </div>
+                            <div id="publicentry-description" class="input-group">
+                                <textarea id="publicentry-description-listing" class="form-control custom-control" rows="3" style="resize:none" placeholder="Public server listing description, in markdown" maxlength="1000"></textarea>
+                                <span class="input-group-addon btn btn-primary" onclick="javascript:config('listing', document.getElementById('publicentry-description-listing').value, switchPublic);"><span class="glyphicon glyphicon-ok" aria-hidden="true"></span> Submit</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 
                 <div class="row">
                     <div class="col-lg-12">
@@ -347,19 +374,19 @@
                                         Member joined messages
                                     </label>
                                     &nbsp;
-                                    <select id="manageentry-select-newmembermsg" onchange="javascript:config(this.id.substring(19), this.value, function() {});" class="selectpicker" data-width="fit" data-live-search="true"></select>
+                                    <select id="manageentry-select-newmembermsg" onchange="javascript:config(this.id.substring(19), this.value, function() {});" class="selectpicker" data-width="fit" data-live-search="true" multiple></select>
                                 </div>
                                 <span id="manageentry-newmembermsg-body" class="collapse">
                                     <span id="manageentry-newmembermsg-block"></span>
                                     <div class="input-group col-xs-5" style="margin-left:19px;">
-                                        <span class="input-group-addon btn btn-danger" id="newmembermsg-default" onclick="javascript:config('newmembermsg', 'default', function() {});" data-toggle="tooltip" data-placement="bottom" title="Clear custom greetings and reset">Default</span>
+                                        <span class="input-group-addon btn btn-danger" id="newmembermsg-default" onclick="javascript:config('newmembermsg', 'default', function() {});" data-toggle="tooltip" data-placement="bottom" title="Clear custom greetings and reset"><span class="glyphicon glyphicon-remove-sign" aria-hidden="true"></span>  Default</span>
                                         <input type="text" id="newmembermsg-input" class="form-control" placeholder="++ is replaced with username" onkeydown="if(event.keyCode==13){config('newmembermsg', this.value, function() {});}" style="min-width:200px;">
-                                        <span class="input-group-addon btn btn-primary" onclick="javascript:config('newmembermsg', $('#newmembermsg-input').val(), function() {});">Add</span>
+                                        <span class="input-group-addon btn btn-primary" onclick="javascript:config('newmembermsg', $('#newmembermsg-input').val(), function() {});"><span class="glyphicon glyphicon-plus" aria-hidden="true"></span> Add</span>
                                     </div>
+                                    <br>
                                 </span>
                                 
-                                <br>
-                                <select id="manageentry-select-newrole" onchange="javascript:config(this.id.substring(19), this.value, function() {});" class="selectpicker" data-width="fit" data-live-search="true"></select>
+                                Role(s) for new members: <select id="manageentry-select-newrole" onchange="javascript:config(this.id.substring(19), $('#' + this.id).val(), function() {});" class="selectpicker" data-width="fit" multiple></select>
                                 
                                 <div class="checkbox">
                                     <input id="manageentry-onmembermsg" type="checkbox" onclick="javascript:config(this.id.substring(12), this.checked, function() {});">
@@ -372,9 +399,9 @@
                                 <span id="manageentry-onmembermsg-body" class="collapse">
                                     <span id="manageentry-onmembermsg-block"></span>
                                     <div class="input-group col-xs-5" style="margin-left:19px;">
-                                        <span class="input-group-addon btn btn-danger" id="onmembermsg-default" onclick="javascript:config('onmembermsg', 'default', function() {});" data-toggle="tooltip" data-placement="bottom" title="Clear custom greetings and reset">Default</span>
+                                        <span class="input-group-addon btn btn-danger" id="onmembermsg-default" onclick="javascript:config('onmembermsg', 'default', function() {});" data-toggle="tooltip" data-placement="bottom" title="Clear custom greetings and reset"><span class="glyphicon glyphicon-remove-sign" aria-hidden="true"></span>  Default</span>
                                         <input type="text" id="onmembermsg-input" class="form-control" placeholder="++ is replaced with username" onkeydown="if(event.keyCode==13){config('onmembermsg', this.value, function() {});}" style="min-width:200px;">
-                                        <span class="input-group-addon btn btn-primary" onclick="javascript:config('onmembermsg', $('#onmembermsg-input').val(), function() {});">Add</span>
+                                        <span class="input-group-addon btn btn-primary" onclick="javascript:config('onmembermsg', $('#onmembermsg-input').val(), function() {});"><span class="glyphicon glyphicon-plus" aria-hidden="true"></span> Add</span>
                                     </div>
                                 </span>
                                 
@@ -389,9 +416,9 @@
                                 <span id="manageentry-offmembermsg-body" class="collapse">
                                     <span id="manageentry-offmembermsg-block"></span>
                                     <div class="input-group col-xs-5" style="margin-left:19px;">
-                                        <span class="input-group-addon btn btn-danger" id="offmembermsg-default" onclick="javascript:config('offmembermsg', 'default', function() {});" data-toggle="tooltip" data-placement="bottom" title="Clear custom greetings and reset">Default</span>
+                                        <span class="input-group-addon btn btn-danger" id="offmembermsg-default" onclick="javascript:config('offmembermsg', 'default', function() {});" data-toggle="tooltip" data-placement="bottom" title="Clear custom greetings and reset"><span class="glyphicon glyphicon-remove-sign" aria-hidden="true"></span>  Default</span>
                                         <input type="text" id="offmembermsg-input" class="form-control" placeholder="++ is replaced with username" onkeydown="if(event.keyCode==13){config('offmembermsg', this.value, function() {});}" style="min-width:200px;">
-                                        <span class="input-group-addon btn btn-primary" onclick="javascript:config('offmembermsg', $('#offmembermsg-input').val(), function() {});">Add</span>
+                                        <span class="input-group-addon btn btn-primary" onclick="javascript:config('offmembermsg', $('#offmembermsg-input').val(), function() {});"><span class="glyphicon glyphicon-plus" aria-hidden="true"></span> Add</span>
                                     </div>
                                 </span>
                                 
@@ -402,6 +429,15 @@
                                     </label>
                                     &nbsp;
                                     <select id="manageentry-select-changemembermsg" onchange="javascript:config(this.id.substring(19), this.value, function() {});" class="selectpicker" data-width="fit" data-live-search="true"></select>
+                                </div>
+
+                                <div class="checkbox">
+                                    <input id="manageentry-twitchmembermsg" type="checkbox" onclick="javascript:config(this.id.substring(12), this.checked, function() {});">
+                                    <label for="manageentry-twitchmembermsg">
+                                        Twitch streaming messages
+                                    </label>
+                                    &nbsp;
+                                    <select id="manageentry-select-twitchmembermsg" onchange="javascript:config(this.id.substring(19), this.value, function() {});" class="selectpicker" data-width="fit" data-live-search="true"></select>
                                 </div>
                                 
                                 <div class="checkbox">
@@ -415,9 +451,9 @@
                                 <span id="manageentry-rmmembermsg-body" class="collapse">
                                     <span id="manageentry-rmmembermsg-block"></span>
                                     <div class="input-group col-xs-5" style="margin-left:19px;">
-                                        <span class="input-group-addon btn btn-danger" id="rmmembermsg-default" onclick="javascript:config('rmmembermsg', 'default', function() {});" data-toggle="tooltip" data-placement="bottom" title="Clear custom greetings and reset">Default</span>
+                                        <span class="input-group-addon btn btn-danger" id="rmmembermsg-default" onclick="javascript:config('rmmembermsg', 'default', function() {});" data-toggle="tooltip" data-placement="bottom" title="Clear custom greetings and reset"><span class="glyphicon glyphicon-remove-sign" aria-hidden="true"></span>  Default</span>
                                         <input type="text" id="rmmembermsg-input" class="form-control" placeholder="++ is replaced with username" onkeydown="if(event.keyCode==13){config('rmmembermsg', this.value, function() {});}" style="min-width:200px;">
-                                        <span class="input-group-addon btn btn-primary" onclick="javascript:config('rmmembermsg', $('#rmmembermsg-input').val(), function() {});">Add</span>
+                                        <span class="input-group-addon btn btn-primary" onclick="javascript:config('rmmembermsg', $('#rmmembermsg-input').val(), function() {});"><span class="glyphicon glyphicon-plus" aria-hidden="true"></span> Add</span>
                                     </div>
                                 </span>
                                 
@@ -432,9 +468,9 @@
                                 <span id="manageentry-banmembermsg-body" class="collapse">
                                     <span id="manageentry-banmembermsg-block"></span>
                                     <div class="input-group col-xs-5" style="margin-left:19px;">
-                                        <span class="input-group-addon btn btn-danger" id="banmembermsg-default" onclick="javascript:config('banmembermsg', 'default', function() {});" data-toggle="tooltip" data-placement="bottom" title="Clear custom greetings and reset">Default</span>
+                                        <span class="input-group-addon btn btn-danger" id="banmembermsg-default" onclick="javascript:config('banmembermsg', 'default', function() {});" data-toggle="tooltip" data-placement="bottom" title="Clear custom greetings and reset"><span class="glyphicon glyphicon-remove-sign" aria-hidden="true"></span>  Default</span>
                                         <input type="text" id="banmembermsg-input" class="form-control" placeholder="++ is replaced with username" onkeydown="if(event.keyCode==13){config('banmembermsg', this.value, function() {});}" style="min-width:200px;">
-                                        <span class="input-group-addon btn btn-primary" onclick="javascript:config('banmembermsg', $('#banmembermsg-input').val(), function() {});">Add</span>
+                                        <span class="input-group-addon btn btn-primary" onclick="javascript:config('banmembermsg', $('#banmembermsg-input').val(), function() {});"><span class="glyphicon glyphicon-plus" aria-hidden="true"></span> Add</span>
                                     </div>
                                 </span>
                                 
@@ -449,17 +485,17 @@
                                 <span id="manageentry-unbanmembermsg-body" class="collapse">
                                     <span id="manageentry-unbanmembermsg-block"></span>
                                     <div class="input-group col-xs-5" style="margin-left:19px;">
-                                        <span class="input-group-addon btn btn-danger" id="unbanmembermsg-default" onclick="javascript:config('unbanmembermsg', 'default', function() {});" data-toggle="tooltip" data-placement="bottom" title="Clear custom greetings and reset">Default</span>
+                                        <span class="input-group-addon btn btn-danger" id="unbanmembermsg-default" onclick="javascript:config('unbanmembermsg', 'default', function() {});" data-toggle="tooltip" data-placement="bottom" title="Clear custom greetings and reset"><span class="glyphicon glyphicon-remove-sign" aria-hidden="true"></span>  Default</span>
                                         <input type="text" id="unbanmembermsg-input" class="form-control" placeholder="++ is replaced with username" onkeydown="if(event.keyCode==13){config('unbanmembermsg', this.value, function() {});}" style="min-width:200px;">
-                                        <span class="input-group-addon btn btn-primary" onclick="javascript:config('unbanmembermsg', $('#unbanmembermsg-input').val(), function() {});">Add</span>
+                                        <span class="input-group-addon btn btn-primary" onclick="javascript:config('unbanmembermsg', $('#unbanmembermsg-input').val(), function() {});"><span class="glyphicon glyphicon-plus" aria-hidden="true"></span> Add</span>
                                     </div>
                                 </span>
                                 
                                 <br>
                                 <div id="manageentry-newgreeting" class="input-group">
                                     <span id="newgreetingremove" class="input-group-addon btn btn-danger" onclick="javascript:configNewgreeting('');">Remove</span>
-                                    <textarea id="newgreetinginput" class="form-control custom-control" rows="3" style="resize:none" placeholder="Message shown to new members via PM, in markdown"></textarea>
-                                    <span class="input-group-addon btn btn-primary" onclick="javascript:configNewgreeting(document.getElementById('newgreetinginput').value);">Submit</span>
+                                    <textarea id="newgreetinginput" class="form-control custom-control" rows="3" style="resize:none" placeholder="Message shown to new members via PM, in markdown" maxlength="1500"></textarea>
+                                    <span class="input-group-addon btn btn-primary" onclick="javascript:configNewgreeting(document.getElementById('newgreetinginput').value);"><span class="glyphicon glyphicon-ok" aria-hidden="true"></span> Submit</span>
                                 </div>
                                 
                                 <br>
@@ -469,6 +505,11 @@
                                     <label for="manageentry-spamfilter">
                                         Spam filter
                                     </label>
+                                    &nbsp;
+                                    <select id="manageentry-spamfilter-action" onChange="javascript:config('spamfilter', 'skipkick', function() {});" class="selectpicker" data-width="fit">
+                                        <option id="spamfilter-kick" value="kick">Kick Violators</option>
+                                        <option id="spamfilter-block" value="block">Block Violators</option>
+                                    </select>
                                 </div>
                                 <span id="manageentry-spamfilter-body" class="collapse">
                                     <span id="manageentry-spamfilter-block"></span>
@@ -486,6 +527,11 @@
                                     <label for="manageentry-nsfwfilter">
                                         NSFW filter (blocks NSFW fetching through bot)
                                     </label>
+                                    &nbsp;
+                                    <select id="manageentry-nsfwfilter-action" onChange="javascript:config('nsfwfilter', 'skipkick', function() {});" class="selectpicker" data-width="fit">
+                                        <option id="nsfwfilter-kick" value="kick">Kick Violators</option>
+                                        <option id="nsfwfilter-block" value="block">Block Violators</option>
+                                    </select>
                                 </div>
                                 <span id="manageentry-nsfwfilter-body" class="collapse">
                                     <span id="manageentry-nsfwfilter-block"></span>
@@ -495,9 +541,29 @@
                                 <div id="manageentry-filter" class="input-group">
                                     <span id="filterremove" class="input-group-addon btn btn-danger" onclick="javascript:configFilter('');">Clear</span>
                                     <textarea id="filterinput" class="form-control custom-control" rows="3" style="resize:none" placeholder="List of words to filter, separated by commas"></textarea>
-                                    <span class="input-group-addon btn btn-primary" onclick="javascript:configFilter(document.getElementById('filterinput').value);">Submit</span>
+                                    <span class="input-group-addon btn btn-primary" onclick="javascript:configFilter(document.getElementById('filterinput').value);"><span class="glyphicon glyphicon-ok" aria-hidden="true"></span> Submit</span>
                                 </div>
+                                <br>
+                                <select id="manageentry-filter-action" onChange="javascript:config('filter', 'skipkick', function() {});" class="selectpicker" data-width="fit">
+                                    <option id="filter-kick" value="kick">Kick Violators</option>
+                                    <option id="filter-block" value="block">Block Violators</option>
+                                </select>
                             </span>
+
+                            <br>
+                            <h3 id="name-diplay">Name Display</h3>
+                            <div class="checkbox">
+                                <input id="manageentry-usenicks" type="checkbox" onclick="javascript:config(this.id.substring(12), this.checked, function() {});">
+                                <label for="manageentry-usenicks">
+                                    Use nickname if set
+                                </label>
+                            </div>
+                            <div class="checkbox">
+                                <input id="manageentry-usediscriminators" type="checkbox" onclick="javascript:config(this.id.substring(12), this.checked, function() {});">
+                                <label for="manageentry-usediscriminators">
+                                    Show user discriminator (0-9999)
+                                </label>
+                            </div>
                             
                             <br>
                             <h3 id="other">Other</h3>
@@ -541,14 +607,6 @@
                                 <select id="caselector" class="selectpicker" data-width="fit" data-live-search="true"></select>
                                 <input type="submit" class="btn btn-default" value="Go">
                             </form>
-                            
-                            <br>
-                            <div class="checkbox">
-                                <input id="manageentry-showpub" type="checkbox" onclick="javascript:config(this.id.substring(12), this.checked, function() {});">
-                                <label for="manageentry-showpub">
-                                    Show logs and data for this server on public status page
-                                </label>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -577,7 +635,7 @@
                 
                 <div class="row">
                     <div class="col-lg-12">
-                        <h2 id="extensions" data-toggle="collapse" data-target="#extensions-body" aria-expanded="false" aria-controls="collapseextensions">Extensions</h2>
+                        <h2 id="extensions" data-toggle="collapse" data-target="#extensions-body" aria-expanded="false" aria-controls="collapseextensions">Extensions <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true" data-toggle="tooltip" data-placement="top" style="font-size: 0.7em;" title="We've recently added the extension builder, which is in beta and may have bugs. Please file issues on our GitHub repo."></span></h2>
                         <div id="extensions-body" class="collapse">
                             <p class="help-block">Extensions allow you to add server-specific functionality to the bot. Learn more <a href="https://git.io/vVHfT" target="_blank" data-toggle="tooltip" data-placement="bottom" title="Extensions wiki page">here</a>.</p>
                             <div class="table-responsive">
@@ -596,7 +654,7 @@
                             Upload: 
                             <input id="extensionsupload" type="file" style="display:inline-block;width:300;" accept="application/json" onchange="javascript:newExtension(this.files)" />
                             <br><br>
-                            <a role="button" href="http://awesome-botmakersinc.rhcloud.com/builder" target="_blank" class="btn btn-default" data-toggle="tooltip" data-placement="bottom" title="Easily build and test AwesomeBot extensions">Extension Builder</a>
+                            <a role="button" href="http://awesome-botmakersinc.rhcloud.com/builder" target="_blank" class="btn btn-default" data-toggle="tooltip" data-placement="bottom" title="Easily build and test AwesomeBot extensions"><span class="glyphicon glyphicon-wrench" aria-hidden="true"></span> Extension Builder</a>
                         </div>
                     </div>
                 </div>
