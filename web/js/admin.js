@@ -67,6 +67,13 @@ function switchAdmins() {
         document.getElementById("adminsselector").innerHTML = adminsselector;
         $("#adminsselector").selectpicker("refresh");
     });
+
+    var adminsselector_role = "";
+    for(var i=botData.roles.length-1; i>=0; i--) {
+        adminsselector_role += "<option id=\"newroleentry-" + botData.roles[i][1] + "\" value=\"role-" + botData.roles[i][1] + "\" style=\"color: " + botData.roles[i][3] + ";\">" + botData.roles[i][0] + "</option>";
+    }
+    document.getElementById("adminsselector-role").innerHTML = adminsselector_role;
+    $("#adminsselector-role").selectpicker("refresh");
 }
 
 function switchBlocked() {
@@ -114,6 +121,13 @@ function switchBlocked() {
         document.getElementById("blockedselector").innerHTML = blockedselector;
         $("#blockedselector").selectpicker("refresh");
     });
+
+    var blockedselector_role = "";
+    for(var i=botData.roles.length-1; i>=0; i--) {
+        blockedselector_role += "<option id=\"newroleentry-" + botData.roles[i][1] + "\" value=\"role-" + botData.roles[i][1] + "\" style=\"color: " + botData.roles[i][3] + ";\">" + botData.roles[i][0] + "</option>";
+    }
+    document.getElementById("blockedselector-role").innerHTML = blockedselector_role;
+    $("#blockedselector-role").selectpicker("refresh");
 }
 
 function newMute(data, i) {
@@ -312,7 +326,6 @@ function switchCommands() {
         "linkme": "Searches the Google Play Store for one or more apps", 
         "appstore": "Searches the Apple App Store for one or more apps", 
         "say": "Says something in the chat", 
-        "me": "Command that emulates the /me command in other bots", 
         "convert": "Converts between units of measurement and currencies", 
         "twitter": "Fetches the Twitter timeline for a given user", 
         "youtube": "Gets a YouTube link with the given query, including channels, videos, and playlists", 
@@ -348,7 +361,7 @@ function switchCommands() {
     }
     var commands = [];
     for(var cmd in botData.configs) {
-        if(["admins", "blocked", "extensions", "newgreeting", "nsfwfilter", "servermod", "spamfilter", "customroles", "customcolors", "customkeys", "cmdtag", "newmembermsg", "onmembermsg", "offmembermsg", "changemembermsg", "twitchmembermsg", "rmmembermsg", "banmembermsg", "unbanmembermsg", "triviasets", "newrole", "showpub", "defaultcount", "autoprune", "translated", "filter", "usenicks", "usediscriminators", "listsrc", "listing", "tagcommands"].indexOf(cmd)==-1) {
+        if(["admins", "blocked", "extensions", "newgreeting", "nsfwfilter", "servermod", "spamfilter", "customroles", "customcolors", "customkeys", "cmdtag", "newmembermsg", "onmembermsg", "offmembermsg", "changemembermsg", "twitchmembermsg", "editmembermsg", "deletemembermsg", "rmmembermsg", "banmembermsg", "unbanmembermsg", "triviasets", "newrole", "showpub", "defaultcount", "autoprune", "translated", "filter", "usenicks", "usediscriminators", "listsrc", "listing", "tagcommands", "cooldown"].indexOf(cmd)==-1) {
             commands.push("<div class=\"checkbox\"><input style=\"height: auto;\" id=\"commandsentry-" + cmd + "\" type=\"checkbox\" onclick=\"javascript:config(this.id.substring(14), this.checked, switchCommands);\" " + ((cmd=="rss" ? botData.configs[cmd][0] : botData.configs[cmd]) ? "checked " : "") + "/><label for=\"commandsentry-" + cmd + "\">" + cmd + "&nbsp;&nbsp;<p class=\"help-block\" style=\"display:inline\">" + descs[cmd] + "</p></label></div>");
         }
     }
@@ -370,7 +383,17 @@ function switchCommands() {
         }
     });
 
-    document.getElementById("commands-defaultcount").value = botData.configs.defaultcount
+    document.getElementById("commands-defaultcount").value = botData.configs.defaultcount;
+
+    document.getElementById("commands-cooldown").checked = botData.configs.cooldown!=0;
+    document.getElementById("commands-cooldown-select").value = botData.configs.cooldown;
+    if(botData.configs.cooldown==0) {
+        document.getElementById("commands-cooldown-select").setAttribute("disabled", "disable");
+        $("#commands-cooldown-select").selectpicker("refresh");
+    } else {
+        document.getElementById("commands-cooldown-select").removeAttribute("disabled");
+        $("#commands-cooldown-select").selectpicker("refresh");
+    }
     
     document.getElementById("api-google-input").value = botData.configs.customkeys.google_api_key;
     if(!botData.configs.customkeys.google_api_key) {

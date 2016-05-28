@@ -133,7 +133,8 @@
             172800
         ],
         "usenicks": true,
-        "usediscriminators": false
+        "usediscriminators": false,
+        "cooldown": 0
     },
     "full": {
         "servermod": true,
@@ -171,7 +172,6 @@
         "linkme": true,
         "appstore": true,
         "say": true,
-        "me": true,
         "convert": true,
         "twitter": true,
         "youtube": true,
@@ -234,7 +234,6 @@
         "linkme": false,
         "appstore": false,
         "say": false,
-        "me": false,
         "convert": false,
         "twitter": false,
         "youtube": true,
@@ -297,7 +296,6 @@
         "linkme": true,
         "appstore": true,
         "say": true,
-        "me": false,
         "convert": true,
         "twitter": false,
         "youtube": true,

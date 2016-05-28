@@ -129,6 +129,7 @@
                                 </table>
                             </div>
                             <select id="adminsselector" class="selectpicker" data-width="fit" data-live-search="true" title="Select Member to Add" onChange="javascript:config('admins', this.value, function() {switchAdmins();switchBlocked();});"></select>
+                            <select id="adminsselector-role" onchange="javascript:config('admins', $('#' + this.id).val(), switchAdmins);" class="selectpicker" data-width="fit" title="Add Admins By Role"></select>
                         </div>
                     </div>
                 </div>
@@ -152,6 +153,7 @@
                                 </table>
                             </div>
                             <select id="blockedselector" class="selectpicker" data-width="fit" data-live-search="true" title="Select Member to Block" onChange="javascript:config('blocked', this.value, function() {switchAdmins();switchBlocked();});"></select>
+                            <select id="blockedselector-role" onchange="javascript:config('blocked', $('#' + this.id).val(), switchBlocked);" class="selectpicker" data-width="fit" title="Block Members By Role"></select>
                         </div>
                     </div>
                 </div>
@@ -231,8 +233,25 @@
                                 <input type="number" id="commands-defaultcount" class="form-control" min="1" max="100" onkeydown="if(event.keyCode==13){config('defaultcount', this.value, switchCommands);">
                                 <span class="input-group-addon btn btn-primary" onclick="javascript:config('defaultcount', $('#commands-defaultcount').val(), switchCommands);"><span class="glyphicon glyphicon-ok" aria-hidden="true"></span> Set</span>
                             </div>
+
+                            <div class="checkbox">
+                                <input id="commands-cooldown" type="checkbox" onclick="javascript:config('cooldown', this.checked ? 5000 : 0, switchCommands);">
+                                <label for="commands-cooldown">
+                                    Command cooldown period of
+                                </label>
+                                <select id="commands-cooldown-select" onchange="javascript:config('cooldown', this.value, switchCommands);" class="selectpicker" data-width="fit">
+                                    <option value="2000">2 seconds</option>
+                                    <option value="3000">3 seconds</option>
+                                    <option value="5000">5 seconds</option>
+                                    <option value="10000">10 seconds</option>
+                                    <option value="15000">15 seconds</option>
+                                    <option value="30000">30 seconds</option>
+                                    <option value="45000">45 seconds</option>
+                                    <option value="60000">1 minute</option>
+                                    <option value="120000">2 minutes</option>
+                                </select>
+                            </div>
                             
-                            <br>
                             <h3 id="api-keys">API Keys</h3>
                             <p class="help-block">Sometimes we get rate limited for the image search and YouTube commands. Use this area to set a custom Google API key for your server so the global bot rate limit doesn't affect the bot on your server. Follow <a href="https://github.com/BitQuote/AwesomeBot/wiki/Setup#google_api_key">the wiki</a> for instructions.</p>
                             
@@ -575,7 +594,7 @@
                             <div class="checkbox">
                                 <input id="manageentry-usediscriminators" type="checkbox" onclick="javascript:config(this.id.substring(12), this.checked, function() {});">
                                 <label for="manageentry-usediscriminators">
-                                    Show user discriminator (0-9999)
+                                    Show discriminator (0-9999)
                                 </label>
                             </div>
                             
@@ -611,7 +630,7 @@
                             <form class="form-inline" id="caform">
                                 <select id="catypeselector" class="selectpicker" data-width="fit">
                                     <option value="clean">Clean</option>
-                                    <option value="purge">Purge</option>
+                                    <option value="purge">Nuke</option>
                                     <option value="archive">Archive</option>
                                 </select>
                                 <div id="cainput-block" style="display:inline-block;">
@@ -641,9 +660,9 @@
                                     <tbody id="triviasetstablebody"></tbody>
                                 </table>
                             </div>
-                            <span class="btn btn-default btn-file">
+                            <label class="btn btn-default btn-file">
                                 Upload New<input id="triviasetsupload" type="file" style="display: none;"accept="application/json" onchange="javascript:newTriviaSet(this.files)" />
-                            </span>
+                            </label>
                             
                         </div>
                     </div>
@@ -667,9 +686,9 @@
                                     <tbody id="extensionstablebody"></tbody>
                                 </table>
                             </div>
-                            <span class="btn btn-default btn-file">
+                            <label class="btn btn-default btn-file">
                                 Upload New<input id="extensionsupload" type="file" style="display: none;" accept="application/json" onchange="javascript:newExtension(this.files)" />
-                            </span>
+                            </label>
                             <br><br>
                             <a role="button" href="http://awesome-botmakersinc.rhcloud.com/builder" target="_blank" class="btn btn-default" data-toggle="tooltip" data-placement="bottom" title="Easily build and test AwesomeBot extensions"><span class="glyphicon glyphicon-wrench" aria-hidden="true"></span> Extension Builder</a>
                         </div>
