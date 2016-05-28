@@ -342,11 +342,13 @@ function switchCommands() {
         "avatar": "Posts a user's profile picture",
         "list": "Admin-only to-do list",
         "kick": "Removes a member from the server",
-        "ban": "Removes a member from the server and prevents them from coming back"
+        "ban": "Removes a member from the server and prevents them from coming back",
+        "nuke": "Deletes messages in a channel, all or from a user",
+        "archive": "Provides a JSON file with the last <i>n</i> messages in chat"
     }
     var commands = [];
     for(var cmd in botData.configs) {
-        if(["admins", "blocked", "extensions", "newgreeting", "nsfwfilter", "servermod", "spamfilter", "customroles", "customcolors", "customkeys", "cmdtag", "newmembermsg", "onmembermsg", "offmembermsg", "changemembermsg", "twitchmembermsg", "rmmembermsg", "banmembermsg", "unbanmembermsg", "triviasets", "newrole", "showpub", "defaultcount", "autoprune", "translated", "filter", "usenicks", "usediscriminators", "listsrc", "listing"].indexOf(cmd)==-1) {
+        if(["admins", "blocked", "extensions", "newgreeting", "nsfwfilter", "servermod", "spamfilter", "customroles", "customcolors", "customkeys", "cmdtag", "newmembermsg", "onmembermsg", "offmembermsg", "changemembermsg", "twitchmembermsg", "rmmembermsg", "banmembermsg", "unbanmembermsg", "triviasets", "newrole", "showpub", "defaultcount", "autoprune", "translated", "filter", "usenicks", "usediscriminators", "listsrc", "listing", "tagcommands"].indexOf(cmd)==-1) {
             commands.push("<div class=\"checkbox\"><input style=\"height: auto;\" id=\"commandsentry-" + cmd + "\" type=\"checkbox\" onclick=\"javascript:config(this.id.substring(14), this.checked, switchCommands);\" " + ((cmd=="rss" ? botData.configs[cmd][0] : botData.configs[cmd]) ? "checked " : "") + "/><label for=\"commandsentry-" + cmd + "\">" + cmd + "&nbsp;&nbsp;<p class=\"help-block\" style=\"display:inline\">" + descs[cmd] + "</p></label></div>");
         }
     }
@@ -405,7 +407,7 @@ function switchManage() {
         $("#manageentry-select-autoprune").selectpicker("refresh");
     }
     
-    var membermsg = ["newmembermsg", "onmembermsg", "offmembermsg", "changemembermsg", "twitchmembermsg", "rmmembermsg", "banmembermsg", "unbanmembermsg"];
+    var membermsg = ["newmembermsg", "onmembermsg", "offmembermsg", "changemembermsg", "twitchmembermsg", "editmembermsg", "deletemembermsg", "rmmembermsg", "banmembermsg", "unbanmembermsg"];
     for(var i=0; i<membermsg.length; i++) {
         document.getElementById("manageentry-" + membermsg[i]).checked = botData.configs[membermsg[i]][0];
         if(botData.configs[membermsg[i]][0]) {
@@ -413,12 +415,14 @@ function switchManage() {
             for(var j=0; j<botData.channels.length; j++) {
                 manageentry_select += "<option value=\"" + botData.channels[j][1] + "\">#" + botData.channels[j][0] + "</option>";
             }
-            document.getElementById("manageentry-select-" + membermsg[i]).innerHTML = manageentry_select;
-            document.getElementById("manageentry-select-" + membermsg[i]).value = (["changemembermsg", "twitchmembermsg"].indexOf(membermsg[i])>-1 ? botData.configs[membermsg[i]][1] : botData.configs[membermsg[i]][2]);
-            document.getElementById("manageentry-select-" + membermsg[i]).removeAttribute("disabled");
-            $("#manageentry-select-" + membermsg[i]).selectpicker("refresh");
+            if(["editmembermsg", "deletemembermsg"].indexOf(membermsg[i])==-1) {
+                document.getElementById("manageentry-select-" + membermsg[i]).innerHTML = manageentry_select;
+                document.getElementById("manageentry-select-" + membermsg[i]).value = (["changemembermsg", "twitchmembermsg"].indexOf(membermsg[i])>-1 ? botData.configs[membermsg[i]][1] : botData.configs[membermsg[i]][2]);
+                document.getElementById("manageentry-select-" + membermsg[i]).removeAttribute("disabled");
+                $("#manageentry-select-" + membermsg[i]).selectpicker("refresh");
+            }
             
-            if(["changemembermsg", "twitchmembermsg"].indexOf(membermsg[i])==-1) {
+            if(["changemembermsg", "twitchmembermsg", "editmembermsg", "deletemembermsg"].indexOf(membermsg[i])==-1) {
                 var current_block = "";
                 for(var j=0; j<botData.configs[membermsg[i]][1].length; j++) {
                     current_block += "<div class=\"checkbox\">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type=\"checkbox\" onclick=\"javascript:config('" + membermsg[i] + "', this.value, function() {});\" id=\"manageentry-" + membermsg[i] + "-" + j + "\" value=\"" + botData.configs[membermsg[i]][1][j] + "\" checked><label for=\"manageentry-" + membermsg[i] + "-" + j + "\">" + botData.configs[membermsg[i]][1][j].replace("++", "<b>@user</b>") + "</label></div>";
@@ -428,8 +432,10 @@ function switchManage() {
                 $("#manageentry-" + membermsg[i] + "-body").collapse("show");
             }
         } else {
-            document.getElementById("manageentry-select-" + membermsg[i]).setAttribute("disabled", "disable");
-            $("#manageentry-select-" + membermsg[i]).selectpicker("refresh");
+            if(["editmembermsg", "deletemembermsg"].indexOf(membermsg[i])==-1) {
+                document.getElementById("manageentry-select-" + membermsg[i]).setAttribute("disabled", "disable");
+                $("#manageentry-select-" + membermsg[i]).selectpicker("refresh");
+            }
             if(membermsg[i]!="changemembermsg") {
                 $("#manageentry-" + membermsg[i] + "-body").collapse("hide");
             }

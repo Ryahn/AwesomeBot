@@ -85,6 +85,12 @@
             false,
             null
         ],
+        "editmembermsg": [
+            false
+        ],
+        "deletemembermsg": [
+            false
+        ],
         "rmmembermsg": [
             false,
             [
@@ -133,6 +139,8 @@
         "servermod": true,
         "kick": true,
         "ban": true,
+        "nuke": true,
+        "archive": true,
         "spamfilter": [
             true,
             [],
@@ -194,6 +202,8 @@
         "servermod": true,
         "kick": true,
         "ban": true,
+        "nuke": true,
+        "archive": true,
         "spamfilter": [
             false,
             [],
@@ -255,6 +265,8 @@
         "servermod": true,
         "kick": true,
         "ban": true,
+        "nuke": true,
+        "archive": true,
         "spamfilter": [
             true,
             [],

@@ -24,6 +24,12 @@
         overflow-y: scroll;
         overflow-x: hidden;
     }
+    #servertable {
+        max-height: 500px;
+        width: 100%; 
+        margin: 0; 
+        overflow-y: auto;
+    }
     </style>
     <script src="./js/jquery.min.js"></script>
     <script src="./js/bootstrap.min.js"></script>
@@ -141,16 +147,18 @@
                     </div>
                     <br>
                     <div class="table-responsive">
-                        <table id="servertable" class="table table-striped">
-                            <thead>
-                                <tr>
-                                    <th onclick="switchServers('svrnm', null);">Name</th>
-                                    <th onclick="switchServers('messages', null);">Messages</th>
-                                    <th onclick="switchServers('members', null);">Members</th>
-                                </tr>
-                            </thead>
-                            <tbody id="servertablebody"></tbody>
-                        </table>
+                        <div id="servertable" class="bodycontainer scrollable">
+                            <table class="table table-striped table-scrollable">
+                                <thead>
+                                    <tr>
+                                        <th onclick="switchServers('svrnm', null);">Name</th>
+                                        <th onclick="switchServers('messages', null);">Messages</th>
+                                        <th onclick="switchServers('members', null);">Members</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="servertablebody"></tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>

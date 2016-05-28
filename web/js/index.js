@@ -38,43 +38,46 @@ function getQueryParams(qs) {
     
 function writeInterface() {
     $("#loading-modal").modal("show");
+
+    getJSON("http://awesome-botmakersinc.rhcloud.com/botdata", function(data) {
+        document.getElementById("servers-badge").innerHTML = data.svrcount;
     
-    getJSON("data?section=list&type=bot", function(data) {
-        document.title = data.username + " Status";
-        document.getElementById("botname").innerHTML = data.username;
-        document.getElementById("profilepic").src = data.avatar;
-        setFavicon(data.avatar);
-        document.getElementById("addserverlink").href = data.oauthurl;
-        document.getElementById("servers-badge").innerHTML = data.servers;
-        
-        getJSON("data?section=list&type=servers", function(data) {
-            var statsselect = "";
-            for(var i=0; i<data.stream.length; i++) {
-                statsselect += "<option value=\"" + data.stream[i][1] + "\">" + data.stream[i][0] + "</option>";
-            }
-            document.getElementById("statsselect").innerHTML += statsselect;
-            $("#statsselect").selectpicker("refresh");
+        getJSON("data?section=list&type=bot", function(data) {
+            document.title = data.username + " Status";
+            document.getElementById("botname").innerHTML = data.username;
+            document.getElementById("profilepic").src = data.avatar;
+            setFavicon(data.avatar);
+            document.getElementById("addserverlink").href = data.oauthurl;
             
-            switchStats("null", true);
-                
-            getJSON("data?section=list&type=logids", function(data) {
-                var idselector = "";
+            getJSON("data?section=list&type=servers", function(data) {
+                var statsselect = "";
                 for(var i=0; i<data.stream.length; i++) {
-                    idselector += "<option id=\"id-" + (data.stream[i][0] ? ("server-" + data.stream[i][0][0]) : ("author-"+ data.stream[i][1][0])) + "\" value=\"" + (data.stream[i][0] ? ("server-" + data.stream[i][0][0]) : ("author-"+ data.stream[i][1][0])) + "\">";
-                    if(!data.stream[i][0] && data.stream[i][1]) {
-                        idselector += "@" + data.stream[i][1][1];
-                    } else {
-                        idselector += data.stream[i][0][1];
-                    }
-                    idselector += "</option>";
+                    statsselect += "<option value=\"" + data.stream[i][1] + "\">" + data.stream[i][0] + "</option>";
                 }
-                document.getElementById("idselector").innerHTML += idselector;
-                $("#idselector").selectpicker("refresh");
+                document.getElementById("statsselect").innerHTML += statsselect;
+                $("#statsselect").selectpicker("refresh");
                 
-                switchLog(true);
-                
-                switchServers("svrnm", null, function() {
-                    $("#loading-modal").modal("hide");
+                switchStats("null", true);
+                    
+                getJSON("data?section=list&type=logids", function(data) {
+                    var idselector = "";
+                    for(var i=0; i<data.stream.length; i++) {
+                        idselector += "<option id=\"id-" + (data.stream[i][0] ? ("server-" + data.stream[i][0][0]) : ("author-"+ data.stream[i][1][0])) + "\" value=\"" + (data.stream[i][0] ? ("server-" + data.stream[i][0][0]) : ("author-"+ data.stream[i][1][0])) + "\">";
+                        if(!data.stream[i][0] && data.stream[i][1]) {
+                            idselector += "@" + data.stream[i][1][1];
+                        } else {
+                            idselector += data.stream[i][0][1];
+                        }
+                        idselector += "</option>";
+                    }
+                    document.getElementById("idselector").innerHTML += idselector;
+                    $("#idselector").selectpicker("refresh");
+                    
+                    switchLog(true);
+                    
+                    switchServers("svrnm", null, function() {
+                        $("#loading-modal").modal("hide");
+                    });
                 });
             });
         });
@@ -117,7 +120,10 @@ function switchServers(sort, search, callback) {
             },
             content: function() {
                 i = parseInt(this.id.substring(this.id.indexOf("-")+1));
-                return "<img style=\"width:100%;\" src=\"" + data.stream[i][0] + "\" /><br><br>Owned by <b>@" + data.stream[i][2] + "</b><br>Total: <b>" + data.stream[i][4].substring(0, data.stream[i][4].indexOf(" ")) + "</b> members<br><b>" + data.stream[i][3] + "</b> message" + (data.stream[i][3]==1 ? "" : "s") + " today" + (data.stream[i][5].enabled ? ("<hr>" + micromarkdown.parse(data.stream[i][5].description) + "<br><br><a href=\"" + data.stream[i][5].invite + "\" role=\"button\" class=\"btn btn-primary\">Join " + data.stream[i][1] + "</a>") : "") + "<script>document.getElementById(\"" + this.id + "\").parentNode.parentNode.style.maxWidth = \"350px\";</script>";
+                setTimeout(function() {
+                    document.getElementById("serverimg-" + i).src = data.stream[i][0];
+                }, 10);
+                return "<img id=\"serverimg-" + i + "\" style=\"width:100%;\" src=\"data:image/gif;base64,R0lGODlhAQABAIAAAHd3dwAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==\" /><br><br>Owned by <b>@" + data.stream[i][2] + "</b><br>Total: <b>" + data.stream[i][4].substring(0, data.stream[i][4].indexOf(" ")) + "</b> members<br><b>" + data.stream[i][3] + "</b> message" + (data.stream[i][3]==1 ? "" : "s") + " today" + (data.stream[i][5].enabled ? ("<hr>" + micromarkdown.parse(data.stream[i][5].description) + "<br><br><a href=\"" + data.stream[i][5].invite + "\" role=\"button\" class=\"btn btn-primary\">Join " + data.stream[i][1] + "</a>") : "") + "<script>document.getElementById(\"" + this.id + "\").parentNode.parentNode.style.maxWidth = \"350px\";</script>";
             },
             selector: ".serverentry",
             placement: "top",

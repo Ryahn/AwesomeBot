@@ -374,7 +374,7 @@
                                         Member joined messages
                                     </label>
                                     &nbsp;
-                                    <select id="manageentry-select-newmembermsg" onchange="javascript:config(this.id.substring(19), this.value, function() {});" class="selectpicker" data-width="fit" data-live-search="true" multiple></select>
+                                    <select id="manageentry-select-newmembermsg" onchange="javascript:config(this.id.substring(19), this.value, function() {});" class="selectpicker" data-width="fit"></select>
                                 </div>
                                 <span id="manageentry-newmembermsg-body" class="collapse">
                                     <span id="manageentry-newmembermsg-block"></span>
@@ -394,7 +394,7 @@
                                         Member came online messages
                                     </label>
                                     &nbsp;
-                                    <select id="manageentry-select-onmembermsg" onchange="javascript:config(this.id.substring(19), this.value, function() {});" class="selectpicker" data-width="fit" data-live-search="true"></select>
+                                    <select id="manageentry-select-onmembermsg" onchange="javascript:config(this.id.substring(19), this.value, function() {});" class="selectpicker" data-width="fit"></select>
                                 </div>
                                 <span id="manageentry-onmembermsg-body" class="collapse">
                                     <span id="manageentry-onmembermsg-block"></span>
@@ -411,7 +411,7 @@
                                         Member went offline messages
                                     </label>
                                     &nbsp;
-                                    <select id="manageentry-select-offmembermsg" onchange="javascript:config(this.id.substring(19), this.value, function() {});" class="selectpicker" data-width="fit" data-live-search="true"></select>
+                                    <select id="manageentry-select-offmembermsg" onchange="javascript:config(this.id.substring(19), this.value, function() {});" class="selectpicker" data-width="fit"></select>
                                 </div>
                                 <span id="manageentry-offmembermsg-body" class="collapse">
                                     <span id="manageentry-offmembermsg-block"></span>
@@ -428,7 +428,7 @@
                                         Member changed username messages
                                     </label>
                                     &nbsp;
-                                    <select id="manageentry-select-changemembermsg" onchange="javascript:config(this.id.substring(19), this.value, function() {});" class="selectpicker" data-width="fit" data-live-search="true"></select>
+                                    <select id="manageentry-select-changemembermsg" onchange="javascript:config(this.id.substring(19), this.value, function() {});" class="selectpicker" data-width="fit"></select>
                                 </div>
 
                                 <div class="checkbox">
@@ -437,7 +437,21 @@
                                         Twitch streaming messages
                                     </label>
                                     &nbsp;
-                                    <select id="manageentry-select-twitchmembermsg" onchange="javascript:config(this.id.substring(19), this.value, function() {});" class="selectpicker" data-width="fit" data-live-search="true"></select>
+                                    <select id="manageentry-select-twitchmembermsg" onchange="javascript:config(this.id.substring(19), this.value, function() {});" class="selectpicker" data-width="fit"></select>
+                                </div>
+
+                                <div class="checkbox">
+                                    <input id="manageentry-editmembermsg" type="checkbox" onclick="javascript:config(this.id.substring(12), this.checked, function() {});">
+                                    <label for="manageentry-editmembermsg">
+                                        Message edited messages
+                                    </label>
+                                </div>
+
+                                <div class="checkbox">
+                                    <input id="manageentry-deletemembermsg" type="checkbox" onclick="javascript:config(this.id.substring(12), this.checked, function() {});">
+                                    <label for="manageentry-deletemembermsg">
+                                        Message deleted messages
+                                    </label>
                                 </div>
                                 
                                 <div class="checkbox">
@@ -446,7 +460,7 @@
                                         Member left messages
                                     </label>
                                     &nbsp;
-                                    <select id="manageentry-select-rmmembermsg" onchange="javascript:config(this.id.substring(19), this.value, function() {});" class="selectpicker" data-width="fit" data-live-search="true"></select>
+                                    <select id="manageentry-select-rmmembermsg" onchange="javascript:config(this.id.substring(19), this.value, function() {});" class="selectpicker" data-width="fit"></select>
                                 </div>
                                 <span id="manageentry-rmmembermsg-body" class="collapse">
                                     <span id="manageentry-rmmembermsg-block"></span>
@@ -463,7 +477,7 @@
                                         Member banned messages
                                     </label>
                                     &nbsp;
-                                    <select id="manageentry-select-banmembermsg" onchange="javascript:config(this.id.substring(19), this.value, function() {});" class="selectpicker" data-width="fit" data-live-search="true"></select>
+                                    <select id="manageentry-select-banmembermsg" onchange="javascript:config(this.id.substring(19), this.value, function() {});" class="selectpicker" data-width="fit"></select>
                                 </div>
                                 <span id="manageentry-banmembermsg-body" class="collapse">
                                     <span id="manageentry-banmembermsg-block"></span>
@@ -480,7 +494,7 @@
                                         Member unbanned messages
                                     </label>
                                     &nbsp;
-                                    <select id="manageentry-select-unbanmembermsg" onchange="javascript:config(this.id.substring(19), this.value, function() {});" class="selectpicker" data-width="fit" data-live-search="true"></select>
+                                    <select id="manageentry-select-unbanmembermsg" onchange="javascript:config(this.id.substring(19), this.value, function() {});" class="selectpicker" data-width="fit"></select>
                                 </div>
                                 <span id="manageentry-unbanmembermsg-body" class="collapse">
                                     <span id="manageentry-unbanmembermsg-block"></span>
@@ -627,8 +641,10 @@
                                     <tbody id="triviasetstablebody"></tbody>
                                 </table>
                             </div>
-                            Upload: 
-                            <input id="triviasetsupload" type="file" style="display:inline-block;width:300;" accept="application/json" onchange="javascript:newTriviaSet(this.files)" />
+                            <span class="btn btn-default btn-file">
+                                Upload New<input id="triviasetsupload" type="file" style="display: none;"accept="application/json" onchange="javascript:newTriviaSet(this.files)" />
+                            </span>
+                            
                         </div>
                     </div>
                 </div>
@@ -651,8 +667,9 @@
                                     <tbody id="extensionstablebody"></tbody>
                                 </table>
                             </div>
-                            Upload: 
-                            <input id="extensionsupload" type="file" style="display:inline-block;width:300;" accept="application/json" onchange="javascript:newExtension(this.files)" />
+                            <span class="btn btn-default btn-file">
+                                Upload New<input id="extensionsupload" type="file" style="display: none;" accept="application/json" onchange="javascript:newExtension(this.files)" />
+                            </span>
                             <br><br>
                             <a role="button" href="http://awesome-botmakersinc.rhcloud.com/builder" target="_blank" class="btn btn-default" data-toggle="tooltip" data-placement="bottom" title="Easily build and test AwesomeBot extensions"><span class="glyphicon glyphicon-wrench" aria-hidden="true"></span> Extension Builder</a>
                         </div>

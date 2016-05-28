@@ -70,13 +70,12 @@ try {
      - new admin section for stats and points
      - automatic RSS posting option
      - data migration for RSS posting
-     - scrollable servers list in maintainer and status page
-     - edit and delete membermsg
      - room command for temporary channels
-     - archive command
-     - per-server afk messages
-     - per-server profile fields
      - ranks based on number of points
+     - slowdown option in admin console (server-wide)
+     - slowdown command for admins (per-channel)
+     - add admins by role
+     - awesome self host builder
      - extension builder in admin console
      - public extension gallery
      - interface for gallery outside of admin console
@@ -578,7 +577,6 @@ var commands = {
             if(configs.hosting!="") {
                 info += ". Status: " + configs.hosting;
             }
-            info += "\n\n*This project is in no way affiliated with Alphabet, Inc., who does not own or endorse this product.*";
             bot.sendMessage(msg.channel, info);
         }
     },
@@ -845,6 +843,41 @@ var commands = {
             }
         }
     },
+    // Sets an AFK message for this server 
+    "afk": {
+        usage: "<message>",
+        process: function(bot, msg, suffix) {
+            if(!suffix) {
+                logMsg(new Date().getTime(), "WARN", msg.channel.server.id, msg.channel.id, msg.author.username + " did not provide AFK message");
+                bot.sendMessage(msg.channel, msg.author + " What message should I send when you're AFK? Use the syntax `afk <message>`");
+            } else if(suffix==".") {
+                if(stats[msg.channel.server.id].members[msg.author.id]) {
+                    delete stats[msg.channel.server.id].members[msg.author.id].AFK;
+                    logMsg(new Date().getTime(), "INFO", msg.channel.server.id, msg.channel.id, "Removed AFK message for " + msg.author.username);
+                    bot.sendMessage(msg.channel, msg.author + " OK, I won't show that message anymore.");
+                } else {
+                    logMsg(new Date().getTime(), "WARN", msg.channel.server.id, msg.channel.id, msg.author.username + " tried to delete nonexistent AFK message");
+                    bot.sendMessage(msg.channel, msg.auhtor + " I didn't have an AFK message set for you in the first place. Use `afk <message>`");
+                }
+            } else {
+                if(!stats[msg.channel.server.id].members[msg.author.id]) {
+                    stats[msg.channel.server.id].members[msg.author.id] = {
+                        messages: 0,
+                        active: new Date().getTime(),
+                        seen: new Date().getTime(),
+                        mentions: {
+                            pm: false,
+                            stream: []
+                        },
+                        strikes: []
+                    };
+                }
+                stats[msg.channel.server.id].members[msg.author.id].AFK = suffix;
+                logMsg(new Date().getTime(), "INFO", msg.channel.server.id, msg.channel.id, "Set AFK message for " + msg.author.username);
+                bot.sendMessage(msg.channel, msg.author + " Thanks, I'll show that if/when someone tags you in a server. Reply with `" + getPrefix(msg.channel.server) + "afk .` when you come back :)");
+            }
+        }
+    },
     // Searches Google for a given query
     "search": {
         usage: "<query> [<count>]",
@@ -1009,6 +1042,40 @@ var commands = {
                         bot.sendMessage(msg.channel, "I don't have permission to ban on this server :sob:");
                     } else {
                         bot.sendMessage(msg.channel, "kk");
+                    }
+                });
+            }
+        }
+    },
+    // Archive n messages in this channel
+    "archive": {
+        usage: "<no. of messages>",
+        process: function(bot, msg, suffix) {
+            if(!suffix || isNaN(suffix)) {
+                logMsg(new Date().getTime(), "WARN", msg.channel.server.id, msg.channel.id, "Number of messages to archive not provided");
+                bot.sendMessage(msg.channel, msg.author + " I'll need a number with that, please.");
+            } else {
+                archiveMessages(msg.channel, suffix, function(err, archive) {
+                    if(err) {
+                        bot.sendMessage(msg.channel, "Damn, Discord gave me some trouble with that. Ask the mods to give me message history permissions.");
+                    } else {
+                        var filename = "./" + msg.channel.id + "-" + genToken(8) + ".json";
+                        fs.writeFile(filename, JSON.stringify(archive, null, 4), function(err) {
+                            if(err) {
+                                logMsg(new Date().getTime(), "ERROR", msg.channel.server.id, msg.channel.id, "Failed to write temporary archive");
+                                bot.sendMessage(msg.channel, "Errors, errors, errors :(");
+                            } else {
+                                bot.sendFile(msg.channel, filename, msg.channel.server.name + "-" + msg.channel.name + ".json", function(err) {
+                                    if(err) {
+                                        logMsg(new Date().getTime(), "ERROR", msg.channel.server.id, msg.channel.id, "Failed to send archive");
+                                        bot.sendMessage(msg.channel, "Discord is getting mad at me. Try a smaller number of messages.");
+                                    } 
+                                    fs.unlink(filename, function(err) {
+                                        logMsg(new Date().getTime(), "ERROR", msg.channel.server.id, msg.channel.id, "Failed to delete temporary archive");
+                                    });
+                                });
+                            }
+                        });
                     }
                 });
             }
@@ -1799,6 +1866,25 @@ var commands = {
                     bot.sendMessage(msg.channel, "Setting custom colors is disabled in this server, sorry.");
                 }
                 return;
+            } else if(suffix.split(",").length>=2) {
+                var key = suffix.substring(0, suffix.indexOf(",")).toLowerCase().trim();
+                var value = suffix.substring(suffix.indexOf(",")+1).trim();
+                if(!key || !value) {
+                    logMsg(new Date().getTime(), "WARN", msg.channel.server.id, msg.channel.id, msg.author.username + " did not specify parameters for profile data");
+                    bot.sendMessage(msg.channel, msg.author + " Uh, use the syntax `" + getPrefix(msg.channel.server) + "profile <key>,<value>`");
+                } else if(["messages", "active", "seen", "mentions", "strikes"].indexOf(key)>-1) {
+                    logMsg(new Date().getTime(), "WARN", msg.channel.server.id, msg.channel.id, msg.author.username + " tried to assign default stats profile value");
+                    bot.sendMessage(msg.channel, msg.author + " You can't change the value for " + key);
+                } else if(stats[msg.channel.server.id].members[msg.author.id] && stats[msg.channel.server.id].members[msg.author.id][key] && value==".") {
+                    delete stats[msg.channel.server.id].members[msg.author.id][key];
+                    logMsg(new Date().getTime(), "INFO", msg.channel.server.id, msg.channel.id, "Deleted key " + key + " from " + msg.author.username + "'s stats profile");
+                    bot.sendMessage(msg.channel, "*Poof, gone.*");
+                } else {
+                    stats[msg.channel.server.id].members[msg.author.id][key] = value;
+                    logMsg(new Date().getTime(), "INFO", msg.channel.server.id, msg.channel.id, "Saved new key " + key + " in " + msg.author.username + "'s stats profile");
+                    bot.sendMessage(msg.channel, "K, TIL.");
+                }
+                return;
             } else {
                 usr = userSearch(suffix, msg.channel.server);
             }
@@ -2185,8 +2271,8 @@ var pmcommands = {
                     bot.sendMessage(msg.channel, "Please include the name of the value as well as the value itself, separated by a comma.");
                     return;
                 }
-                var key = msg.content.substring(8, msg.content.indexOf(","));
-                var value = msg.content.substring(msg.content.indexOf(",")+1);
+                var key = msg.content.substring(8, msg.content.indexOf(",")).trim();
+                var value = msg.content.substring(msg.content.indexOf(",")+1).trim();
                 if(["id", "status", "points", "afk", "past names"].indexOf(key.toLowerCase())>-1) {
                     logMsg(new Date().getTime(), "WARN", null, msg.author.id, "User tried to assign default profile value");
                     bot.sendMessage(msg.channel, "You can't change the value for " + key);
@@ -2289,7 +2375,7 @@ var pmcommands = {
                 return;
             }
             // Starts a poll in a given channel via private message
-            if(msg.author.id != bot.user.id && msg.content.toLowerCase().indexOf("poll")==0) {
+            if(msg.author.id!=bot.user.id && msg.content.toLowerCase().indexOf("poll")==0) {
                 var svr = bot.servers.get("name", msg.content.substring(msg.content.indexOf(" ")+1, msg.content.lastIndexOf(" ")));
                 if(!svr || !svr.members.get("id", msg.author.id)) {
                     logMsg(new Date().getTime(), "WARN", null, msg.author.id, "Invalid server provided for new poll");
@@ -2516,6 +2602,17 @@ var pmcommands = {
 // Initializes bot and outputs to console
 var bot = new Discord.Client({forceFetchUsers: true});
 bot.on("ready", function() {
+    // Authorize AwesomeBot
+    unirest.post("http://awesome-botmakersinc.rhcloud.com/botauth?token=" + AuthDetails.awesome_token)
+    .end(function(response) {
+        if(response.status==200) {
+            postData();
+        } else {
+            logMsg(new Date().getTime(), "ERROR", "General", null, "Unauthorized self-hosted AwesomeBot running, exiting. Please see https://github.com/BitQuote/AwesomeBot/wiki/Setup#getting-started");
+            process.exit();
+        }
+    });
+
     //checkVersion();
     
     // Set avatar if necessary
@@ -2651,18 +2748,18 @@ function messageHandler(msg) {
         }
         var cmd = pmcommands[cmdTxt];
         if(cmd) {
-            bot.startTyping(msg.channel);
-            if(cmdTxt!="config" || suffix) {
-                logMsg(new Date().getTime(), "INFO", null, msg.author.id, "Treating '" + msg.cleanContent + "' from as a PM command");
-            }
-            cmd.process(bot, msg, suffix);
-            bot.stopTyping(msg.channel);
+            bot.startTyping(msg.channel, function() {
+                if(cmdTxt!="config" || suffix) {
+                    logMsg(new Date().getTime(), "INFO", null, msg.author.id, "Treating '" + msg.cleanContent + "' from as a PM command");
+                }
+                cmd.process(bot, msg, suffix);
+                bot.stopTyping(msg.channel);
+            });
             return;
         }
     }
 
     // Stuff that only applies to public messages
-    var extensionApplied = false;
     if(!msg.channel.isPrivate) {
         // Count new message
         messages[msg.channel.server.id]++;
@@ -2832,10 +2929,8 @@ function messageHandler(msg) {
                 if(mentions.pm && usr.status!="online") {
                     bot.sendMessage(usr, "__You were mentioned by @" + msg.author.username + " on **" + msg.channel.server.name + "**:__\n" + msg.cleanContent);
                 }
-                if(profileData[usr.id]) {
-                    if(profileData[usr.id].AFK && configs.servers[msg.channel.server.id].afk) {
-                        bot.sendMessage(msg.channel, "**@" + getName(msg.channel.server, usr) + "** is currently AFK: " + profileData[usr.id].AFK);
-                    }
+                if(((profileData[usr.id] && profileData[usr.id].AFK) || stats[msg.channel.server.id].members[usr.id] && stats[msg.channel.server.id].members[usr.id].AFK) && configs.servers[msg.channel.server.id].afk) {
+                    bot.sendMessage(msg.channel, "**@" + getName(msg.channel.server, usr) + "** is currently AFK: " + (stats[msg.channel.server.id].members[usr.id].AFK || profileData[usr.id].AFK));
                 }
                 
                 if([msg.author.id, bot.user.id].indexOf(usr.id)==-1 && configs.servers[msg.channel.server.id].points && !novoting[msg.author.id]) {
@@ -2924,32 +3019,31 @@ function messageHandler(msg) {
             var keywordcontains = contains(extension.key, msg.content, extension.case);
             if((extension.type.toLowerCase()=="keyword" && keywordcontains>-1) || (extension.type.toLowerCase()=="command" && checkCommandTag(msg.content, msg.channel.server.id) && checkCommandTag(msg.content, msg.channel.server.id)[0].toLowerCase()==extension.key.toLowerCase())) {
                 logMsg(new Date().getTime(), "INFO", msg.channel.server.id, msg.channel.id, "Treating '" + msg.cleanContent + "' from " + msg.author.username + " as an extension " + configs.servers[msg.channel.server.id].extensions[ext].type);
-                bot.startTyping(msg.channel);
-                extensionApplied = true;
-                
-                if(extension.type=="command") {
-                    if(!stats[msg.channel.server.id].commands[extension.key]) {
-                        stats[msg.channel.server.id].commands[extension.key] = 0;
-                    }
-                    stats[msg.channel.server.id].commands[extension.key]++;
-                }
-                
-                var params = getExtensionParams(configs.servers[msg.channel.server.id].extensions[ext], msg.channel.server, msg.channel, msg, extension.type.toLowerCase()=="keyword" ? keywordcontains : null, extension.type.toLowerCase()=="command" ? checkCommandTag(msg.content, msg.channel.server.id)[1] : null);
-                try {
-                    var context = new vm.createContext(params);
-                    var script = new vm.Script(configs.servers[msg.channel.server.id].extensions[ext].process);
-                    script.runInContext(context);
-                    configs.servers[msg.channel.server.id].extensions[ext].store = params.store;
-                    saveData("./data/config.json", function(err) {
-                        if(err) {
-                            logMsg(new Date().getTime(), "ERROR", msg.channel.server.id, msg.channel.id, "Could not save updated store for extension " + configs.servers[msg.channel.server.id].extensions[ext].name);
+                bot.startTyping(msg.channel, function() {
+                    if(extension.type=="command") {
+                        if(!stats[msg.channel.server.id].commands[extension.key]) {
+                            stats[msg.channel.server.id].commands[extension.key] = 0;
                         }
-                    });
-                } catch(runError) {
-                    logMsg(new Date().getTime(), "ERROR", msg.channel.server.id, msg.channel.id, "Failed to run extension " + configs.servers[msg.channel.server.id].extensions[ext].type + ": " + runError);
-                }
-                bot.stopTyping(msg.channel);
-                break;
+                        stats[msg.channel.server.id].commands[extension.key]++;
+                    }
+                    
+                    var params = getExtensionParams(configs.servers[msg.channel.server.id].extensions[ext], msg.channel.server, msg.channel, msg, extension.type.toLowerCase()=="keyword" ? keywordcontains : null, extension.type.toLowerCase()=="command" ? checkCommandTag(msg.content, msg.channel.server.id)[1] : null);
+                    try {
+                        var context = new vm.createContext(params);
+                        var script = new vm.Script(configs.servers[msg.channel.server.id].extensions[ext].process);
+                        script.runInContext(context);
+                        configs.servers[msg.channel.server.id].extensions[ext].store = params.store;
+                        saveData("./data/config.json", function(err) {
+                            if(err) {
+                                logMsg(new Date().getTime(), "ERROR", msg.channel.server.id, msg.channel.id, "Could not save updated store for extension " + configs.servers[msg.channel.server.id].extensions[ext].name);
+                            }
+                        });
+                    } catch(runError) {
+                        logMsg(new Date().getTime(), "ERROR", msg.channel.server.id, msg.channel.id, "Failed to run extension " + configs.servers[msg.channel.server.id].extensions[ext].type + ": " + runError);
+                    }
+                    bot.stopTyping(msg.channel);
+                });
+                return;
             }
         }
 
@@ -2991,55 +3085,55 @@ function messageHandler(msg) {
             }
             
             // Fetch app links
-            bot.startTyping(msg.channel);
-            if(msg.content.toLowerCase().indexOf("linkme ")>-1) {
-                logMsg(new Date().getTime(), "INFO", msg.channel.server.id, msg.channel.id, msg.author.username + " requested the following Play Store app(s): " + apps);
-                for(var i=0; i<apps.length; i++) {
-                    var basePath = "https://play.google.com/store/search?&c=apps&q=" + apps[i] + "&hl=en";
-                    var data;
-                    // Scrapes Play Store search results webpage for information
-                    var u;
-                    unirest.get(basePath)
-                    .end(function(response) {
-                        data = scrapeSearch(response.raw_body);
-                        var send = "";
-                        if(data.items[0]) {
-                            send = data.items[0].name + " by " + data.items[0].company + ", ";
-                            if(data.items[0].price.indexOf("$")>-1) {
-                                send += data.items[0].price.substring(0, data.items[0].price.lastIndexOf("$"));
+            bot.startTyping(msg.channel, function() {
+                if(msg.content.toLowerCase().indexOf("linkme ")>-1) {
+                    logMsg(new Date().getTime(), "INFO", msg.channel.server.id, msg.channel.id, msg.author.username + " requested the following Play Store app(s): " + apps);
+                    for(var i=0; i<apps.length; i++) {
+                        var basePath = "https://play.google.com/store/search?&c=apps&q=" + apps[i] + "&hl=en";
+                        var data;
+                        // Scrapes Play Store search results webpage for information
+                        var u;
+                        unirest.get(basePath)
+                        .end(function(response) {
+                            data = scrapeSearch(response.raw_body);
+                            var send = "";
+                            if(data.items[0]) {
+                                send = data.items[0].name + " by " + data.items[0].company + ", ";
+                                if(data.items[0].price.indexOf("$")>-1) {
+                                    send += data.items[0].price.substring(0, data.items[0].price.lastIndexOf("$"));
+                                } else {
+                                    send += "free"
+                                }
+                                send += " and rated " + data.items[0].rating + " stars: " + data.items[0].url + "\n";
                             } else {
-                                send += "free"
+                                logMsg(new Date().getTime(), "WARN", msg.channel.server.id, msg.channel.id, "App " + apps[i] + " not found to link for " + msg.author.username);
+                                send = msg.author + " Sorry, no such app exists.\n";
                             }
-                            send += " and rated " + data.items[0].rating + " stars: " + data.items[0].url + "\n";
-                        } else {
-                            logMsg(new Date().getTime(), "WARN", msg.channel.server.id, msg.channel.id, "App " + apps[i] + " not found to link for " + msg.author.username);
-                            send = msg.author + " Sorry, no such app exists.\n";
-                        }
-                        bot.sendMessage(msg.channel, send);
-                    });
+                            bot.sendMessage(msg.channel, send);
+                        });
+                    }
+                } else if(msg.content.toLowerCase().indexOf("appstore ")>-1) {
+                    logMsg(new Date().getTime(), "INFO", msg.channel.server.id, msg.channel.id, msg.author.username + " requested the following App Store app(s): " + apps);
+                    for(var i=0; i<apps.length; i++) {
+                        itunes({
+                            entity: "software",
+                            country: "US",
+                            term: apps[i],
+                            limit: 1
+                        }, function (err, data) {
+                            var send = "";
+                            if(!err) {
+                                send = data.results[0].trackCensoredName + " by " + data.results[0].artistName + ", " + data.results[0].formattedPrice + " and rated " + data.results[0].averageUserRating + " stars: " + data.results[0].trackViewUrl + "\n";
+                            } else {
+                                logMsg(new Date().getTime(), "WARN", msg.channel.server.id, msg.channel.id, "App " + apps[i] + " not found to link for " + msg.author.username);
+                                send = msg.author + " Sorry, no such app exists.\n";
+                            }
+                            bot.sendMessage(msg.channel, send);
+                        });
+                    }
                 }
-            } else if(msg.content.toLowerCase().indexOf("appstore ")>-1) {
-                logMsg(new Date().getTime(), "INFO", msg.channel.server.id, msg.channel.id, msg.author.username + " requested the following App Store app(s): " + apps);
-                for(var i=0; i<apps.length; i++) {
-                    itunes({
-                        entity: "software",
-                        country: "US",
-                        term: apps[i],
-                        limit: 1
-                    }, function (err, data) {
-                        var send = "";
-                        if(!err) {
-                            send = data.results[0].trackCensoredName + " by " + data.results[0].artistName + ", " + data.results[0].formattedPrice + " and rated " + data.results[0].averageUserRating + " stars: " + data.results[0].trackViewUrl + "\n";
-                        } else {
-                            logMsg(new Date().getTime(), "WARN", msg.channel.server.id, msg.channel.id, "App " + apps[i] + " not found to link for " + msg.author.username);
-                            send = msg.author + " Sorry, no such app exists.\n";
-                        }
-                        bot.sendMessage(msg.channel, send);
-                    });
-                }
-            }
-            
-            bot.stopTyping(msg.channel);
+                bot.stopTyping(msg.channel);
+            });
             return;
         }
     }
@@ -3053,35 +3147,36 @@ function messageHandler(msg) {
     }
     
     // Process commands
-    if(cmd && !msg.channel.isPrivate && !extensionApplied && stats[msg.channel.server.id].botOn[msg.channel.id]) {
+    if(cmd && !msg.channel.isPrivate && stats[msg.channel.server.id].botOn[msg.channel.id]) {
         if(configs.servers[msg.channel.server.id][cmdTxt]!=null) {
             if(configs.servers[msg.channel.server.id][cmdTxt]==false) {
                 return;
             }
         }
-        bot.startTyping(msg.channel);
-        if(checkFiltered(msg, true, false) && configs.servers[msg.channel.server.id].admins.indexOf(msg.author.id)==-1 && configs.servers[msg.channel.server.id].servermod && configs.servers[msg.channel.server.id].nsfwfilter[0] && configs.servers[msg.channel.server.id].nsfwfilter[1].indexOf(msg.channel.id)==-1 && ["image", "youtube", "gif", "search"].indexOf(cmdTxt)>-1) {
-            handleFiltered(msg, "NSFW");
-        } else if(stats[msg.channel.server.id].botOn[msg.channel.id]) {
-            logMsg(new Date().getTime(), "INFO", msg.channel.server.id, msg.channel.id, "Treating '" + msg.cleanContent + "' from " + msg.author.username + " as a command");
-            if(["quiet", "ping", "help", "stats", "trivia", "vote"].indexOf(cmdTxt)==-1) {
-                if(!stats[msg.channel.server.id].commands[cmdTxt]) {
-                    stats[msg.channel.server.id].commands[cmdTxt] = 0;
+        bot.startTyping(msg.channel, function() {
+            if(checkFiltered(msg, true, false) && configs.servers[msg.channel.server.id].admins.indexOf(msg.author.id)==-1 && configs.servers[msg.channel.server.id].servermod && configs.servers[msg.channel.server.id].nsfwfilter[0] && configs.servers[msg.channel.server.id].nsfwfilter[1].indexOf(msg.channel.id)==-1 && ["image", "youtube", "gif", "search"].indexOf(cmdTxt)>-1) {
+                handleFiltered(msg, "NSFW");
+            } else if(stats[msg.channel.server.id].botOn[msg.channel.id]) {
+                logMsg(new Date().getTime(), "INFO", msg.channel.server.id, msg.channel.id, "Treating '" + msg.cleanContent + "' from " + msg.author.username + " as a command");
+                if(["quiet", "ping", "help", "stats", "trivia", "vote"].indexOf(cmdTxt)==-1) {
+                    if(!stats[msg.channel.server.id].commands[cmdTxt]) {
+                        stats[msg.channel.server.id].commands[cmdTxt] = 0;
+                    }
+                    stats[msg.channel.server.id].commands[cmdTxt]++;
                 }
-                stats[msg.channel.server.id].commands[cmdTxt]++;
+                cmd.process(bot, msg, suffix);
             }
-            cmd.process(bot, msg, suffix);
-        }
-        bot.stopTyping(msg.channel);
+            bot.stopTyping(msg.channel);
+        });
     // Check for matching tag commands
     } else if(!suffix && configs.servers[msg.channel.server.id].tags[cmdTxt] && configs.servers[msg.channel.server.id].tagcommands.indexOf(cmdTxt)>-1) {
         logMsg(new Date().getTime(), "INFO", msg.channel.server.id, msg.channel.id, "Treating '" + msg.cleanContent + "' from " + msg.author.username + " as a tag command");
-        bot.startTyping(msg.channel);
-        bot.sendMessage(msg.channel, configs.servers[msg.channel.server.id].tags[cmdTxt], function() {
+        bot.startTyping(msg.channel, function() {
+            bot.sendMessage(msg.channel, configs.servers[msg.channel.server.id].tags[cmdTxt]);
             bot.stopTyping(msg.channel);
         });
     // Process message as chatterbot prompt if not a command
-    } else if(!extensionApplied && (msg.content.indexOf(bot.user.mention())==0 || msg.content.indexOf("<@!" + bot.user.id + ">")==0 || msg.channel.isPrivate) && !msg.author.bot) {
+    } else if((msg.content.indexOf(bot.user.mention())==0 || msg.content.indexOf("<@!" + bot.user.id + ">")==0 || msg.channel.isPrivate) && !msg.author.bot) {
         if(!msg.channel.isPrivate) {
             if(!configs.servers[msg.channel.server.id].chatterbot || !stats[msg.channel.server.id].botOn[msg.channel.id]) {
                 return;
@@ -3090,59 +3185,59 @@ function messageHandler(msg) {
         } else {
             logMsg(new Date().getTime(), "INFO", null, msg.author.id, "Treating '" + msg.content + "' as chatterbot prompt"); 
         }
-        bot.startTyping(msg.channel);
-        
-        var prompt = "";
-        if(!msg.channel.isPrivate) {
-            prompt = msg.cleanContent.substring((msg.channel.server.detailsOfUser(bot.user).nick || bot.user.username).length+1);
-            prompt = prompt.substring(prompt.indexOf(" ")+1);
-            if(prompt.toLowerCase().indexOf("help")==0) {
-                bot.sendMessage(msg.channel, "Use `" + getPrefix(msg.channel.server) + "help` for info about how to use me on this server :smiley:");
-                bot.stopTyping(msg.channel);
-                return;
-            }
-            if(prompt.toLowerCase().indexOf("join")==0) {
-                bot.sendMessage(msg.channel, "https://discordapp.com/oauth2/authorize?&client_id=" + AuthDetails.client_id + "&scope=bot&permissions=0");
-                bot.stopTyping(msg.channel);
-                return;
-            }
-        } else {
-            prompt = msg.cleanContent;
-            if([0, 1].indexOf(prompt.toLowerCase().indexOf("help"))>-1) {
-                bot.sendMessage(msg.author, "Use `@" + bot.user.username + " help` in the public chat to get help, or head over to the wiki: https://git.io/vwhGe");
-                bot.stopTyping(msg.channel);
-                return;
-            }
-            if([0, 1].indexOf(prompt.toLowerCase().indexOf("join"))>-1) {
-                bot.sendMessage(msg.channel, "https://discordapp.com/oauth2/authorize?&client_id=" + AuthDetails.client_id + "&scope=bot&permissions=0");
-                bot.stopTyping(msg.channel);
-                return;
-            }
-        }
-        
-        if(!bots[msg.author.id]) {
-            bots[msg.author.id] = require("mitsuku-api")();
-        }
-        var ai = bots[msg.author.id];
-        ai.send(prompt).then(function(response) {
-            var res = response.replace("Mitsuku", msg.channel.isPrivate ? bot.user.username : (msg.channel.server.detailsOfUser(bot.user).nick || bot.user.username));
+        bot.startTyping(msg.channel, function() {
+            var prompt = "";
             if(!msg.channel.isPrivate) {
-                res = res.replace("Mousebreaker", bot.users.get("id", configs.maintainer) ? bot.users.get("id", configs.maintainer).username : bot.users.get("id", configs.servers[msg.channel.server.id].admins[0]).username);
-            }
-            res = res.replace("(mitsuku@square-bear.co.uk)", "");
-            if(res.indexOf("You have been banned from talking to the chat robot.")>-1) {
-                res = "I'm not talking to you anymore. Goodbye and good riddance!";
-            }
-            if(msg.channel.isPrivate) {
-                bot.sendMessage(msg.channel, res);
+                prompt = msg.cleanContent.substring((msg.channel.server.detailsOfUser(bot.user).nick || bot.user.username).length+1);
+                prompt = prompt.substring(prompt.indexOf(" ")+1);
+                if(prompt.toLowerCase().indexOf("help")==0) {
+                    bot.sendMessage(msg.channel, "Use `" + getPrefix(msg.channel.server) + "help` for info about how to use me on this server :smiley:");
+                    bot.stopTyping(msg.channel);
+                    return;
+                }
+                if(prompt.toLowerCase().indexOf("join")==0) {
+                    bot.sendMessage(msg.channel, "https://discordapp.com/oauth2/authorize?&client_id=" + AuthDetails.client_id + "&scope=bot&permissions=0");
+                    bot.stopTyping(msg.channel);
+                    return;
+                }
             } else {
-                bot.sendMessage(msg.channel, msg.author + " " + res);
+                prompt = msg.cleanContent;
+                if([0, 1].indexOf(prompt.toLowerCase().indexOf("help"))>-1) {
+                    bot.sendMessage(msg.author, "Use `@" + bot.user.username + " help` in the public chat to get help, or head over to the wiki: https://git.io/vwhGe");
+                    bot.stopTyping(msg.channel);
+                    return;
+                }
+                if([0, 1].indexOf(prompt.toLowerCase().indexOf("join"))>-1) {
+                    bot.sendMessage(msg.channel, "https://discordapp.com/oauth2/authorize?&client_id=" + AuthDetails.client_id + "&scope=bot&permissions=0");
+                    bot.stopTyping(msg.channel);
+                    return;
+                }
             }
-            bot.stopTyping(msg.channel);
+            
+            if(!bots[msg.author.id]) {
+                bots[msg.author.id] = require("mitsuku-api")();
+            }
+            var ai = bots[msg.author.id];
+            ai.send(prompt).then(function(response) {
+                var res = response.replace("Mitsuku", msg.channel.isPrivate ? bot.user.username : (msg.channel.server.detailsOfUser(bot.user).nick || bot.user.username));
+                if(!msg.channel.isPrivate) {
+                    res = res.replace("Mousebreaker", bot.users.get("id", configs.maintainer) ? bot.users.get("id", configs.maintainer).username : bot.users.get("id", configs.servers[msg.channel.server.id].admins[0]).username);
+                }
+                res = res.replace("(mitsuku@square-bear.co.uk)", "");
+                if(res.indexOf("You have been banned from talking to the chat robot.")>-1) {
+                    res = "I'm not talking to you anymore. Goodbye and good riddance!";
+                }
+                if(msg.channel.isPrivate) {
+                    bot.sendMessage(msg.channel, res);
+                } else {
+                    bot.sendMessage(msg.channel, msg.author + " " + res);
+                }
+                bot.stopTyping(msg.channel);
+            });
         });
     // Otherwise, check if it's a self-message or just does the tag reaction
-    } else if(!extensionApplied) {  
-        if(msg.author != bot.user && msg.isMentioned(bot.user) && configs.servers[msg.channel.server.id].tagreaction && stats[msg.channel.server.id].botOn[msg.channel.id]) {
+    } else {  
+        if(msg.author!=bot.user && msg.isMentioned(bot.user) && configs.servers[msg.channel.server.id].tagreaction && stats[msg.channel.server.id].botOn[msg.channel.id]) {
             logMsg(new Date().getTime(), "INFO", msg.channel.server.id, msg.channel.id, "Bot tagged by " + msg.author.username);
             bot.sendMessage(msg.channel,msg.author + ", you called?");
         }
@@ -3179,7 +3274,17 @@ function newServer(svr) {
     defaultConfig(svr);
     adminMsg(false, svr, {username: bot.user.username}, " (me) has been added to " + svr.name + ". You're one of my admins. You can manage me in this server by PMing me `config " + svr.name + "`. Check out https://git.io/vaa2F to learn more.");
     bot.sendMessage(svr.defaultChannel, "Hi, I'm " + (svr.detailsOfUser(bot.user).nick || bot.user.username) + "! Use `" + getPrefix(svr) + "help` to learn more or check out https://git.io/vaa2F");
+    postData();
+}
+
+function postData() {
     postCarbon();
+    unirest.post("http://awesome-botmakersinc.rhcloud.com/botdata?token=" + AuthDetails.awesome_token + "&svrcount=" + bot.servers.length + "&usrcount=" + bot.users.length)
+    .end(function(response) {
+        if(response.status==200) {
+            logMsg(new Date().getTime(), "INFO", "General", null, "Successfully POSTed to Awesome");
+        }
+    });
 }
 
 function postCarbon() {
@@ -3218,7 +3323,7 @@ bot.on("serverDeleted", function(svr) {
         deleteServerData(svr.id);
     });
     logMsg(new Date().getTime(), "INFO", "General", null, "Server " + svr.name + " removed, left server");
-    postCarbon();
+    postData();
 });
 
 // Checks for old servers
@@ -3360,7 +3465,13 @@ function serverMemberRemovedHandler(svr, usr) {
     }
 };
 
-// Reduces activity score when message is publicly deleted
+bot.on("messageUpdated", function(oldmsg, newmsg) {
+    if(oldmsg && newmsg && oldmsg.cleanContent && newmsg.cleanContent && oldmsg.cleanContent!=newmsg.cleanContent && !oldmsg.channel.isPrivate && configs.servers[oldmsg.channel.server.id].editmembermsg[0] && configs.servers[oldmsg.channel.server.id].servermod) {
+        bot.sendMessage(oldmsg.channel, "Message by **@" + getName(oldmsg.channel.server, oldmsg.author) + "** edited. Original:\n```" + oldmsg.cleanContent + "```Updated:\n```" + newmsg.cleanContent + "```");
+    }
+});
+
+// Reduces activity score when message is publicly deleted, removes upvote, and/or shows membermsg
 bot.on("messageDeleted", function(msg) {
     if(msg) {
         if(!msg.channel.isPrivate) {
@@ -3385,6 +3496,9 @@ bot.on("messageDeleted", function(msg) {
                         }
                     }
                 });
+            }
+            if(configs.servers[msg.channel.server.id].deletemembermsg[0] && configs.servers[msg.channel.server.id].servermod && msg.author.id!=bot.user.id) {
+                bot.sendMessage(msg.channel, "Message by **@" + getName(msg.channel.server, msg.author) + "** deleted:\n```" + msg.cleanContent + "```");
             }
         }
     }
@@ -3672,7 +3786,7 @@ function getRandomInt(min, max) {
 // Checks if the values in an array are all the same
 Array.prototype.allValuesSame = function() {
     for(var i=1; i<this.length; i++) {
-        if(this[i] !== this[0]) {
+        if(this[i]!==this[0]) {
             return false;
         }
     }
@@ -3685,7 +3799,7 @@ function duplicateMax(arr) {
     if((arr.length-2)<0) {
         return false;
     }
-    return arr[arr.length-1] == arr[arr.length-2];
+    return arr[arr.length-1]==arr[arr.length-2];
 }
 
 // Count the occurrences of an object in an array
@@ -4823,6 +4937,8 @@ function parseAdminConfig(delta, svr, consoleid, callback) {
                 break;
             case "changemembermsg":
             case "twitchmembermsg":
+            case "editmembermsg":
+            case "deletemembermsg":
                 if(typeof(delta[key])=="boolean") {
                     configs.servers[svr.id][key][0] = delta[key];
                     var yn = delta[key] ? "on" : "off";
@@ -5432,6 +5548,14 @@ function userSearch(str, svr) {
     } else {
         usr = svr.members.get("username", str);
     }
+    if(!usr) {
+        for(var i=0; i<svr.members.length; i++) {
+            if(svr.detailsOfUser(svr.members[i]).nick && svr.detailsOfUser(svr.members[i]).nick==str) {
+                usr = svr.members[i];
+                break;
+            }
+        }
+    }
     return usr;
 }
 
@@ -5456,7 +5580,7 @@ function giSearch(query, num, svrid, chid, callback) {
                         logMsg(new Date().getTime(), "ERROR", svrid, chid, "Google Images API error");
                         callback(null);
                     }
-                } else if(!data.items || data.items.length == 0 || query.indexOf("<#")>-1) {
+                } else if(!data.items || data.items.length==0 || query.indexOf("<#")>-1) {
                     logMsg(new Date().getTime(), "WARN", svrid, chid, "No image results for " + query);
                     callback(null);
                 } else {
@@ -5686,6 +5810,7 @@ function totalCommandUsage() {
 // Generate printable user profile
 function getProfile(usr, svr) {
     var usrinfo = {
+        "Username": usr.username,
         "ID": usr.id,
         "Discriminator": usr.discriminator,
         "Status": usr.status
@@ -5708,7 +5833,7 @@ function getProfile(usr, svr) {
         });
     }
     for(var field in profileData[usr.id]) {
-        usrinfo[(field.charAt(0).toUpperCase() + field.slice(1))] = profileData[usr.id][field].toString();
+        usrinfo[field.charAt(0).toUpperCase() + field.slice(1)] = profileData[usr.id][field].toString();
     }
     var details = svr.detailsOfUser(usr);
     var svrinfo = {};
@@ -5741,6 +5866,11 @@ function getProfile(usr, svr) {
         svrinfo["Last seen"] = secondsToString((new Date().getTime() - stats[svr.id].members[usr.id].seen)/1000) + "ago";
     }
     svrinfo["Strikes"] = stats[svr.id].members[usr.id].strikes.length + " so far";
+    for(var key in stats[svr.id].members[usr.id]) {
+        if(["messages", "active", "seen", "mentions", "strikes"].indexOf(key)==-1) {
+            svrinfo[key.charAt(0).toUpperCase() + key.slice(1)] = stats[svr.id].members[usr.id][key];
+        }
+    }
     var info = {};
     info["User profile: @" + getName(svr, usr)] = usrinfo;
     info["On " + svr.name] = svrinfo;
@@ -5824,7 +5954,10 @@ function archiveMessages(ch, count, callback) {
                     edited: messages[i].editedTimestamp!=null,
                     content: messages[i].cleanContent,
                     attachments: messages[i].attachments,
-                    author: messages[i].author.username  
+                    author: {
+                        username: messages[i].author.username,
+                        discriminator: messages[i].author.username
+                    }
                 });
             }
             callback(false, archive);
