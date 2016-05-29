@@ -1,3 +1,5 @@
+**DO NOT USE THIS BRANCH FOR YOUR BOT. REMOVING THE BOT AUTHENTICATION CODE IS STRICTLY PROHIBITED AND WILL BE CONSIDERED A LICENSE VIOLATION.**
+
 AwesomeBot [![Build Status](https://travis-ci.org/BitQuote/AwesomeBot.svg?branch=master)](https://travis-ci.org/BitQuote/AwesomeBot)
 ==========
 
