@@ -75,7 +75,7 @@ function writeInterface() {
                     
                     switchLog(true);
                     
-                    switchServers("svrnm", null, function() {
+                    switchServers("messages", null, function() {
                         $("#loading-modal").modal("hide");
                     });
                 });
@@ -155,6 +155,23 @@ function switchColors(theme) {
             document.getElementById("themeswitcher").value = localStorage.getItem("bootstrap-theme");
             $("#themeswitcher").selectpicker("refresh");
         }
+    }
+    if(["admin", "maintainer"].indexOf(window.location.pathname.substring(window.location.pathname.indexOf("/")+1).toLowerCase())>-1) {
+        var headerColor = "#90CAF9";
+        switch(localStorage.getItem("bootstrap-theme")) {
+            case "cyborg":
+                headerColor = "#01579B";
+                break;
+            case "paper":
+                headerColor = "#42A5F5";
+                break;
+            case "slate":
+                headerColor = "#212121";
+                break;
+            case "superhero":
+                headerColor = "#263238";
+        }
+        document.getElementsByClassName("header")[0].style.backgroundColor = headerColor;
     }
 }
 

@@ -85,6 +85,11 @@
             false,
             null
         ],
+        "rankmembermsg": [
+            false,
+            null,
+            false
+        ],
         "editmembermsg": [
             false
         ],
@@ -120,9 +125,10 @@
             null
         ],
         "muted": {},
+        "join": true,
         "filter": [
             [],
-            true
+            "mute"
         ],
         "customkeys": {
             "google_api_key": "",
@@ -134,7 +140,68 @@
         ],
         "usenicks": true,
         "usediscriminators": false,
-        "cooldown": 0
+        "cooldown": 0,
+        "maxcount": 5,
+        "admincommands": [
+            "ban",
+            "kick",
+            "list",
+            "nuke",
+            "quiet"
+        ],
+        "quiet": true,
+        "rankslist": [
+            {
+                "name": "Pro Lurker",
+                "max": 1,
+                "role": null
+            },
+            {
+                "name": "Learning Lurker",
+                "max": 5,
+                "role": null
+            },
+            {
+                "name": "Bad Lurker",
+                "max": 10,
+                "role": null
+            },
+            {
+                "name": "Mostly Inactive",
+                "max": 20,
+                "role": null
+            },
+            {
+                "name": "In Between",
+                "max": 40,
+                "role": null
+            },
+            {
+                "name": "Kinda Active",
+                "max": 50,
+                "role": null
+            },
+            {
+                "name": "Pretty Active",
+                "max": 70,
+                "role": null
+            },
+            {
+                "name": "Super Active",
+                "max": 100,
+                "role": null
+            },
+            {
+                "name": "Pro Member",
+                "max": 150,
+                "role": null
+            },
+            {
+                "name": "Almost a Spammer",
+                "max": 200,
+                "role": null
+            }
+        ]
     },
     "full": {
         "servermod": true,
@@ -146,12 +213,12 @@
             true,
             [],
             5,
-            true
+            "mute"
         ],
         "nsfwfilter": [
             true,
             [],
-            true
+            "block"
         ],
         "customroles": [
             true,
@@ -159,16 +226,17 @@
             true
         ],
         "customcolors": true,
+        "anime": true,
         "meme": true,
         "urban": true,
         "choose": true,
         "tag": true,
         "stats": true,
         "points": true,
+        "ranks": true,
         "messages": true,
         "avatar": true,
         "lottery": true,
-        "chatterbot": true,
         "linkme": true,
         "appstore": true,
         "say": true,
@@ -195,6 +263,7 @@
         "emoji": true,
         "time": true,
         "list": true,
+        "room": true,
         "showpub": true,
         "defaultcount": 5
     },
@@ -223,14 +292,15 @@
         "customcolors": false,
         "tag": false,
         "meme": false,
+        "anime": false,
         "urban": false,
         "choose": false,
         "stats": false,
         "points": false,
+        "ranks": false,
         "messages": false,
         "avatar": false,
         "lottery": false,
-        "chatterbot": false,
         "linkme": false,
         "appstore": false,
         "say": false,
@@ -257,6 +327,7 @@
         "emoji": false,
         "time": false,
         "list": false,
+        "room": false,
         "showpub": false,
         "defaultcount": 1
     },
@@ -282,17 +353,18 @@
             [],
             true
         ],
-        "customcolors": false,
+        "customcolors": true,
         "tag": true,
         "meme": false,
+        "anime": false,
         "urban": true,
         "choose": false,
         "stats": true,
         "points": true,
+        "ranks": true,
         "messages": true,
         "avatar": true,
         "lottery": false,
-        "chatterbot": true,
         "linkme": true,
         "appstore": true,
         "say": true,
@@ -303,7 +375,7 @@
         "gif": true,
         "wolfram": true,
         "wiki": true,
-        "weather": false,
+        "weather": true,
         "stock": false,
         "reddit": true,
         "roll": false,
@@ -314,11 +386,12 @@
         "trivia": true,
         "afk": true,
         "joke": false,
-        "translate": false,
+        "translate": true,
         "shorten": false,
         "emoji": false,
         "time": true,
         "list": false,
+        "room": true,
         "showpub": false,
         "defaultcount": 3
     }  

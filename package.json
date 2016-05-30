@@ -48,10 +48,11 @@
     "bing-translate": "*",
     "domain": "*",
     "remove-markdown": "*",
-    "emoji-dictionary": "*"
+    "emoji-dictionary": "*",
+    "wiki-infobox-parser": "*"
   },
   "scripts": {
-    "start": "node start.js"
+    "start": "node bot.js"
   },
-  "main": "start.js"
+  "main": "bot.js"
 }

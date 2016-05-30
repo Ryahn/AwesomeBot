@@ -2,7 +2,6 @@ function doAdminSetup() {
     document.title = botData.svrnm + " Admin Console";
     document.getElementById("servername").innerHTML = botData.svrnm;
     document.getElementById("profilepic").src = botData.svricon;
-    setFavicon(botData.svricon);
     document.getElementById("botname").innerHTML = botData.botnm;
     document.getElementById("botsince").innerHTML = " added " + botData.joined + " ago";
     document.getElementById("rssrow").style.display = botData.configs.rss[0] ? "" : "none";
@@ -17,6 +16,8 @@ function doAdminSetup() {
     $("#rss-body").collapse("show");
     switchTranslated();
     $("#translated-body").collapse("show");
+    switchStatspoints();
+    $("#statspoints-body").collapse("show");
     switchCommands();
     $("#commands-body").collapse("show");
     switchPublic();
@@ -314,15 +315,58 @@ function newTranslate() {
     }
 }
 
-var descs = {}
+function switchStatspoints() {
+    var statspoints = ["stats", "games", "messages", "ranks", "points", "lottery"];
+    for(var i=0; i<statspoints.length; i++) {
+        document.getElementById("statspoints-" + statspoints[i]).checked = botData.configs[statspoints[i]];
+    }
+    disableBlock("statspoints-stats-block", !botData.configs.stats);
+    disableBlock("statspoints-points-block", !botData.configs.points);
+
+    document.getElementById("rankstable-block").style.display = botData.configs.ranks ? "" : "none";
+    var rankstablebody = "";
+    for(var i=botData.configs.rankslist.length-1; i>=0; i--) {
+        rankstablebody += "<tr id=\"ranksentry-" + i + "\"><td>" + botData.configs.rankslist[i][0] + "</td><td>" + botData.configs.rankslist[i][1] + "</td><td>" + (botData.configs.rankslist[i][2] ? ("<span style=\"color:" +  botData.configs.rankslist[i][2][1] + "\">" + botData.configs.rankslist[i][2][0] + "</span>") : "None") + "</td><td>" + botData.configs.rankslist[i][3] + "</td><td><button type=\"button\" class=\"btn btn-danger btn-xs\" onclick=\"javascript:config('rankslist', " + i + ", switchStatspoints);\"><span class=\"glyphicon glyphicon-remove\" aria-hidden=\"true\"></span> Remove</button></td></tr>";
+    }
+    document.getElementById("rankstablebody").innerHTML = rankstablebody;
+    var ranksselect = "";
+    for(var i=botData.roles.length-1; i>=0; i--) {
+        ranksselect += "<option id=\"ranksselect-" + botData.roles[i][1] + "\" value=\"" + botData.roles[i][1] + "\" style=\"color: " + botData.roles[i][3] + ";\">" + botData.roles[i][0] + "</option>";
+    }
+    document.getElementById("ranksselect").innerHTML = ranksselect;
+    $("#ranksselect").selectpicker("refresh");
+}
+
+function newRank() {
+    if(!document.getElementById("ranksinput").value || !document.getElementById("ranksmax").value) {
+        if(!document.getElementById("ranksinput").value) {
+            $("#ranksinput-block").addClass("has-error");
+        }
+        if(!document.getElementById("ranksmax").value) {
+            $("#ranksmax-block").addClass("has-error");
+        }
+    } else {
+        $("#ranksinput-block").removeClass("has-error");
+        $("#ranksmax-block").removeClass("has-error");
+        config("rankslist", {
+            name: document.getElementById("ranksinput").value,
+            max: parseInt(document.getElementById("ranksmax").value),
+            role: document.getElementById("ranksselect").value ? document.getElementById("ranksselect").value : null
+        }, function() {
+            document.getElementById("ranksinput").value = "";
+            document.getElementById("ranksmax").value = "";
+            document.getElementById("ranksselect").value = "";
+            switchStatspoints();
+        });
+    }
+}
+
 function switchCommands() {
     var descs = {
         "rss": "Fetches entries from an <a href='#rss'>RSS feed</a>",
         "tag": "Quick snippet respnse system", 
-        "stats": "Shows the most active members, richest users, most played games, and most used commands on the server for this week", 
-        "points": "A quick way to get the number of points for a user", 
+        "stats": "Shows the most active members, richest users, most played games, and most used commands on the server for this week",
         "lottery": "Hourly point giveaways in the <code>points</code> command", 
-        "chatterbot": "Fun chatbot, provided by Mitsuku", 
         "linkme": "Searches the Google Play Store for one or more apps", 
         "appstore": "Searches the Apple App Store for one or more apps", 
         "say": "Says something in the chat", 
@@ -337,7 +381,6 @@ function switchCommands() {
         "stock": "Fetches basic information about a stock symbol from Yahoo! Finance", 
         "reddit": "Gets the top HOT posts from a given sub on Reddit", 
         "roll": "Generates a random number or rolls a die", 
-        "games": "Lists the games being played on this server in descending order", 
         "profile": "An all-in-one command to view or set information about users", 
         "tagreaction": "Responds when tagged without a command", 
         "poll": "Allows users to create live, in-chat polls", 
@@ -347,7 +390,6 @@ function switchCommands() {
         "choose": "Randomly chooses from a set of options", 
         "afk": "Display AFK message for users when tagged", 
         "shorten": "Uses goo.gl to shorten or decode a URL", 
-        "messages": "Shows the number of messages a user has sent in the past week", 
         "joke": "Tells a random joke!", 
         "translate": "Uses Microsoft Translate to translate a word/phrase into another language", 
         "emoji": "Fetches the large version of an emoji", 
@@ -357,16 +399,30 @@ function switchCommands() {
         "kick": "Removes a member from the server",
         "ban": "Removes a member from the server and prevents them from coming back",
         "nuke": "Deletes messages in a channel, all or from a user",
-        "archive": "Provides a JSON file with the last <i>n</i> messages in chat"
+        "archive": "Provides a JSON file with the last <i>n</i> messages in chat",
+        "room": "Allows anyone to create a temporary channel with a few other members",
+        "anime": "Searches anime shows using Hummingbird",
+        "quiet": "Turns off the bot in one or all channels",
+        "join": "Provdes the OAuth link to add the bot to another server"
     }
+    var blacklist = ["admins", "blocked", "extensions", "newgreeting", "nsfwfilter", "servermod", "spamfilter", "customroles", "customcolors", "customkeys", "cmdtag", "newmembermsg", "onmembermsg", "offmembermsg", "changemembermsg", "rankmembermsg", "twitchmembermsg", "editmembermsg", "deletemembermsg", "rmmembermsg", "banmembermsg", "unbanmembermsg", "triviasets", "newrole", "showpub", "defaultcount", "maxcount", "autoprune", "translated", "filter", "usenicks", "usediscriminators", "listsrc", "listing", "tagcommands", "cooldown", "stats", "points", "ranks", "rankslist", "messages", "games", "lottery", "admincommands"];
+
     var commands = [];
     for(var cmd in botData.configs) {
-        if(["admins", "blocked", "extensions", "newgreeting", "nsfwfilter", "servermod", "spamfilter", "customroles", "customcolors", "customkeys", "cmdtag", "newmembermsg", "onmembermsg", "offmembermsg", "changemembermsg", "twitchmembermsg", "editmembermsg", "deletemembermsg", "rmmembermsg", "banmembermsg", "unbanmembermsg", "triviasets", "newrole", "showpub", "defaultcount", "autoprune", "translated", "filter", "usenicks", "usediscriminators", "listsrc", "listing", "tagcommands", "cooldown"].indexOf(cmd)==-1) {
-            commands.push("<div class=\"checkbox\"><input style=\"height: auto;\" id=\"commandsentry-" + cmd + "\" type=\"checkbox\" onclick=\"javascript:config(this.id.substring(14), this.checked, switchCommands);\" " + ((cmd=="rss" ? botData.configs[cmd][0] : botData.configs[cmd]) ? "checked " : "") + "/><label for=\"commandsentry-" + cmd + "\">" + cmd + "&nbsp;&nbsp;<p class=\"help-block\" style=\"display:inline\">" + descs[cmd] + "</p></label></div>");
+        if(blacklist.indexOf(cmd)==-1) {
+            commands.push("<div class=\"checkbox\"><input style=\"height: auto;\" id=\"commandsentry-" + cmd + "\" type=\"checkbox\" onclick=\"javascript:config(this.id.substring(14), this.checked, switchCommands);\" " + ((cmd=="rss" ? botData.configs[cmd][0] : botData.configs[cmd]) ? "checked " : "") + "/><label for=\"commandsentry-" + cmd + "\">" + cmd + "&nbsp;&nbsp;<p class=\"help-block\" style=\"display:inline\">" + descs[cmd] + "</p></label>&nbsp;&nbsp;<select id=\"" + cmd + "-admincommands-select\"onChange=\"javascript:config('admincommands', '" + cmd + "', switchCommands);\" class=\"selectpicker\" data-width=\"fit\"><option" + (botData.configs.admincommands.indexOf(cmd)==-1 ? " selected" : "") + ">Everyone</option><option" + (botData.configs.admincommands.indexOf(cmd)>-1 ? " selected" : "") + ">Admins only</option></select></div>");
         }
     }
     commands.sort();
     $("#commands-container").html(commands.join(''));
+
+    for(var cmd in botData.configs) {
+        if(blacklist.indexOf(cmd)==-1) {
+            $("#" + cmd + "-admincommands-select").selectpicker("refresh")
+        }
+    }
+
+
     document.getElementById("commandtag-tag").innerHTML = "@" + botData.botnm;
     document.getElementById("commandtag-selector").value = botData.configs.cmdtag;
     $("#commandtag-selector").selectpicker("refresh");
@@ -384,6 +440,7 @@ function switchCommands() {
     });
 
     document.getElementById("commands-defaultcount").value = botData.configs.defaultcount;
+    document.getElementById("commands-maxcount").value = botData.configs.maxcount;
 
     document.getElementById("commands-cooldown").checked = botData.configs.cooldown!=0;
     document.getElementById("commands-cooldown-select").value = botData.configs.cooldown;
@@ -429,8 +486,14 @@ function switchManage() {
         document.getElementById("manageentry-select-autoprune").removeAttribute("disabled");
         $("#manageentry-select-autoprune").selectpicker("refresh");
     }
+
+    if(!botData.configs.ranks) {
+        document.getElementById("rankmembermsg").style.display = "none";
+    } else {
+        document.getElementById("rankmembermsg").style.display = "";
+    }
     
-    var membermsg = ["newmembermsg", "onmembermsg", "offmembermsg", "changemembermsg", "twitchmembermsg", "editmembermsg", "deletemembermsg", "rmmembermsg", "banmembermsg", "unbanmembermsg"];
+    var membermsg = ["newmembermsg", "onmembermsg", "offmembermsg", "changemembermsg", "twitchmembermsg", "rankmembermsg", "editmembermsg", "deletemembermsg", "rmmembermsg", "banmembermsg", "unbanmembermsg"];
     for(var i=0; i<membermsg.length; i++) {
         document.getElementById("manageentry-" + membermsg[i]).checked = botData.configs[membermsg[i]][0];
         if(botData.configs[membermsg[i]][0]) {
@@ -440,12 +503,18 @@ function switchManage() {
             }
             if(["editmembermsg", "deletemembermsg"].indexOf(membermsg[i])==-1) {
                 document.getElementById("manageentry-select-" + membermsg[i]).innerHTML = manageentry_select;
-                document.getElementById("manageentry-select-" + membermsg[i]).value = (["changemembermsg", "twitchmembermsg"].indexOf(membermsg[i])>-1 ? botData.configs[membermsg[i]][1] : botData.configs[membermsg[i]][2]);
+                document.getElementById("manageentry-select-" + membermsg[i]).value = (["changemembermsg", "twitchmembermsg", "rankmembermsg"].indexOf(membermsg[i])>-1 ? botData.configs[membermsg[i]][1] : botData.configs[membermsg[i]][2]);
                 document.getElementById("manageentry-select-" + membermsg[i]).removeAttribute("disabled");
                 $("#manageentry-select-" + membermsg[i]).selectpicker("refresh");
             }
+
+            if(membermsg[i]=="rankmembermsg") {
+                document.getElementById("manageentry-select-pm-" + membermsg[i]).value = botData.configs.rankmembermsg[2] ? "pms" : "messages";
+                document.getElementById("manageentry-select-pm-" + membermsg[i]).removeAttribute("disabled");
+                $("#manageentry-select-pm-" + membermsg[i]).selectpicker("refresh");
+            }
             
-            if(["changemembermsg", "twitchmembermsg", "editmembermsg", "deletemembermsg"].indexOf(membermsg[i])==-1) {
+            if(["changemembermsg", "rankmembermsg", "twitchmembermsg", "editmembermsg", "deletemembermsg"].indexOf(membermsg[i])==-1) {
                 var current_block = "";
                 for(var j=0; j<botData.configs[membermsg[i]][1].length; j++) {
                     current_block += "<div class=\"checkbox\">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type=\"checkbox\" onclick=\"javascript:config('" + membermsg[i] + "', this.value, function() {});\" id=\"manageentry-" + membermsg[i] + "-" + j + "\" value=\"" + botData.configs[membermsg[i]][1][j] + "\" checked><label for=\"manageentry-" + membermsg[i] + "-" + j + "\">" + botData.configs[membermsg[i]][1][j].replace("++", "<b>@user</b>") + "</label></div>";
@@ -458,6 +527,10 @@ function switchManage() {
             if(["editmembermsg", "deletemembermsg"].indexOf(membermsg[i])==-1) {
                 document.getElementById("manageentry-select-" + membermsg[i]).setAttribute("disabled", "disable");
                 $("#manageentry-select-" + membermsg[i]).selectpicker("refresh");
+            }
+            if(membermsg[i]=="rankmembermsg") {
+                document.getElementById("manageentry-select-pm-" + membermsg[i]).setAttribute("disabled", "disable");
+                $("#manageentry-select-pm-" + membermsg[i]).selectpicker("refresh");
             }
             if(membermsg[i]!="changemembermsg") {
                 $("#manageentry-" + membermsg[i] + "-body").collapse("hide");
@@ -499,7 +572,7 @@ function switchManage() {
             document.getElementById("manageentry-spamfilter-selector").value = "high";
             break;
     }
-    document.getElementById("manageentry-spamfilter-action").value = botData.configs.spamfilter[3] ? "block" : "kick";
+    document.getElementById("manageentry-spamfilter-action").value = botData.configs.spamfilter[3];
     
     
     document.getElementById("manageentry-nsfwfilter").checked = botData.configs.nsfwfilter[0];
@@ -515,10 +588,10 @@ function switchManage() {
     } else {
         $("#manageentry-nsfwfilter-body").collapse("hide");
     }
-    document.getElementById("manageentry-nsfwfilter-action").value = botData.configs.nsfwfilter[2] ? "block" : "kick";
+    document.getElementById("manageentry-nsfwfilter-action").value = botData.configs.nsfwfilter[2];
     
     
-    disableBlock("servermod", !botData.configs.servermod);
+    disableBlock("manageentry-servermod-block", !botData.configs.servermod);
     if(!botData.configs.servermod) {
         document.getElementById("manageentry-spamfilter-selector").setAttribute("disabled", "disable");
         document.getElementById("manageentry-spamfilter-action").setAttribute("disabled", "disable");
@@ -545,7 +618,7 @@ function switchManage() {
     
     var filterstr = filterToString(botData.configs.filter[0]);
     document.getElementById("manageentry-filter").style.display = "";
-    document.getElementById("manageentry-filter-action").value = botData.configs.filter[1] ? "block" : "kick";
+    document.getElementById("manageentry-filter-action").value = botData.configs.filter[1];
     $("#manageentry-filter-action").selectpicker("refresh");
     if(filterstr && botData.configs.servermod) {
         document.getElementById("filterremove").style.display = "";
@@ -620,7 +693,7 @@ function switchPublic() {
 }
 
 function disableBlock(blockname, disable) {
-    var inputs = document.getElementById("manageentry-" + blockname + "-block").getElementsByTagName("input");
+    var inputs = document.getElementById(blockname).getElementsByTagName("input");
     for(var i=0; i<inputs.length; i++) {
         if(disable) {
             inputs[i].setAttribute("disabled", "disable");
@@ -628,7 +701,7 @@ function disableBlock(blockname, disable) {
             inputs[i].removeAttribute("disabled");
         }
     }
-    var buttons = document.getElementById("manageentry-" + blockname + "-block").getElementsByClassName("btn");
+    var buttons = document.getElementById(blockname).getElementsByClassName("btn");
     for(var i=0; i<buttons.length; i++) {
         if(disable) {
             buttons[i].setAttribute("disabled", "disable");

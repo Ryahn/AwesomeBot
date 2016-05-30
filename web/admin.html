@@ -55,6 +55,9 @@
                     <a href="#translated">Auto-Translation</a>
                 </li>
                 <li>
+                    <a href="#statspoints">Stats &amp; Points</a>
+                </li>
+                <li>
                     <a href="#commands">Commands</a>
                 </li>
                 <li>
@@ -73,7 +76,7 @@
         </div>
 
         <!-- Page Content -->
-        <div id="page-content-wrapper">
+        <div id="page-content-wrapper" class="header">
             <div class="container-fluid">
                 <div class="row">
                     <div class="col-xs-2">
@@ -109,7 +112,11 @@
                         <img id="profilepic" style="float:right;" src="data:image/gif;base64,R0lGODlhAQABAIAAAHd3dwAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==" width="100" height="100" class="img-responsive img-circle" alt="Server Icon">
                     </div>
                 </div>
-                
+            </div>
+        </div>
+              
+        <div id="page-content-wrapper">
+            <div class="container-fluid">  
                 <div class="row">
                     <div class="col-lg-12">
                         <h2 class="section-head" id="admins" data-toggle="collapse" data-target="#admins-body" aria-expanded="false" aria-controls="collapseadmins">Bot Admins</h2>
@@ -188,6 +195,91 @@
                         </div>
                     </div>
                 </div>
+
+                <div class="row">
+                    <div class="col-lg-12">
+                        <h2 id="statspoints" data-toggle="collapse" data-target="#statspoints-body" aria-expanded="false" aria-controls="collapsestatspoints">Stats &amp; Points</h2>
+                        <div id="statspoints-body" class="collapse">
+                            <div class="checkbox">
+                                <input id="statspoints-stats" type="checkbox" onclick="javascript:config(this.id.substring(12), this.checked, switchStatspoints);">
+                                <label for="statspoints-stats">
+                                    Collect stats about members, games, and messages
+                                </label>
+                            </div>
+                            <span id="statspoints-stats-block">
+                                <div class="checkbox">
+                                    <input id="statspoints-games" type="checkbox" onclick="javascript:config(this.id.substring(12), this.checked, switchStatspoints);">
+                                    <label for="statspoints-games">
+                                        games
+                                        &nbsp;
+                                        <p class="help-block" style="display: inline">
+                                            Quickly view games stats
+                                        </p>
+                                    </label>
+                                </div>
+                                <div class="checkbox">
+                                    <input id="statspoints-messages" type="checkbox" onclick="javascript:config(this.id.substring(12), this.checked, switchStatspoints);">
+                                    <label for="statspoints-messages">
+                                        messages
+                                        &nbsp;
+                                        <p class="help-block" style="display: inline">
+                                            Quickly view message stats
+                                        </p>
+                                    </label>
+                                </div>
+                                <div class="checkbox">
+                                    <input id="statspoints-ranks" type="checkbox" onclick="javascript:config(this.id.substring(12), this.checked, switchStatspoints);">
+                                    <label for="statspoints-ranks">
+                                        Assign ranks to users based on their messages
+                                    </label>
+                                </div>
+                            </span>
+
+                            <span id="rankstable-block">
+                                <div class="table-responsive">
+                                    <table class="table table-striped" id="rankstable">
+                                        <thead>
+                                            <tr>
+                                                <th>Name</th>
+                                                <th>Max</th>
+                                                <th>Role</th>
+                                                <th>Members</th>
+                                                <th>Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="rankstablebody"></tbody>
+                                    </table>
+                                </div>
+                                <form class="form-inline" id="newrankform">
+                                    <div id="ranksinput-block" style="display:inline-block;">
+                                        <input type="text" class="form-control" id="ranksinput" style="width:200px;" maxlength="200" placeholder="Rank name">
+                                    </div>
+                                    <div id="ranksmax-block" style="display:inline-block;">
+                                        <input id="ranksmax" class="form-control" type="number" placeholder="Max score" min="1" style="width:150px;" data-toggle="tooltip" data-placement="bottom" title="Score is calculated by adding the number of messages and minutes connected to voice, then dividing by 10"></input>
+                                    </div>
+                                    <select id="ranksselect" class="selectpicker" data-width="fit" data-live-search="true" title="Select Role"></select>
+                                    <input type="submit" class="btn btn-default" value="Add">
+                                </form>
+                            </span>
+                            <br>
+
+                            <div class="checkbox">
+                                <input id="statspoints-points" type="checkbox" onclick="javascript:config(this.id.substring(12), this.checked, switchStatspoints);">
+                                <label for="statspoints-points">
+                                    AwesomePoints: karma for Discord (upvote and gild)
+                                </label>
+                            </div>
+                            <span id="statspoints-points-block">
+                                <div class="checkbox">
+                                    <input id="statspoints-lottery" type="checkbox" onclick="javascript:config(this.id.substring(12), this.checked, switchStatspoints);">
+                                    <label for="statspoints-lottery">
+                                        Hourly points lottery in <code>points</code> command
+                                    </label>
+                                </div>
+                            </span>
+                        </div>
+                    </div>
+                </div>
                 
                 <div class="row">
                     <div class="col-lg-12">
@@ -198,7 +290,7 @@
                             <select id="commandtag-selector" onchange="javascript:config('cmdtag', this.value, switchCommands);" class="selectpicker" data-width="fit">
                                 <option id="commandtag-tag" value="tag"></option>
                                 <option id="commandtag-plus" value="+">+</option>
-                                <option id="commandtag-amp" value="&">&</option>
+                                <option id="commandtag-amp" value="&amp;">&amp;</option>
                                 <option id="commandtag-bang" value="!">!</option>
                                 <option id="commandtag-min" value="-">-</option>
                                 <option id="commandtag-dub" value="--">--</option>
@@ -232,6 +324,14 @@
                             <div class="input-group form-inline col-xs-2">
                                 <input type="number" id="commands-defaultcount" class="form-control" min="1" max="100" onkeydown="if(event.keyCode==13){config('defaultcount', this.value, switchCommands);">
                                 <span class="input-group-addon btn btn-primary" onclick="javascript:config('defaultcount', $('#commands-defaultcount').val(), switchCommands);"><span class="glyphicon glyphicon-ok" aria-hidden="true"></span> Set</span>
+                            </div>
+                            <br>
+
+                            Maximum number of items to fetch:
+                            &nbsp;&nbsp;
+                            <div class="input-group form-inline col-xs-2">
+                                <input type="number" id="commands-maxcount" class="form-control" min="1" max="100" onkeydown="if(event.keyCode==13){config('maxcount', this.value, switchCommands);">
+                                <span class="input-group-addon btn btn-primary" onclick="javascript:config('maxcount', $('#commands-maxcount').val(), switchCommands);"><span class="glyphicon glyphicon-ok" aria-hidden="true"></span> Set</span>
                             </div>
 
                             <div class="checkbox">
@@ -450,6 +550,19 @@
                                     <select id="manageentry-select-changemembermsg" onchange="javascript:config(this.id.substring(19), this.value, function() {});" class="selectpicker" data-width="fit"></select>
                                 </div>
 
+                                <div class="checkbox" id="rankmembermsg">
+                                    <input id="manageentry-rankmembermsg" type="checkbox" onclick="javascript:config(this.id.substring(12), this.checked, function() {});">
+                                    <label for="manageentry-rankmembermsg">
+                                        Rank change 
+                                    </label>
+                                    <select id="manageentry-select-pm-rankmembermsg" onchange="javascript:config(this.id.substring(22), 'pm', function() {});" class="selectpicker" data-width="fit">
+                                        <option value="messages">messages</option>
+                                        <option value="pms">PMs</option>
+                                    </select>
+                                    &nbsp;
+                                    <select id="manageentry-select-rankmembermsg" onchange="javascript:config(this.id.substring(19), this.value, function() {});" class="selectpicker" data-width="fit"></select>
+                                </div>
+
                                 <div class="checkbox">
                                     <input id="manageentry-twitchmembermsg" type="checkbox" onclick="javascript:config(this.id.substring(12), this.checked, function() {});">
                                     <label for="manageentry-twitchmembermsg">
@@ -539,8 +652,9 @@
                                         Spam filter
                                     </label>
                                     &nbsp;
-                                    <select id="manageentry-spamfilter-action" onChange="javascript:config('spamfilter', 'skipkick', function() {});" class="selectpicker" data-width="fit">
+                                    <select id="manageentry-spamfilter-action" onChange="javascript:config('spamfilter', 'action-' + this.value, function() {});" class="selectpicker" data-width="fit">
                                         <option id="spamfilter-kick" value="kick">Kick Violators</option>
+                                        <option id="spamfilter-mute" value="mute">Mute Violators</option>
                                         <option id="spamfilter-block" value="block">Block Violators</option>
                                     </select>
                                 </div>
@@ -561,8 +675,9 @@
                                         NSFW filter (blocks NSFW fetching through bot)
                                     </label>
                                     &nbsp;
-                                    <select id="manageentry-nsfwfilter-action" onChange="javascript:config('nsfwfilter', 'skipkick', function() {});" class="selectpicker" data-width="fit">
+                                    <select id="manageentry-nsfwfilter-action" onChange="javascript:config('nsfwfilter', 'action-' + this.value, function() {});" class="selectpicker" data-width="fit">
                                         <option id="nsfwfilter-kick" value="kick">Kick Violators</option>
+                                        <option id="nsfwfilter-mute" value="mute">Mute Violators</option>
                                         <option id="nsfwfilter-block" value="block">Block Violators</option>
                                     </select>
                                 </div>
@@ -577,8 +692,9 @@
                                     <span class="input-group-addon btn btn-primary" onclick="javascript:configFilter(document.getElementById('filterinput').value);"><span class="glyphicon glyphicon-ok" aria-hidden="true"></span> Submit</span>
                                 </div>
                                 <br>
-                                <select id="manageentry-filter-action" onChange="javascript:config('filter', 'skipkick', function() {});" class="selectpicker" data-width="fit">
+                                <select id="manageentry-filter-action" onChange="javascript:config('filter', 'action-' + this.value, function() {});" class="selectpicker" data-width="fit">
                                     <option id="filter-kick" value="kick">Kick Violators</option>
+                                    <option id="filter-mute" value="mute">Mute Violators</option>
                                     <option id="filter-block" value="block">Block Violators</option>
                                 </select>
                             </span>
@@ -637,7 +753,7 @@
                                     <input id="cainput" class="form-control" type="number" placeholder="# of messages" min="1"></input>
                                 </div>
                                 &nbsp;in&nbsp;
-                                <select id="caselector" class="selectpicker" data-width="fit" data-live-search="true"></select>
+                                <select id="caselector" class="selectpicker" data-width="fit"></select>
                                 <input type="submit" class="btn btn-default" value="Go">
                             </form>
                         </div>
@@ -781,6 +897,10 @@
     });
     $("#newstrikeform").submit(function() {
         newStrike();
+        return false;
+    });
+    $("#newrankform").submit(function() {
+        newRank();
         return false;
     });
     $("#newrssform").submit(function() {
