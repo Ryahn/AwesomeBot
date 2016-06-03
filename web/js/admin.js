@@ -244,12 +244,32 @@ function switchRss() {
     
     var rsstablebody = "";
     for(var i=0; i<botData.configs.rss[1].length; i++) {
-        rsstablebody += "<tr id=\"rssentry-" + i + "\"><td>" + botData.configs.rss[2][i] + "</td><td><a href=\"" + botData.configs.rss[1][i] + "\">" + botData.configs.rss[1][i] + "</a></td><td><button type=\"button\" class=\"btn btn-danger btn-xs\" onclick=\"javascript:config('rss', this.parentNode.parentNode.id.substring(9), switchRss);\"><span class=\"glyphicon glyphicon-remove\" aria-hidden=\"true\"></span> Remove</button></td></tr>";
+        rsstablebody += "<tr id=\"rssentry-" + i + "\"><td>" + botData.configs.rss[2][i] + "</td><td><a href=\"" + botData.configs.rss[1][i] + "\">" + botData.configs.rss[1][i] + "</a></td><td><button type=\"button\" id=\"rssentry-" + i + "-updates\" class=\"btn btn-primary btn-xs rssupdates\"><span class=\"glyphicon glyphicon-refresh\" aria-hidden=\"true\"></span> Updates</button>&nbsp;<button type=\"button\" class=\"btn btn-danger btn-xs\" onclick=\"javascript:config('rss', this.parentNode.parentNode.id.substring(9), switchRss);\"><span class=\"glyphicon glyphicon-remove\" aria-hidden=\"true\"></span> Remove</button></td></tr>";
     }
     document.getElementById("rsstablebody").innerHTML = rsstablebody;
     if(botData.configs.rss[1].length==0) {
         document.getElementById("rsstable").style.display = "none";
     }
+
+    $("#rsstable").popover({ 
+        html: true,
+        title: function() {
+            i = parseInt(this.id.substring(this.id.indexOf("-")+1, this.id.lastIndexOf("-")));
+            return "<button type=\"button\" class=\"close\" id=\"rssentry-" + i + "-updates\" onclick=\"$('#" + this.id + "').popover('hide');\" aria-label=\"Close\"><span aria-hidden=\"true\">&times;</span></button><h4 class=\"modal-title\">RSS Updates</h4>";
+        },
+        content: function() {
+            i = parseInt(this.id.substring(this.id.indexOf("-")+1, this.id.lastIndexOf("-")));
+            var popovercontent = "Post new articles in:";
+            for(var j=0; j<botData.channels.length; j++) {
+                popovercontent += "<div class=\"checkbox\"><input type=\"checkbox\" id=\"rssupdates-channel-" + botData.channels[j][1] + "\" onclick=\"javascript:config('rss', {chid: '" + botData.channels[j][1] + "', i: " + i + "}, function() {});\"" + (botData.configs.rss[3][i][0].indexOf(botData.channels[j][1])>-1 ? " checked" : "") + "><label for=\"rssupdates-channel-" + botData.channels[j][1] + "\">#" + botData.channels[j][0] + "</label></div>";
+            }
+            return popovercontent;
+        },
+        selector: ".rssupdates",
+        placement: "bottom",
+        container: "body",
+        trigger: "click"
+    });
 }
 
 function newRss() {
@@ -280,7 +300,7 @@ function switchTranslated() {
     var translatedtablebody = "";
     for(var i=0; i<botData.configs.translated.length; i++) {
         blacklist.push(botData.configs.translated[i][2]);
-        translatedtablebody += "<tr id=\"translatedentry-" + botData.configs.translated[i][2] + "\"><td><img class=\"profilepic\" width=25 src=\"" + botData.configs.translated[i][0] + "\" /></td><td>" + botData.configs.translated[i][1] + "</td><td>" + botData.configs.translated[i][3] + "</td><td><button type=\"button\" class=\"btn btn-danger btn-xs\" onclick=\"javascript:config('translated', [this.parentNode.parentNode.id.substring(16)], switchTranslated);\"><span class=\"glyphicon glyphicon-remove\" aria-hidden=\"true\"></span> Remove</button></td></tr>";
+        translatedtablebody += "<tr id=\"translatedentry-" + botData.configs.translated[i][2] + "\"><td><img class=\"profilepic\" width=25 src=\"" + botData.configs.translated[i][0] + "\" /></td><td>" + botData.configs.translated[i][1] + "</td><td>" + botData.configs.translated[i][3] + "</td><td>" + botData.configs.translated[i][4] + "</td><td><button type=\"button\" class=\"btn btn-danger btn-xs\" onclick=\"javascript:config('translated', [this.parentNode.parentNode.id.substring(16)], switchTranslated);\"><span class=\"glyphicon glyphicon-remove\" aria-hidden=\"true\"></span> Remove</button></td></tr>";
     }
     document.getElementById("translatedtablebody").innerHTML = translatedtablebody;
     if(botData.configs.translated.length==0) {
@@ -299,19 +319,33 @@ function switchTranslated() {
         $("#translatedselector").selectpicker("refresh");
     });
     document.getElementById("translatedinput").value = "";
+
+    var translatedchannels = "";
+    for(var i=0; i<botData.channels.length; i++) {
+        translatedchannels += "<option id=\"translatedch-" + botData.channels[i][1] + "\" value=\"" + botData.channels[i][1] + "\">#" + botData.channels[i][0] + "</option>";
+    }
+    document.getElementById("translatedchannels").innerHTML = translatedchannels;
+    $("#translatedchannels").selectpicker("refresh");
 }
 
 function newTranslate() {
-    if(!document.getElementById("translatedselector").value || !document.getElementById("translatedinput").value) {
+    if(!document.getElementById("translatedselector").value || !document.getElementById("translatedinput").value || !$("#translatedchannels").val()) {
+        console.log("hi");
         if(!document.getElementById("translatedselector").value) {
             richModal("Select a member");
+            return;
         }
         if(!document.getElementById("translatedinput").value) {
             $("#translatedinput-block").addClass("has-error");
+            return;
+        }
+        if(!$("#translatedchannels").val()) {
+            richModal("Select at least one channel");
+            return;
         }
     } else {
         $("#translatedinput-block").removeClass("has-error");
-        config("translated", [document.getElementById("translatedselector").value, document.getElementById("translatedinput").value], switchTranslated);
+        config("translated", [document.getElementById("translatedselector").value, document.getElementById("translatedinput").value, $("#translatedchannels").val()], switchTranslated);
     }
 }
 
@@ -326,7 +360,7 @@ function switchStatspoints() {
     document.getElementById("rankstable-block").style.display = botData.configs.ranks ? "" : "none";
     var rankstablebody = "";
     for(var i=botData.configs.rankslist.length-1; i>=0; i--) {
-        rankstablebody += "<tr id=\"ranksentry-" + i + "\"><td>" + botData.configs.rankslist[i][0] + "</td><td>" + botData.configs.rankslist[i][1] + "</td><td>" + (botData.configs.rankslist[i][2] ? ("<span style=\"color:" +  botData.configs.rankslist[i][2][1] + "\">" + botData.configs.rankslist[i][2][0] + "</span>") : "None") + "</td><td>" + botData.configs.rankslist[i][3] + "</td><td><button type=\"button\" class=\"btn btn-danger btn-xs\" onclick=\"javascript:config('rankslist', " + i + ", switchStatspoints);\"><span class=\"glyphicon glyphicon-remove\" aria-hidden=\"true\"></span> Remove</button></td></tr>";
+        rankstablebody += "<tr id=\"ranksentry-" + i + "\"><td>" + botData.configs.rankslist[i][0] + "</td><td>" + (i==botData.configs.rankslist.length-1 ? "&infin;" : botData.configs.rankslist[i][1]) + "</td><td>" + (botData.configs.rankslist[i][2] ? ("<span style=\"color:" +  botData.configs.rankslist[i][2][1] + "\">" + botData.configs.rankslist[i][2][0] + "</span>") : "None") + "</td><td>" + botData.configs.rankslist[i][3] + "</td><td><button type=\"button\" class=\"btn btn-danger btn-xs\" onclick=\"javascript:config('rankslist', " + i + ", switchStatspoints);\"><span class=\"glyphicon glyphicon-remove\" aria-hidden=\"true\"></span> Remove</button></td></tr>";
     }
     document.getElementById("rankstablebody").innerHTML = rankstablebody;
     var ranksselect = "";
@@ -403,14 +437,20 @@ function switchCommands() {
         "room": "Allows anyone to create a temporary channel with a few other members",
         "anime": "Searches anime shows using Hummingbird",
         "quiet": "Turns off the bot in one or all channels",
-        "join": "Provdes the OAuth link to add the bot to another server"
+        "join": "Provdes the OAuth link to add the bot to another server",
+        "giveaway": "Easy way to randomly give away a secret of some sort",
+        "chatterbot": "The Mitsuku chatbot, very fun and friendly",
+        "info": "Lists basic stats about this server",
+        "calc": "Quickly evaluate a mathematical expression",
+        "manga": "Searches manga data",
+        "imdb": "Provides movie and TV show data"
     }
-    var blacklist = ["admins", "blocked", "extensions", "newgreeting", "nsfwfilter", "servermod", "spamfilter", "customroles", "customcolors", "customkeys", "cmdtag", "newmembermsg", "onmembermsg", "offmembermsg", "changemembermsg", "rankmembermsg", "twitchmembermsg", "editmembermsg", "deletemembermsg", "rmmembermsg", "banmembermsg", "unbanmembermsg", "triviasets", "newrole", "showpub", "defaultcount", "maxcount", "autoprune", "translated", "filter", "usenicks", "usediscriminators", "listsrc", "listing", "tagcommands", "cooldown", "stats", "points", "ranks", "rankslist", "messages", "games", "lottery", "admincommands"];
+    var blacklist = ["admins", "blocked", "extensions", "newgreeting", "nsfwfilter", "servermod", "spamfilter", "customroles", "customcolors", "customkeys", "cmdtag", "newmembermsg", "onmembermsg", "offmembermsg", "changemembermsg", "rankmembermsg", "twitchmembermsg", "editmembermsg", "deletemembermsg", "rmmembermsg", "banmembermsg", "unbanmembermsg", "triviasets", "newrole", "showpub", "defaultcount", "maxcount", "autoprune", "translated", "filter", "usenicks", "usediscriminators", "listsrc", "listing", "tagcommands", "cooldown", "stats", "points", "ranks", "rankslist", "messages", "games", "lottery", "admincommands", "showsvr"];
 
     var commands = [];
     for(var cmd in botData.configs) {
         if(blacklist.indexOf(cmd)==-1) {
-            commands.push("<div class=\"checkbox\"><input style=\"height: auto;\" id=\"commandsentry-" + cmd + "\" type=\"checkbox\" onclick=\"javascript:config(this.id.substring(14), this.checked, switchCommands);\" " + ((cmd=="rss" ? botData.configs[cmd][0] : botData.configs[cmd]) ? "checked " : "") + "/><label for=\"commandsentry-" + cmd + "\">" + cmd + "&nbsp;&nbsp;<p class=\"help-block\" style=\"display:inline\">" + descs[cmd] + "</p></label>&nbsp;&nbsp;<select id=\"" + cmd + "-admincommands-select\"onChange=\"javascript:config('admincommands', '" + cmd + "', switchCommands);\" class=\"selectpicker\" data-width=\"fit\"><option" + (botData.configs.admincommands.indexOf(cmd)==-1 ? " selected" : "") + ">Everyone</option><option" + (botData.configs.admincommands.indexOf(cmd)>-1 ? " selected" : "") + ">Admins only</option></select></div>");
+            commands.push("<div class=\"checkbox\"><input style=\"height: auto;\" id=\"commandsentry-" + cmd + "\" type=\"checkbox\" onclick=\"javascript:config(this.id.substring(14), this.checked, switchCommands);\" " + ((cmd=="rss" ? botData.configs[cmd][0] : botData.configs[cmd]) ? "checked " : "") + "/><label for=\"commandsentry-" + cmd + "\">" + cmd + "&nbsp;&nbsp;<p class=\"help-block\" style=\"display:inline\">" + descs[cmd] + "</p></label>&nbsp;&nbsp;<select id=\"" + cmd + "-admincommands-select\" onChange=\"javascript:config('admincommands', '" + cmd + "', switchCommands);\" class=\"selectpicker\" data-width=\"fit\"><option" + (botData.configs.admincommands.indexOf(cmd)==-1 ? " selected" : "") + ">Everyone</option><option" + (botData.configs.admincommands.indexOf(cmd)>-1 ? " selected" : "") + ">Admins only</option></select></div>");
         }
     }
     commands.sort();
@@ -418,7 +458,12 @@ function switchCommands() {
 
     for(var cmd in botData.configs) {
         if(blacklist.indexOf(cmd)==-1) {
-            $("#" + cmd + "-admincommands-select").selectpicker("refresh")
+            if((cmd=="rss" && botData.configs[cmd][0]) || botData.configs[cmd]) {
+                document.getElementById(cmd + "-admincommands-select").removeAttribute("disabled");
+            } else {
+                document.getElementById(cmd + "-admincommands-select").setAttribute("disabled", "disable");
+            }
+            $("#" + cmd + "-admincommands-select").selectpicker("refresh");
         }
     }
 
@@ -670,6 +715,17 @@ function switchManage() {
     } else {
         document.getElementById("manageentry-trivia").style.display = "none";
     }
+
+    if(botData.giveaways.length>0) {
+        document.getElementById("manageentry-giveaways").style.display = "";
+        var manageentry_giveaways_block = "";
+        for(var i=0; i<botData.trivia.length; i++) {
+            manageentry_giveaways_block += "<li>" + botData.giveaways[i][1] + "&nbsp;<button type=\"button\" class=\"btn btn-danger btn-xs\" id=\"manageentry-giveaways-" + botData.giveaways[i][0] + "\" onclick=\"javascript:config('endgiveaway', this.id.substring(22), function() {});\">End</button></li>";
+        }
+        document.getElementById("manageentry-giveaways-block").innerHTML = manageentry_giveaways_block;
+    } else {
+        document.getElementById("manageentry-giveaways").style.display = "none";
+    }
     
     if(!document.getElementById("caselector").innerHTML) {
         var caselector = ""; 
@@ -682,14 +738,17 @@ function switchManage() {
 }
 
 function switchPublic() {
+    document.getElementById("publicentry-showsvr").checked = botData.configs.showsvr;
     document.getElementById("publicentry-showpub").checked = botData.configs.showpub;
 
     document.getElementById("publicentry-enable-listing").checked = botData.configs.listing.enabled;
     document.getElementById("publicentry-description-listing").value = botData.configs.listing.description;
     document.getElementById("publicentry-description").style.display = "";
-    if(!botData.configs.listing.enabled) {
+    if(!botData.configs.listing.enabled || !botData.configs.showsvr) {
         document.getElementById("publicentry-description").style.display = "none";
     }
+
+    disableBlock("public-showsvr-block", !botData.configs.showsvr);
 }
 
 function disableBlock(blockname, disable) {

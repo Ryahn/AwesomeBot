@@ -14,6 +14,7 @@ function doMaintainerSetup() {
     $("#botblocked-body").collapse("show");
     switchProfiles();
     $("#files-body").collapse("show");
+    switchBigmessage();
     $("#bigmessage-body").collapse("show");
     
     $("#loading-modal").modal("hide");
@@ -57,7 +58,12 @@ function switchServers() {
         },
         content: function() {
             i = parseInt(this.id.substring(this.id.indexOf("-")+1, this.id.lastIndexOf("-")));
-            return "<div class=\"input-group\"><input type=\"text\" id=\"" + botData.servers[i][2] + "-msgserver\" class=\"form-control\" placeholder=\"Message in markdown\" onkeydown=\"if(event.keyCode==13){sendMessage('" + botData.servers[i][2] + "', this.value, " + i + ");}\"><span class=\"input-group-addon btn btn-primary\" onclick=\"javascript:sendMessage('" + botData.servers[i][2] + "', document.getElementById('" + botData.servers[i][2] + "-msgserver').value, " + i + ");\"><span class=\"glyphicon glyphicon-send\" aria-hidden=\"true\"></span> Send</span></div><script>document.getElementById(\"" + botData.servers[i][2] + "-msgserver\").parentNode.parentNode.parentNode.style.maxWidth = \"350px\";</script>";
+            var info= "<div class=\"input-group\"><select id=\"serverentry-" + i + "-msg-ch\" class=\"selectpicker\" data-width=\"fit\">";
+            for(var j=0; j<botData.servers[i][4].length; j++) {
+                info += "<option value=\"" + botData.servers[i][4][j][1] + "\">#" + botData.servers[i][4][j][0] + "</option>";
+            }
+            info += "</select><input type=\"text\" id=\"" + botData.servers[i][2] + "-msgserver\" class=\"form-control\" placeholder=\"Message in markdown\" onkeydown=\"if(event.keyCode==13){sendMessage(document.getElementById('serverentry-" + i + "-msg-ch').value, this.value, " + i + ");}\"><span class=\"input-group-addon btn btn-primary\" onclick=\"javascript:sendMessage(document.getElementById('serverentry-" + i + "-msg-ch').value, document.getElementById('" + botData.servers[i][2] + "-msgserver').value, " + i + ");\"><span class=\"glyphicon glyphicon-send\" aria-hidden=\"true\"></span> Send</span></div><script>document.getElementById(\"" + botData.servers[i][2] + "-msgserver\").parentNode.parentNode.parentNode.style.maxWidth = \"500px\";$(\"#serverentry-" + i + "-msg-ch\").selectpicker(\"refresh\")</script>";
+            return info;
         },
         selector: ".servermsg",
         placement: "bottom",
@@ -69,10 +75,10 @@ function switchServers() {
     document.getElementById("addserverlink").href = botData.oauthurl;
 }
 
-function sendMessage(svrid, msg, i) {
+function sendMessage(chid, msg, i) {
     if(msg) {
         $("#serverentry-" + i + "-msg").popover("hide");
-        config("msgserver", [svrid, msg], function() {});
+        config("msgserver", [chid, msg], function() {});
     }
 }
 
@@ -175,6 +181,10 @@ function configProfiles(i) {
     } else {
         config("points", [botData.members[parseInt(document.getElementById("profilesselector").value)][1], document.getElementById("profilesinput").value], function() {});
     }
+}
+
+function switchBigmessage() {
+    document.getElementById("pmforward").checked = botData.pmforward;
 }
 
 function newBigmessage() {

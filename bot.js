@@ -51,6 +51,7 @@ try {
     const googl = require("goo.gl");
     const emoji = require("emoji-dictionary");
     const removeMd = require("remove-markdown");
+    const mathjs = require("mathjs");
     const jokesearch = require("jokesearch");
     const bingTranslate = require("bing-translate").init({
         client_id: AuthDetails.microsoft_client_id,
@@ -68,12 +69,14 @@ try {
     TODO:
      - default extensions for throw, slash, rip, etc
      - automatic RSS posting option
-     - data migration for RSS posting
-     - maintainer message channel option
-     - maintainer PM reroute option
-     - giveaways command
-     - improved lottery
+     - steam command
+     - imdb command
+     - enable/disable commands per-channel
+     - Amazon command
+     - XKCD command
+     - duckduckgo command
      - awesome self host builder
+     - music: youtube, playlists
      - extension builder in admin console
      - public extension gallery
      - interface for gallery outside of admin console
@@ -107,8 +110,9 @@ var cools = {};
 var cooldowns = {};
 var filterviolations = {};
 
-// Stuff for ongoing polls, trivia games, reminders, and admin console sessions
+// Stuff for ongoing polls, giveaways, trivia games, reminders, and admin console sessions
 var polls = {};
+var giveaways = {};
 var trivia = {};
 var adminconsole = {};
 var admintime = {};
@@ -151,7 +155,7 @@ app.get("/data", function(req, res) {
         } else if(req.query.type=="members" && req.query.svrid) {
             var svr = bot.servers.get("id", req.query.svrid);
             if(svr) {
-                if(configs.servers[svr.id].showpub) {
+                if(configs.servers[svr.id].showsvr && configs.servers[svr.id].showpub) {
                     data.stream = [];
                     for(var i=0; i<svr.members.length; i++) {
                         if(svr.members[i].username && svr.members[i].id && svr.members[i].id!=bot.user.id) {
@@ -197,7 +201,7 @@ app.get("/data", function(req, res) {
     } else if(req.query.section=="stats" && req.query.type && req.query.svrid) {
         var svr = bot.servers.get("id", req.query.svrid);
         if(svr) {
-            if(configs.servers[svr.id].showpub) {
+            if(configs.servers[svr.id].showsvr && configs.servers[svr.id].showpub) {
                 if(req.query.type=="profile" && req.query.usrid) {
                     var usr = svr.members.get("id", req.query.usrid);
                     if(usr) {
@@ -213,7 +217,7 @@ app.get("/data", function(req, res) {
     } else if(req.query.section=="servers" && ["svrnm", "messages", "members"].indexOf(req.query.sort)>-1) {
         data.stream = [];
         for(var i=0; i<bot.servers.length; i++) {
-            if(configs.servers[bot.servers[i].id].showpub) {
+            if(configs.servers[svr.id].showsvr) {
                 var icon = bot.servers[i].iconURL || "http://i.imgur.com/fU70HJK.png";
                 var name = bot.servers[i].name;
                 var owner = bot.servers[i].owner.username;
@@ -221,7 +225,7 @@ app.get("/data", function(req, res) {
                 var total = bot.servers[i].members.length;
                 var online = bot.servers[i].members.getAll("status", "online").length;
                 var idle = bot.servers[i].members.getAll("status", "idle").length;
-                var listing = configs.servers[bot.servers[i].id].listing;
+                var listing = configs.servers[bot.servers[i].id].listing.enabled ? configs.servers[bot.servers[i].id].listing : {enabled: false};
                 data.stream.push([icon, name, owner, ms, total + " total, " + online + " online, " + idle + " idle", listing]);
             }
         }
@@ -256,7 +260,16 @@ app.get("/data", function(req, res) {
             
             var servers = [];
             for(var i=0; i<bot.servers.length; i++) {
-                servers.push([bot.servers[i].iconURL || "http://i.imgur.com/fU70HJK.png", bot.servers[i].name, bot.servers[i].id, "@" + bot.servers[i].owner.username]);
+                var channels = [];
+                for(var j=0; j<bot.servers[i].channels.length; j++) {
+                    if(!(bot.servers[i].channels[j] instanceof Discord.VoiceChannel)) {
+                        channels.push([bot.servers[i].channels[j].name, bot.servers[i].channels[j].id, bot.servers[i].channels[j].position]);
+                    }
+                }
+                channels.sort(function(a, b) {
+                    return a[2] - b[2];
+                });
+                servers.push([bot.servers[i].iconURL || "http://i.imgur.com/fU70HJK.png", bot.servers[i].name, bot.servers[i].id, "@" + bot.servers[i].owner.username, channels]);
             }
             servers.sort(function(a, b) {
                 a = a[1].toUpperCase();
@@ -291,6 +304,7 @@ app.get("/data", function(req, res) {
             
             data = {
                 maintainer: bot.users.get("id", configs.maintainer) ? bot.users.get("id", configs.maintainer).username : null,
+                pmforward: configs.pmforward,
                 commandusage: totalCommandUsage(),
                 statsage: prettyDate(new Date(stats.timestamp)),
                 username: bot.user.username,
@@ -381,8 +395,15 @@ app.get("/data", function(req, res) {
                         currentConfig[key] = [];
                         for(var i=0; i<configs.servers[svr.id][key].list.length; i++) {
                             var usr = svr.members.get("id", configs.servers[svr.id][key].list[i]);
+                            var channels = "";
+                            for(var j=0; j<configs.servers[svr.id][key].channels[i].length; j++) {
+                                var ch = svr.channels.get("id", configs.servers[svr.id][key].channels[i][j]);
+                                if(ch) {
+                                    channels += (channels.length==0 ? "" : ", ") + "#" + ch.name;
+                                }
+                            }
                             if(usr && configs.botblocked.indexOf(usr.id)==-1) {
-                                currentConfig[key].push([usr.avatarURL || "http://i.imgur.com/fU70HJK.png", usr.username + (usr.bot ? " [BOT]" : ""), usr.id, configs.servers[svr.id][key].langs[i]]);
+                                currentConfig[key].push([usr.avatarURL || "http://i.imgur.com/fU70HJK.png", usr.username + (usr.bot ? " [BOT]" : ""), usr.id, configs.servers[svr.id][key].langs[i], channels]);
                             }
                         }
                         currentConfig[key].sort(function(a, b) {
@@ -438,7 +459,7 @@ app.get("/data", function(req, res) {
                     var usr = svr.members.get("id", usrid);
                     var ch = svr.channels.get("id", polls[usrid].channel);
                     if(polls[usrid].open && usr && ch) {
-                        closepolls.push([usrid, "\"" + polls[usrid].title + "\" in #" + ch.name + " by @" + (usr.username + (usr.bot ? " [BOT]" : "")) + " with " + polls[usrid].responses.length + " response" + (polls[usrid].responses.length==1 ? "" : "s") + ", started " + secondsToString((new Date().getTime() - polls[usrid].timestamp)/1000) + "ago"]);
+                        closepolls.push([usrid, "\"" + polls[usrid].title + "\" in #" + ch.name + " by @" + usr.username + " with " + polls[usrid].responses.length + " response" + (polls[usrid].responses.length==1 ? "" : "s") + ", started " + secondsToString((new Date().getTime() - polls[usrid].timestamp)/1000) + "ago"]);
                     }
                 }
                 
@@ -446,7 +467,16 @@ app.get("/data", function(req, res) {
                 for(var chid in trivia) {
                     ch = svr.channels.get("id", chid);
                     if(ch) {
-                        endtrivia.push([chid, "Game in #" + ch.name + " with " + (trivia[chid].tset || "default") + " set and current score " + trivia[chid].score + " out of " + trivia[chid].possible==1 ? trivia[chid].possible : (trivia[chid].possible-1)]);
+                        endtrivia.push([chid, "Game in #" + ch.name + " with " + (trivia[chid].tset || "default") + " set and current score " + trivia[chid].score + " out of " + (trivia[chid].possible==1 ? trivia[chid].possible : (trivia[chid].possible-1))]);
+                    }
+                }
+
+                var endgiveaways = [];
+                for(var usrid in giveaways) {
+                    var usr = svr.members.get("id", usrid);
+                    var ch = svr.channels.get("id", polls[usrid].channel);
+                    if(usr && ch) {
+                        endgiveaways.push([usrid, "<code>" + giveaways[usrid].name + "</code> started by @" + usr.username + " with " + giveaways[usrid].enrolled.length + " member" + (giveaways[usrid].enrolled.length==1 ? "" : "s") + " enrolled"]);
                     }
                 }
                 
@@ -463,7 +493,8 @@ app.get("/data", function(req, res) {
                     configs: currentConfig,
                     strikes: strikeList,
                     polls: closepolls,
-                    trivia: endtrivia
+                    trivia: endtrivia,
+                    giveaways: endgiveaways
                 };
             } else {
                 data = {};
@@ -610,8 +641,16 @@ var commands = {
             if(["bug", "suggestion", "feature", "issue"].indexOf(suffix.toLowerCase())>-1) {
                 bot.sendMessage(msg.channel, "Please file your " + suffix.toLowerCase() + " here: https://github.com/BitQuote/AwesomeBot/issues/new");
             } else {
-                bot.sendMessage(msg.channel, "Use `" + getPrefix(msg.channel.server) + "help` to list commands. Created by **@BitQuote**. Built on NodeJS with DiscordJS. Go to https://git.io/vaa2F to learn more.\n\n*This project is in no way affiliated with Alphabet, Inc., who does not own or endorse this product.*");
+                bot.sendMessage(msg.channel, "Use `" + getPrefix(msg.channel.server) + "help` to list commands. Created by **@BitQuote**. Built on NodeJS with DiscordJS. Go to http://awesomebot.xyz to learn more.\n\n*This project is in no way affiliated with Alphabet, Inc., who does not own or endorse this product.*");
             }
+        }
+    },
+    // Gets info for this server
+    "info": {
+        process: function(bot, msg) {
+            bot.sendMessage(msg.channel, "__" + msg.channel.server.name + "__\n**ID:** " + msg.channel.server.id + "\n**Owner:** @" + getName(msg.channel.server, msg.channel.server.owner) + "\n**Members:** " + msg.channel.server.members.length + "\n**Icon:** " + (msg.channel.server.iconURL || "None"), function() {
+                bot.sendMessage(msg.channel, "**Command Prefix:** " + (configs.servers[msg.channel.server.id].cmdtag=="tag" ? ("@" + (msg.channel.server.detailsOfUser(bot.user).nick || bot.user.username)) : configs.servers[msg.channel.server.id].cmdtag) + "\n**Messages:** " + messages[msg.channel.server.id] + (configs.servers[msg.channel.server.id].listing.enabled ? ("\n**Invite:** " + configs.servers[msg.channel.server.id].listing.invite + "\n**Description:** " + removeMd(configs.servers[msg.channel.server.id].listing.description)) : ""));
+            });
         }
     },
     // Shows top 5 games and active members
@@ -677,6 +716,22 @@ var commands = {
             });
         }
     },
+    // Performs a calculation
+    "calc": {
+        usage: "<expression>",
+        process: function(bot, msg, suffix) {
+            if(suffix) {
+                try {
+                    bot.sendMessage(msg.channel, "```" + mathjs.eval(suffix) + "```");
+                } catch(err) {
+                    bot.sendMessage(msg.channel, "```" + err + "```");
+                }
+            } else {
+                logMsg(new Date().getTime(), "WARN", msg.channel.server.id, msg.channel.id, "Calc expresison not provided");
+                bot.sendMessage(msg.channel, ":rolling_eyes:");
+            }
+        }
+    },
     // Finds the time in a city
     "time": {
         usage: "<city>",
@@ -714,9 +769,13 @@ var commands = {
             if(!suffix || (!emoji.getName(suffix) && emoji.names.indexOf(suffix.toLowerCase())==-1)) {
                 bot.sendFile(msg.channel, "http://emoji.fileformat.info/gemoji/tired_face.png");
             } else if(emoji.names.indexOf(suffix.toLowerCase())>-1) {
-                bot.sendFile(msg.channel, "http://emoji.fileformat.info/gemoji/" + suffix.toLowerCase() + ".png");
+                bot.sendFile(msg.channel, "http://emoji.fileformat.info/gemoji/" + suffix.toLowerCase() + ".png", function(err) {
+                    bot.sendFile(msg.channel, "http://emoji.fileformat.info/gemoji/tired_face.png");
+                });
             } else {
-                bot.sendFile(msg.channel, "http://emoji.fileformat.info/gemoji/" + emoji.getName(suffix) + ".png");
+                bot.sendFile(msg.channel, "http://emoji.fileformat.info/gemoji/" + emoji.getName(suffix) + ".png", function(err) {
+                    bot.sendFile(msg.channel, "http://emoji.fileformat.info/gemoji/tired_face.png");
+                });
             }
         }
     },
@@ -1002,11 +1061,10 @@ var commands = {
                 var query = suffix.substring(0, suffix.lastIndexOf(" "));
                 var count = parseInt(suffix.substring(suffix.lastIndexOf(" ")+1));
 
-                if(query=="" || !query || isNaN(count)) {
+                if(!query) {
                     query = suffix;
-                    count = configs.servers[msg.channel.server.id].defaultcount;
                 }
-                if(count<0 || count>configs.servers[msg.channel.server.id].maxcount) {
+                if(!count || isNaN(count) || count<0 || count>configs.servers[msg.channel.server.id].maxcount) {
                     count = configs.servers[msg.channel.server.id].defaultcount;
                 }
                 unirest.get("https://kgsearch.googleapis.com/v1/entities:search?query=" + encodeURI(query.replace(/&/g, '')) + "&key=" + (configs.servers[msg.channel.server.id].customkeys.google_api_key || AuthDetails.google_api_key) + "&limit=1&indent=True")
@@ -1049,6 +1107,18 @@ var commands = {
             } else {
                 logMsg(new Date().getTime(), "WARN", msg.channel.server.id, msg.channel.id, "No search parameters");
                 bot.sendMessage(msg.channel, msg.author + " ???");
+            }
+        }
+    },
+    // Gets TV and movie data from IMDB
+    "imdb": {
+        usage: "<TV show or movie>",
+        process: function(bot, msg, suffix) {
+            if(suffix) {
+                
+            } else {
+                logMsg(new Date().getTime(), "WARN", msg.channel.server.id, msg.channel.id, "No IMDB parameters");
+                bot.sendMessage(msg.channel, msg.author + " U WOT M8");
             }
         }
     },
@@ -1268,7 +1338,7 @@ var commands = {
             }
             giSearch(suffix, num, msg.channel.server.id, msg.channel.id, function(img) {
                 if(img==false) {
-                    bot.sendMessage(msg.channel, "Looks like we've hit the Google Image Search API rate limit, folks! Sorry about that.");
+                    bot.sendMessage(msg.channel, "Looks like we've hit the daily Google Image Search API rate limit, folks! Sorry about that.");
                 } else if(img==null) {
                     bot.sendMessage(msg.channel, "Couldn't find anything, sorry");
                 } else {
@@ -1485,14 +1555,14 @@ var commands = {
     "convert": {
         usage: "<no.> <unit> to <unit>",
         process: function(bot, msg, suffix) {
-            var toi = suffix.lastIndexOf(" to ");
+            var toi = suffix.toLowerCase().lastIndexOf(" to ");
             if(toi==-1) {
                 logMsg(new Date().getTime(), "WARN", msg.channel.server.id, msg.channel.id, "User used incorrect conversion syntax");
                 bot.sendMessage(msg.channel, msg.author + " Sorry, I didn't get that. Make sure you're using the right syntax: `" + getPrefix(msg.channel.server) + "<no.> <unit> to <unit>`");
             } else {
                 try {
                     var num = suffix.substring(0, suffix.indexOf(" "));
-                    var unit = suffix.substring(suffix.indexOf(" ")+1, suffix.lastIndexOf(" to ")).toLowerCase();
+                    var unit = suffix.substring(suffix.indexOf(" ")+1, suffix.toLowerCase().lastIndexOf(" to ")).toLowerCase();
                     var end = suffix.substring(suffix.lastIndexOf(" ")+1).toLowerCase();
                     
                     if(isNaN(num)) {
@@ -1573,7 +1643,7 @@ var commands = {
             
             if(!location) {
                 logMsg(new Date().getTime(), "WARN", msg.channel.server.id, msg.channel.id, "Weather location not provided");
-                bot.sendMessage(msg.channel, msg.author + " I don't have a default location set for you. PM me `profile location,<your city>` to set one.");
+                bot.sendMessage(msg.channel, msg.author + " I don't have a default location set for you. PM me `profile location|<your city>` to set one.");
                 return;
             }
             
@@ -1736,7 +1806,13 @@ var commands = {
                     break;
                 default:
                     if(triviaOn) {
-                        if(suffix.toLowerCase()==trivia[msg.channel.id].answer.toLowerCase() && triviaOn) {
+                        var compare = function() {
+                            if(trivia[msg.channel.id].answer.toLowerCase().trim().length<5 || !isNaN(trivia[msg.channel.id].answer.toLowerCase().trim())) {
+                                return suffix.toLowerCase()==trivia[msg.channel.id].answer.toLowerCase().trim();
+                            }
+                            return levenshtein.get(suffix.toLowerCase(), trivia[msg.channel.id].answer.toLowerCase().trim())<3;
+                        }
+                        if(compare() && triviaOn) {
                             logMsg(new Date().getTime(), "INFO", msg.channel.server.id, msg.channel.id, "Correct trivia game answer by " + msg.author.username);
                             
                             // Award AwesomePoints to author
@@ -1755,14 +1831,15 @@ var commands = {
                             // Move on to next question
                             if(trivia[msg.channel.id].attempts<=2) {
                                 trivia[msg.channel.id].score++;
+                                if(!trivia[msg.channel.id].responders[msg.author.id]) {
+                                    trivia[msg.channel.id].responders[msg.author.id] = 0;
+                                }
+                                trivia[msg.channel.id].responders[msg.author.id]++;
                             }
                             trivia[msg.channel.id].attempts = 0;
 
                             var info = msg.author + " got it right! The answer is " + trivia[msg.channel.id].answer;
-                            if(!trivia[msg.channel.id].responders[msg.author.id]) {
-                                trivia[msg.channel.id].responders[msg.author.id] = 0;
-                            }
-                            trivia[msg.channel.id].responders[msg.author.id]++;
+                            
                             var q = triviaQ(msg.channel, trivia[msg.channel.id].set);
                             if(q) {
                                 info += "\n**Next Question:** " + q;
@@ -1861,7 +1938,7 @@ var commands = {
                     site = suffix;
                     count = configs.servers[msg.channel.server.id].defaultcount;
                 }
-                getRSS(msg.channel.server.id, site, (count<1 || count>configs.servers[msg.channel.server.id].maxcount) ? 5 : count, function(err, articles) {
+                getRSS(msg.channel.server.id, site, (count<1 || count>configs.servers[msg.channel.server.id].maxcount) ? configs.servers[msg.channel.server.id].defaultcount : count, function(err, articles) {
                     if(err) {
                         logMsg(new Date().getTime(), "WARN", msg.channel.server.id, msg.channel.id, "Feed " + site + " not found");
                         bot.sendMessage(msg.channel, msg.author + " Feed not found.");
@@ -1930,6 +2007,46 @@ var commands = {
             }
         }
     },
+    // Enrolls in a giveaway
+    "giveaway": {
+        usage: "<name of giveaway>",
+        process: function(bot, msg, suffix) {
+            var g = getGiveaway(suffix);
+            if(g) {
+                if(g==msg.author.id) {
+                    logMsg(new Date().getTime(), "INFO", msg.channel.server.id, msg.channel.id, msg.author.username + " tried to enroll in own giveaway " + giveaways[g].name);
+                    bot.sendMessage(msg.channel, "Hey, you're the one who created that giveaway!");
+                    return;
+                }
+                if(giveaways[g].enrolled.indexOf(msg.author.id)>-1) {
+                    giveaways[g].enrolled.splice(giveaways[g].enrolled.indexOf(msg.author.id), 1);
+                    logMsg(new Date().getTime(), "INFO", msg.channel.server.id, msg.channel.id, "Disenrolled " + msg.author.id + " in giveaway " + giveaways[g].name);
+                    bot.sendMessage(msg.channel, msg.author + " I disenrolled you");
+                } else {
+                    giveaways[g].enrolled.push(msg.author.id);
+                    logMsg(new Date().getTime(), "INFO", msg.channel.server.id, msg.channel.id, "Enrolled " + msg.author.id + " in giveaway " + giveaways[g].name);
+                    bot.sendMessage(msg.channel, "Ok " + msg.author + " you've been entered to win!");
+                }
+            } else if(msg.content.indexOf(suffix)>-1) {
+                var info = "Select one of the following:";
+                var results = [];
+                var count = 0;
+                for(var usrid in giveaways) {
+                    if(giveaways[usrid].channel==msg.channel.id) {
+                        info += "\n\t" + count + ") " + giveaways[usrid].name;
+                        results.push(giveaways[usrid].name);
+                        count++;
+                    }
+                }
+                if(count>0) {
+                    bot.sendMessage(msg.channel, info);
+                    selectMenu(msg.channel, function(i) {
+                        commands.giveaway.process(bot, msg, results[i]);
+                    }, count-1);
+                }
+            }
+        }
+    },
     // Votes on an active poll in public
     "vote": {
         usage: " [<no. of choice>]",
@@ -1947,9 +2064,7 @@ var commands = {
                 } else {
                     var vt = suffix;
                     if(isNaN(vt)) {
-                        logMsg(new Date().getTime(), "WARN", msg.channel.server.id, msg.channel.id, msg.author.username + " used incorrect poll voting syntax");
-                        bot.sendMessage(msg.channel, msg.author + " Use the syntax `" + getPrefix(msg.channel.server) + "vote <no. of choice>`");
-                        return;
+                        vt = polls[act].options.join().toLowerCase().split(",").indexOf(vt.toLowerCase());
                     }
                     if(polls[act].responderIDs.indexOf(msg.author.id)==-1 && vt<polls[act].options.length && vt>=0) {
                         polls[act].responses.push(vt);
@@ -2067,17 +2182,24 @@ var commands = {
                         }
                     } else {
                         if(configs.servers[msg.channel.server.id].customroles[1].length>0 || configs.servers[msg.channel.server.id].customroles[2]) {
-                            info = "The following roles are available:";
+                            info = "Select one of the following:";
+                            var availableRoles = [];
                             for(var i=0; i<configs.servers[msg.channel.server.id].customroles[1].length; i++) {
                                 var role = msg.channel.server.roles.get("id", configs.servers[msg.channel.server.id].customroles[1][i]);
                                 if(role) {
-                                    info += "\n\t" + role.name;
+                                    info += "\n\t" + availableRoles.length + ") " + role.name;
+                                    availableRoles.push(role.name);
                                 }
                             }
                             if(configs.servers[msg.channel.server.id].customroles[2]) {
-                                info += "\n\t" + "*Custom roles*";
+                                info += "\n\t " + "*Custom roles*";
                             }
                             bot.sendMessage(msg.channel, info);
+                            if(availableRoles.length>0) {
+                                selectMenu(msg.channel, function(i) {
+                                    commands.profile.process(bot, msg, "role " + availableRoles[i]);
+                                }, availableRoles.length-1);
+                            }
                         } else {
                             bot.sendMessage(msg.channel, "Setting roles is disabled in this server, sorry.");
                         }
@@ -2300,11 +2422,12 @@ var commands = {
                         points: 0
                     }
                 }
-                if(profileData[msg.author.id].points>=500) {
-                    profileData[msg.author.id].points -= 500;
+                var cost = pointsball<500 ? Math.ceil(pointsball/10) : Math.ceil(pointsball/20)
+                if(profileData[msg.author.id].points>=cost) {
+                    profileData[msg.author.id].points -= cost;
                     lottery[msg.channel.server.id].members.push(msg.author.id);
                     logMsg(new Date().getTime(), "INFO", msg.channel.server.id, msg.channel.id, msg.author.username + " bought a lottery ticket");
-                    bot.sendMessage(msg.channel, msg.author + " Thanks for buying a PointsBall ticket. That cost you 500 points. The lottery will end in " + secondsToString((lottery[msg.channel.server.id].timestamp + 3600000 - new Date().getTime())/1000));
+                    bot.sendMessage(msg.channel, msg.author + " Thanks for buying a PointsBall ticket. That cost you " + cost + " points. The lottery will end in " + secondsToString((lottery[msg.channel.server.id].timestamp + 3600000 - new Date().getTime())/1000));
                     saveData("./data/profiles.json", function(err) {
                         if(err) {
                             logMsg(new Date().getTime(), "ERROR", "General", null, "Failed to save profile data for " + msg.author.username);
@@ -2356,7 +2479,7 @@ var commands = {
             if(!suffix) {
                 var info = "";
                 for(var i=configs.servers[msg.channel.server.id].rankslist.length-1; i>=0; i--) {
-                    var membersWithRank = getMembersWithRank(configs.servers[msg.channel.server.id].rankslist[i]);
+                    var membersWithRank = getMembersWithRank(msg.channel.server, configs.servers[msg.channel.server.id].rankslist[i]);
                     if(membersWithRank.length>0) {
                         membersWithRank.sort(function(a, b) {
                             b = a[0].toUpperCase();
@@ -2405,8 +2528,15 @@ var commands = {
                         return;
                     }
                 }
-                logMsg(new Date().getTime(), "WARN", msg.channel.server.id, msg.channel.id, "Requested member or rank does not exist");
-                bot.sendMessage(msg.channel, "That user or rank doesn't exist :confused:");
+
+                var rankOptions = [];
+                for(var i=0; i<configs.servers[msg.channel.server.id].rankslist.length; i++) {
+                    rankOptions.push(i + ") " + configs.servers[msg.channel.server.id].rankslist[i].name);
+                }
+                bot.sendMessage(msg.channel, "Select one of the following:\n\t" + rankOptions.join("\n\t"));
+                selectMenu(msg.channel, function(i) {
+                    commands.ranks.process(bot, msg, rankOptions[i].substring(rankOptions[i].indexOf(")")+2));
+                }, rankOptions.length-1);
             }
         }
     },
@@ -2498,10 +2628,9 @@ var pmcommands = {
             
             // Admin control panel, check to make sure the config command was valid
             if(suffix) {
-                var svr = bot.servers.get("name", msg.content.substring(msg.content.indexOf(" ")+1));
+                var svr = serverSearch(suffix, msg.author);
                 // Check if specified server exists
                 if(!svr) {
-                    logMsg(new Date().getTime(), "WARN", null, msg.author.id, "User provided invalid server for admin console");
                     bot.sendMessage(msg.channel, "Sorry, invalid server. Try again?");
                 // Check if sender is an admin of the specified server
                 } else if(configs.servers[svr.id].admins.indexOf(msg.author.id)>-1) {
@@ -2585,17 +2714,17 @@ var pmcommands = {
     },
     // Modify the value for a key in a user's profile
     "profile": {
-        usage: "<key>,<value or \".\">",
+        usage: "<key>|<value or \".\">",
         process: function(bot, msg, suffix) {
             if(suffix) {
-                if(msg.content.indexOf(",")==-1) {
+                if(msg.content.indexOf("|")==-1) {
                     logMsg(new Date().getTime(), "WARN", null, msg.author.id, "User did not specify parameters for profile data");
                     bot.sendMessage(msg.channel, "Please include the name of the value as well as the value itself, separated by a comma.");
                     return;
                 }
-                var key = msg.content.substring(8, msg.content.indexOf(",")).trim();
-                var value = msg.content.substring(msg.content.indexOf(",")+1).trim();
-                if(["id", "status", "points", "afk", "past names"].indexOf(key.toLowerCase())>-1) {
+                var key = msg.content.substring(8, msg.content.indexOf("|")).trim();
+                var value = msg.content.substring(msg.content.indexOf("|")+1).trim();
+                if(["id", "status", "points", "afk", "past names", "svrnicks"].indexOf(key.toLowerCase())>-1) {
                     logMsg(new Date().getTime(), "WARN", null, msg.author.id, "User tried to assign default profile value");
                     bot.sendMessage(msg.channel, "You can't change the value for " + key);
                     return;
@@ -2615,7 +2744,7 @@ var pmcommands = {
                             points: 0
                         };
                     }
-                    info = "Alright, got it! PM me `profile " + key + ",.` to delete that.";
+                    info = "Alright, got it! PM me `profile " + key + "|.` to delete that.";
                     profileData[msg.author.id][key] = value;
                 }
                 saveData("./data/profiles.json", function(err) {
@@ -2642,10 +2771,9 @@ var pmcommands = {
                 var svr;
                 do {
                     svrnm = svrnm.substring(0, svrnm.lastIndexOf(" "));
-                    svr = bot.servers.get("name", svrnm);
+                    svr = serverSearch(svrnm, msg.author);
                 } while(!svr && svrnm.length>0);
                 if(!svr) {
-                    logMsg(new Date().getTime(), "WARN", null, msg.author.id, "User provided invalid server for discreet say");
                     bot.sendMessage(msg.channel, "Huh, that's not a server I know of.");
                     return;
                 }
@@ -2677,6 +2805,155 @@ var pmcommands = {
             }
         }
     },
+    // Start a giveaway
+    "giveaway": {
+        usage: "<server> <channel> <name of giveaway>|<secret>[|<giveaway duration>]",
+        process: function(bot, msg, suffix) {
+            if(suffix) {
+                if(suffix.toLowerCase()=="close") {
+                    if(giveaways[msg.author.id]) {
+                        endGiveaway(msg.author);
+                    } else {
+                        logMsg(new Date().getTime(), "WARN", null, msg.author.id, "User tried to close nonexistent giveaway");
+                        bot.sendMessage(msg.channel, "You haven't started a giveaway yet. Use `giveaway <server> <channel> <name of giveaway>|<secret>`");
+                    }
+                    return;
+                }
+                if(giveaways[msg.author.id]) {
+                    logMsg(new Date().getTime(), "WARN", null, msg.author.id, "User already has a giveaway open and cannot start new one");
+                    bot.sendMessage(msg.channel, "You already have a giveaway open. Use `giveaway close` to end it.");
+                    return;
+                }
+                var svrnm = msg.content.substring(msg.content.indexOf(" ")+1);
+                var svr;
+                do {
+                    svrnm = svrnm.substring(0, svrnm.lastIndexOf(" "));
+                    svr = serverSearch(svrnm, msg.author);
+                } while(!svr && svrnm.length>0);
+                if(!svr) {
+                    bot.sendMessage(msg.channel, "Huh, that's not a server I know of.");
+                    return;
+                }
+                if(!configs.servers[svr.id].giveaway) {
+                    bot.sendMessage(msg.channel, "Giveaways aren't allowed on " + svr.name + ". They encourage hoarding over there, I guess.");
+                    return;
+                }
+                if(configs.servers[svr.id].admincommands.indexOf("giveaway")>-1 && configs.servers[svr.id].admins.indexOf(msg.author.id)==-1) {
+                    logMsg(new Date().getTime(), "WARN", null, msg.author.id, "Cannot start giveaway because user is not a bot admin in " + svr.name);
+                    bot.sendMessage(msg.channel, "You're not an admin in that server :P");
+                    return;
+                }
+                var chnm = suffix.substring(svrnm.length+1);
+                chnm = chnm.substring(0, chnm.indexOf(" "));
+                var ch = svr.channels.get("name", chnm);
+                if(!ch) {
+                    logMsg(new Date().getTime(), "WARN", null, msg.author.id, "User provided invalid channel for giveaway");
+                    bot.sendMessage(msg.channel, "There's no such channel on " + svr.name);
+                    return;
+                }
+                var suffix = suffix.substring(svrnm.length+1);
+                suffix = suffix.substring(suffix.indexOf(" "));
+                if([2, 3].indexOf(suffix.split("|").length)>-1) {
+                    var time = {
+                        num: 1,
+                        time: "hour",
+                        countdown: 3600000
+                    };
+                    if(suffix.split("|")[2]) {
+                        time = parseTime(suffix.split("|")[2]);
+                        if(!time) {
+                            logMsg(new Date().getTime(), "WARN", null, msg.author.id, "User provided invalid giveaway time");
+                            bot.sendMessage(msg.channel, "For the giveaway duration, use the syntax `<no.> <h, m, or s>`");   
+                            return;
+                        } else if(time.countdown>14400000) {
+                            logMsg(new Date().getTime(), "WARN", null, msg.author.id, "User provided excessively large giveaway time");
+                            bot.sendMessage(msg.channel, "It's probably not a good idea to make the giveaway last more than 4 hours...");   
+                            return;
+                        }
+                    }
+
+                    if(!suffix.split("|")[0] || !suffix.split("|")[1]) {
+                        logMsg(new Date().getTime(), "WARN", null, msg.author.id, "User did not provide giveaway name and/or secret");    
+                        bot.sendMessage(msg.channel, "I need a name and secret as well, separated by `|`.");
+                        return;
+                    }
+                    if(getGiveaway(suffix.split("|")[0].trim())) {
+                        logMsg(new Date().getTime(), "WARN", null, msg.author.id, "User tried to overwrite existing giveaway");    
+                        bot.sendMessage(msg.channel, "A giveaway with that name already exists on the server; pick a different name.");
+                        return;
+                    }
+                    
+                    logMsg(new Date().getTime(), "INFO", null, msg.author.id, "Started giveaway " + suffix.split("|")[0].trim() + " for " + time.num + " " + time.time);
+                    giveaways[msg.author.id] = {
+                        name: suffix.split("|")[0].trim(),
+                        secret: suffix.split("|")[1],
+                        channel: ch.id,
+                        enrolled: []
+                    };
+                    bot.sendMessage(msg.author, "Gotcha, giveaway started in #" + ch.name + " of " + svr.name);
+                    bot.sendMessage(ch, "**" + msg.author + " has started a giveaway: " + suffix.split("|")[0].trim()+ ".** Use `" + getPrefix(svr) + "giveaway " + suffix.split("|")[0].trim() + "` for a chance to win!");
+
+                    setTimeout(function() {
+                        endGiveaway(msg.author);
+                    }, time.countdown);
+                } else {
+                    logMsg(new Date().getTime(), "WARN", null, msg.author.id, "User used invalid giveaway syntax");
+                    bot.sendMessage(msg.channel, "Please use `giveaway " + svr.name + " " + ch.name + " <name of giveaway>|<secret>[|<giveaway duration>]");   
+                }
+            } else {
+                logMsg(new Date().getTime(), "WARN", null, msg.author.id, "User did not provide parameters for giveaway command");
+                bot.sendMessage(msg.channel, "Whaaaa...Make sure you read the help section for this command. I need a server, channel, and giveaway parameters.");
+            }
+        }
+    },
+    // Set a shortcut for a server
+    "servernick": {
+        usage: "<nickname>|<server or \".\">",
+        process: function(bot, msg, suffix) {
+            if(suffix && suffix.split("|").length==2 && suffix.split("|")[0] && suffix.split("|")[1]) {
+                if(profileData[msg.author.id] && profileData[msg.author.id].svrnicks && profileData[msg.author.id].svrnicks[suffix.split("|")[0].toLowerCase()]) {
+                    if(suffix.split("|")[1]==".") {
+                        delete profileData[msg.author.id].svrnicks[suffix.split("|")[0].toLowerCase()];
+                        saveData("./data/profiles.json", function(err) {
+                            if(err) {
+                                logMsg(new Date().getTime(), "ERROR", "General", null, "Failed to save profile data for " + msg.author.username);
+                            }
+                        });
+                        logMsg(new Date().getTime(), "INFO", null, msg.author.id, "Deleted shortcut '" + suffix.split("|")[0] + "'");
+                        bot.sendMessage(msg.channel, "Alrighty!");
+                    } else {
+                        logMsg(new Date().getTime(), "WARN", null, msg.author.id, "User tried to overwrite server nick");
+                        bot.sendMessage(msg.channel, "You already have a server set for that shortcut, use `servernick " + suffix.split("|")[0] + "|.` to remove it.");
+                    }
+                    return;
+                }
+                var svr = serverSearch(suffix.split("|")[1], msg.author);
+                if(svr) {
+                    if(!profileData[msg.author.id]) {
+                        profileData[msg.author.id] = {
+                            points: 0
+                        };
+                    }
+                    if(!profileData[msg.author.id].svrnicks) {
+                        profileData[msg.author.id].svrnicks = {};
+                    }
+                    profileData[msg.author.id].svrnicks[suffix.split("|")[0].toLowerCase()] = svr.id;
+                    saveData("./data/profiles.json", function(err) {
+                        if(err) {
+                            logMsg(new Date().getTime(), "ERROR", "General", null, "Failed to save profile data for " + msg.author.username);
+                        }
+                    });
+                    logMsg(new Date().getTime(), "INFO", null, msg.author.id, "Created server nick '" + suffix.split("|")[0] + "' for " + svr.name);
+                    bot.sendMessage(msg.channel, "You will now be able to use `" + suffix.split("|")[0] + "` to access " + svr.name);
+                } else {
+                    bot.sendMessage(msg.channel, "Check ur priv bruh");
+                }
+            } else {
+                logMsg(new Date().getTime(), "WARN", null, msg.author.id, "User provided invalid servernick parameters");
+                bot.sendMessage(msg.channel, "I got nothin for ya bro, make sure you're using the right syntax: `servernick <nickname>|<server or \".\">`");
+            }
+        }
+    },
     // Strawpoll-like poll creation
     "poll": {
         usage: "<server> <channel>",
@@ -2698,9 +2975,8 @@ var pmcommands = {
             }
             // Starts a poll in a given channel via private message
             if(msg.author.id!=bot.user.id && msg.content.toLowerCase().indexOf("poll")==0) {
-                var svr = bot.servers.get("name", msg.content.substring(msg.content.indexOf(" ")+1, msg.content.lastIndexOf(" ")));
+                var svr = serverSearch(msg.content.substring(msg.content.indexOf(" ")+1, msg.content.lastIndexOf(" ")), msg.author);
                 if(!svr || !svr.members.get("id", msg.author.id)) {
-                    logMsg(new Date().getTime(), "WARN", null, msg.author.id, "Invalid server provided for new poll");
                     bot.sendMessage(msg.channel, "That server doesn't exist or I'm not on it.");
                 } else if(configs.servers[svr.id].blocked.indexOf(msg.author.id)==-1) {
                     var ch = svr.channels.get("name", msg.content.substring(msg.content.lastIndexOf(" ")+1));
@@ -2748,9 +3024,8 @@ var pmcommands = {
                 var chnm = suffix.substring(suffix.lastIndexOf(" ")+1);
                 suffix = suffix.substring(0, suffix.lastIndexOf(" "));
                 var svrnm = suffix;
-                var svr = bot.servers.get("name", svrnm);
+                var svr = serverSearch(svrnm, msg.author);
                 if(!svr) {
-                    logMsg(new Date().getTime(), "WARN", null, msg.author.id, "User provided invalid server for PM voting");
                     bot.sendMessage(msg.channel, "I'm not on that server or it doesn't exist");
                     return;
                 }
@@ -2759,35 +3034,51 @@ var pmcommands = {
                     logMsg(new Date().getTime(), "WARN", null, msg.author.id, "Channel does not exist for PM voting");
                     bot.sendMessage(msg.channel, svr.name + " doesn't have that channel. Please try again...");
                     return;
+                } else if(stats[svr.id].botOn[ch.id]) {
+                    var act = activePolls(ch.id);
+                    if(!act) {
+                        logMsg(new Date().getTime(), "WARN", null, msg.author.id, "No active poll on provided server/channel for PM voting");
+                        bot.sendMessage(msg.channel, "There's no poll going on in that channel. Start one by replying `poll " + svr.name + " " + ch.name + "`");
+                        return;
+                    }
+                    
+                    var f = polls[act].responderIDs.indexOf(msg.author.id);
+                    if(vt=="." && f>-1) {
+                        logMsg(new Date().getTime(), "INFO", svr.id, ch.id, msg.author.username + "'s vote removed");
+                        polls[act].responderIDs.splice(f, 1);
+                        polls[act].responses.splice(f, 1);
+                        bot.sendMessage(msg.channel, "OK, I removed your vote in the poll. You can vote again now.");
+                        return;
+                    }
+                    if(isNaN(vt)) {
+                        vt = polls[act].options.join().toLowerCase().split(",").indexOf(vt.toLowerCase());
+                    }
+                    if(f>-1 || vt>=polls[act].options.length || vt<0) {
+                        logMsg(new Date().getTime(), "WARN", null, msg.author.id, "User provided invalid PM vote for poll in " + svr.name + ", " + ch.name);
+                        bot.sendMessage(msg.channel, "I couldn't cast your vote");
+                        return;
+                    }
+                    polls[act].responses.push(vt);
+                    polls[act].responderIDs.push(msg.author.id);
+                    logMsg(new Date().getTime(), "INFO", svr.id, ch.id, "Vote cast for " + vt + " via PM");
+                    bot.sendMessage(msg.channel, "Got it! Your vote was cast anonymously ( ͡° ͜ʖ ͡°)");
                 }
-                var act = activePolls(ch.id);
-                if(!act) {
-                    logMsg(new Date().getTime(), "WARN", null, msg.author.id, "No active poll on provided server/channel for PM voting");
-                    bot.sendMessage(msg.channel, "There's no poll going on in that channel. Start one by replying `poll " + svr.name + " " + ch.name + "`");
-                    return;
-                }
-                
-                var f = polls[act].responderIDs.indexOf(msg.author.id);
-                if(vt=="." && f>-1) {
-                    logMsg(new Date().getTime(), "INFO", svr.id, ch.id, msg.author.username + "'s vote removed");
-                    polls[act].responderIDs.splice(f, 1);
-                    polls[act].responses.splice(f, 1);
-                    bot.sendMessage(msg.channel, "OK, I removed your vote in the poll. You can vote again now.");
-                    return;
-                }
-                if(isNaN(vt) || f>-1 || vt>=polls[act].options.length || vt<0) {
-                    logMsg(new Date().getTime(), "WARN", null, msg.author.id, "User provided invalid PM vote for poll in " + svr.name + ", " + ch.name);
-                    bot.sendMessage(msg.channel, "I couldn't cast your vote");
-                    return;
-                }
-                polls[act].responses.push(vt);
-                polls[act].responderIDs.push(msg.author.id);
-                logMsg(new Date().getTime(), "INFO", svr.id, ch.id, "Vote cast for " + vt + " via PM");
-                bot.sendMessage(msg.channel, "Got it! Your vote was cast anonymously ( ͡° ͜ʖ ͡°)");
             } catch(error) {
                 logMsg(new Date().getTime(), "WARN", null, msg.author.id, "Invalid PM voting syntax provided");
                 bot.sendMessage(msg.channel, "Hmmm, I didn't get that. Make sure to use the syntax `vote <server> <channel> <no. of option>`");
             }
+        }
+    },
+    // Get help with the bot
+    "help": {
+        process: function(bot, msg) {
+            bot.sendMessage(msg.author, "Use `@" + bot.user.username + " help` in the public chat to get help, or head over to the wiki: https://git.io/vwhGe");
+        }
+    },
+    // Gets OAuth URL
+    "join": {
+        process: function(bot, msg) {
+            bot.sendMessage(msg.author, "https://discordapp.com/oauth2/authorize?&client_id=" + AuthDetails.client_id + "&scope=bot&permissions=0");
         }
     },
     // View recent mentions/tags in a server
@@ -2795,9 +3086,8 @@ var pmcommands = {
         usage: "<server>",
         process: function(bot, msg, suffix) {
             if(suffix) {
-                var svr = bot.servers.get("name", msg.content.substring(9));
+                var svr = serverSearch(suffix, msg.author);
                 if(!svr) {
-                    logMsg(new Date().getTime(), "WARN", null, msg.author.id, "Invalid server provided for mentions");
                     bot.sendMessage(msg.channel, "I'm not on that server. Use `@AwesomeBot join` in the main chat to add me.");
                     return;
                 } else if(!svr.members.get("id", msg.author.id)) {
@@ -2837,14 +3127,9 @@ var pmcommands = {
         usage: "[<server>]",
         process: function(bot, msg, suffix) {
             if(suffix) {
-                var svr = bot.servers.get("name", msg.content.substring(11));
+                var svr = serverSearch(suffix, msg.author);
                 if(!svr) {
-                    logMsg(new Date().getTime(), "WARN", null, msg.author.id, "Invalid server provided for PM mentions");
-                    bot.sendMessage(msg.channel, "I'm not on that server...");
-                    return;
-                } else if(!svr.members.get("id", msg.author.id)) {
-                    logMsg(new Date().getTime(), "WARN", null, msg.author.id, "User is not on " + svr.name + ", so mentions cannot be retreived");
-                    bot.sendMessage(msg.channel, "*You're* not on " + svr.name + ". Obviously no one can mention you there!");
+                    bot.sendMessage(msg.channel, "That server isn't available, try a different one.");
                     return;
                 }
                 
@@ -2982,6 +3267,9 @@ bot.on("ready", function() {
             }
         });
     }
+
+    // Start RSS update timer
+    domain.run(rssTimer);
     
     // Start listening for web interface
     try {
@@ -3014,6 +3302,10 @@ bot.on("message", function(msg) {
             if(updateconsole && msg.author.id==configs.maintainer && msg.content=="update") {
                 updateBot(msg);
             }
+
+            if(msg.author.id!=configs.maintainer && configs.pmforward) {
+                bot.sendMessage(bot.users.get("id", configs.maintainer), "**@" + msg.author.username + "** just sent me this PM:```" + msg.cleanContent + "```");
+            }
             
             // Gets poll title from user and asks for poll options
             if(polls[msg.author.id] && polls[msg.author.id].title=="") {
@@ -3025,14 +3317,15 @@ bot.on("message", function(msg) {
                 if(msg.content==".") {
                     polls[msg.author.id].options = ["No", "Yes"];
                 } else {
-                    var start = 0;
-                    for(var i=0; i<msg.content.length; i++) {
-                        if(msg.content.charAt(i)==',') {
-                            polls[msg.author.id].options.push(msg.content.substring(start, i));
-                            start = ++i;
+                    var optionsProvided = msg.content.split(",");
+                    for(var i=0; i<optionsProvided.length; i++) {
+                        if(optionsProvided[i] && optionsProvided.indexOf(optionsProvided[i])==-1) {
+                            polls[msg.author.id].options.push(optionsProvided[i]);
                         }
                     }
-                    polls[msg.author.id].options.push(msg.content.substring(start, msg.content.length));
+                    if(polls[msg.author.id].options.length==0) {
+                        polls[msg.author.id].options.push(msg.content);
+                    }
                 }
                 bot.sendMessage(msg.channel, "OK, got it. You can end the poll by sending me `poll close`.");
                 polls[msg.author.id].open = true;
@@ -3187,7 +3480,7 @@ bot.on("message", function(msg) {
             }
             
             // Translate message from certain users
-            if(configs.servers[msg.channel.server.id].translated.list.indexOf(msg.author.id)>-1) {
+            if(configs.servers[msg.channel.server.id].translated.list.indexOf(msg.author.id)>-1 && configs.servers[msg.channel.server.id].translated.channels[configs.servers[msg.channel.server.id].translated.list.indexOf(msg.author.id)].indexOf(msg.channel.id)>-1) {
                 bingTranslate.translate(msg.cleanContent, configs.servers[msg.channel.server.id].translated.langs[configs.servers[msg.channel.server.id].translated.list.indexOf(msg.author.id)], "EN", function(err, result) {
                     if(err) {
                         logMsg(new Date().getTime(), "ERROR", msg.channel.server.id, msg.channel.id, "Failed to auto-translate '" + msg.cleanContent + "' from " + msg.author.username);
@@ -3485,7 +3778,7 @@ bot.on("message", function(msg) {
             }
             setCooldown(msg.channel);
         // Check for matching tag commands
-        } else if(!suffix && configs.servers[msg.channel.server.id].tags[cmdTxt] && configs.servers[msg.channel.server.id].tagcommands.indexOf(cmdTxt)>-1) {
+        } else if(!msg.channel.isPrivate && !suffix && configs.servers[msg.channel.server.id].tags[cmdTxt] && configs.servers[msg.channel.server.id].tagcommands.indexOf(cmdTxt)>-1) {
             logMsg(new Date().getTime(), "INFO", msg.channel.server.id, msg.channel.id, "Treating '" + msg.cleanContent + "' from " + msg.author.username + " as a tag command");
             bot.sendMessage(msg.channel, configs.servers[msg.channel.server.id].tags[cmdTxt]);
             setCooldown(msg.channel);
@@ -3506,26 +3799,14 @@ bot.on("message", function(msg) {
                 setCooldown(msg.channel);
                 if(prompt.toLowerCase().indexOf("help")==0) {
                     bot.sendMessage(msg.channel, "Use `" + getPrefix(msg.channel.server) + "help` for info about how to use me on this server :smiley:");
-                    bot.stopTyping(msg.channel);
                     return;
                 }
                 if(prompt.toLowerCase().indexOf("join")==0) {
                     bot.sendMessage(msg.channel, "https://discordapp.com/oauth2/authorize?&client_id=" + AuthDetails.client_id + "&scope=bot&permissions=0");
-                    bot.stopTyping(msg.channel);
                     return;
                 }
             } else {
                 prompt = msg.cleanContent;
-                if([0, 1].indexOf(prompt.toLowerCase().indexOf("help"))>-1) {
-                    bot.sendMessage(msg.author, "Use `@" + bot.user.username + " help` in the public chat to get help, or head over to the wiki: https://git.io/vwhGe");
-                    bot.stopTyping(msg.channel);
-                    return;
-                }
-                if([0, 1].indexOf(prompt.toLowerCase().indexOf("join"))>-1) {
-                    bot.sendMessage(msg.channel, "https://discordapp.com/oauth2/authorize?&client_id=" + AuthDetails.client_id + "&scope=bot&permissions=0");
-                    bot.stopTyping(msg.channel);
-                    return;
-                }
             }
             
             if(!bots[msg.author.id]) {
@@ -3546,7 +3827,6 @@ bot.on("message", function(msg) {
                 } else {
                     bot.sendMessage(msg.channel, msg.author + " " + res);
                 }
-                bot.stopTyping(msg.channel);
             });
         // Otherwise, check if it's a self-message or just does the tag reaction
         } else {  
@@ -3599,8 +3879,8 @@ function readyServer(svr) {
 
 function newServer(svr) {
     defaultConfig(svr);
-    adminMsg(false, svr, {username: bot.user.username}, " (me) has been added to " + svr.name + ". You're one of my admins. You can manage me in this server by PMing me `config " + svr.name + "`. Check out https://git.io/vaa2F to learn more.");
-    bot.sendMessage(svr.defaultChannel, "Hi, I'm " + (svr.detailsOfUser(bot.user).nick || bot.user.username) + "! Use `" + getPrefix(svr) + "help` to learn more or check out https://git.io/vaa2F");
+    adminMsg(false, svr, {username: bot.user.username}, " (me) has been added to " + svr.name + ". You're one of my admins. You can manage me in this server by PMing me `config " + svr.name + "`. Check out http://awesomebot.xyz to learn more.");
+    bot.sendMessage(svr.defaultChannel, "Hi, I'm " + (svr.detailsOfUser(bot.user).nick || bot.user.username) + "! Use `" + getPrefix(svr) + "help` to learn more or check out http://awesomebot.xyz");
     postData();
 }
 
@@ -3817,6 +4097,19 @@ function checkRank(usr, svr) {
                                 bot.sendMessage(usr, "Congratulations, you've leveled up to **" + stats[svr.id].members[usr.id].rank + "** on " + svr.name + ".");
                             }
                         }
+                        if(configs.servers[svr.id].points) {
+                            if(!profileData[usr.id]) {
+                                profileData[usr.id] = {
+                                    points: 0
+                                }
+                            }
+                            profileData[usr.id].points += 100;
+                            saveData("./data/profiles.json", function(err) {
+                                if(err) {
+                                    logMsg(new Date().getTime(), "ERROR", "General", null, "Failed to save profile data for " + usr.username);
+                                }
+                            });
+                        }
                         if(configs.servers[svr.id].rankslist[i].role && svr.roles.get("id", configs.servers[svr.id].rankslist[i].role)) {
                             bot.addMemberToRole(usr, svr.roles.get("id", configs.servers[svr.id].rankslist[i].role), function(err) {
                                 if(err) {
@@ -3872,6 +4165,23 @@ function serverMemberRemovedHandler(svr, usr) {
     if(configs.servers[svr.id].servermod && configs.servers[svr.id].rmmembermsg[0] && stats[svr.id].botOn[svr.defaultChannel.id]) {
         logMsg(new Date().getTime(), "INFO", svr.id, null, "Member removed: " + usr.username);
         bot.sendMessage(svr.channels.get("id", configs.servers[svr.id].rmmembermsg[2]), configs.servers[svr.id].rmmembermsg[1][getRandomInt(0, configs.servers[svr.id].rmmembermsg[1].length-1)].replaceAll("++", "**@" + getName(svr, usr) + "**"));
+    }
+
+    var changed = false;
+    if(profileData[usr.id] && profileData[usr.id].svrnicks) {
+        for(var nick in profileData[usr.id].svrnicks) {
+            if(profileData[usr.id].svrnicks[nick]==svr.id) {
+                changed = true;
+                delete profileData[usr.id].svrnicks[nick];
+            }
+        }
+    }
+    if(changed) {
+        saveData("./data/profiles.json", function(err) {
+            if(err) {
+                logMsg(new Date().getTime(), "ERROR", "General", null, "Failed to save profile data for " + usr.username);
+            }
+        });
     }
 };
 
@@ -4014,6 +4324,7 @@ function getRSS(svrid, site, count, callback) {
                 }
                 callback(err, articles);
             } catch(error) {
+                console.log(error.stack);
                 logMsg(new Date().getTime(), "ERROR", svrid, null, "Failed to process RSS feed request");
                 return;
             }
@@ -4089,6 +4400,7 @@ function triviaQ(ch, tset) {
     return info;
 }
 
+// End a trivia game
 function endTrivia(game, svr, minusone) {
     var info = "Thanks for playing! Y'all got " + game.score + " out of " + (minusone ? game.possible-1 : game.possible) + ".";
     if(game.score>0) {
@@ -4108,6 +4420,27 @@ function endTrivia(game, svr, minusone) {
         }
     }
     return info;
+}
+
+// End a giveaway
+function endGiveaway(author) {
+    logMsg(new Date().getTime(), "INFO", null, author.id, "Closed giveaway " + giveaways[author.id].name);
+
+    var winIndex = getRandomInt(0, giveaways[author.id].enrolled.length-1);
+    var ch = bot.channels.get("id", giveaways[author.id].channel);
+    var usr = bot.users.get("id", giveaways[author.id].enrolled[winIndex]);
+    if(usr && ch) {
+        bot.sendMessage(author, "The winner of your giveaway is **@" + getName(ch.server, usr) + "**. I sent them the secret!");
+        bot.sendMessage(ch, "The winner of giveaway `" + giveaways[author.id].name + "` started by **@" + getName(ch.server, author) + "** is... " + usr);
+        bot.sendMessage(usr, "Congratulations! You won the giveaway `" + giveaways[author.id].name + "` by **@" + getName(ch.server, author) + "** in " + ch.server.name + ":```" + giveaways[author.id].secret + "```");
+    } else {
+        bot.sendMessage(author, "A winner couldn't be chosen for your giveaway :sob:");
+        if(ch) {
+            bot.sendMessage(ch, "The winner of giveaway `" + giveaways[author.id].name + "` started by **@" + getName(ch.server, author) + "** is... NO ONE, rip");
+        }
+    }
+
+    delete giveaways[author.id];
 }
 
 // Populate stats.json for a server
@@ -4313,7 +4646,7 @@ function clearStatCounter() {
                 if(bot.servers[i].members[j].id!=bot.user.id && !bot.servers[i].members[j].bot) {
                     // If member is playing game, add 0.1 (equal to five minutes) to game tally
                     var game = getGame(bot.servers[i].members[j]); 
-                    if(game && bot.servers[i].members[j].id) {
+                    if(game && bot.servers[i].members[j].id && bot.servers[i].members[j].status=="online") {
                         if(!stats[bot.servers[i].id].games[game]) {
                             stats[bot.servers[i].id].games[game] = 0;
                         }
@@ -4372,7 +4705,7 @@ function endLottery(ch) {
         bot.sendMessage(ch, "The PointsBall lottery amount is `" + pointsball + "` points, here's the winner... NO ONE, rip");
     }
     delete lottery[ch.server.id];
-    pointsball *= 2;
+    pointsball = Math.ceil(pointsball * 1.25);
 }
 
 // Clear stats.json for a server
@@ -4694,9 +5027,56 @@ function runTimerExtension(svrid, extnm) {
     }
 }
 
+// Check for RSS updates and post them
+function rssTimer() {
+    for(var i=0; i<bot.servers.length; i++) {
+        for(var j=0; j<configs.servers[bot.servers[i].id].rss[1].length; j++) {
+            if(configs.servers[bot.servers[i].id].rss[3][j][0].length>0) {
+                rssUpdates(bot.servers[i], j);
+            }
+        }
+    }
+
+    setTimeout(function() {
+        rssTimer();
+    }, 900000);
+}
+
+// Send RSS updates for a feed
+function rssUpdates(svr, i) {
+    getRSS(svr.id, configs.servers[svr.id].rss[1][i], 100, function(err, articles) {
+        if(!err) {
+            var info = [];
+            for(var j=articles.length-1; j>=0; j--) {
+                var tmpinfo = (articles[j].published instanceof Date ? ("`" + prettyDate(articles[j].published) + "`") : "") + " **"  + articles[j].title + "**\n" + articles[j].link + "\n";
+                if((tmpinfo.length + info.join("").length)>2000 || articles[j].link==configs.servers[svr.id].rss[3][i][1]) {
+                    break;
+                } else {
+                    info.push(tmpinfo);
+                }
+            }
+            if(info.length>0) {
+                configs.servers[svr.id].rss[3][i][1] = articles[articles.length-1].link;
+                saveData("./data/config.json", function(err) {
+                    if(err) {
+                        logMsg(new Date().getTime(), "ERROR", "General", null, "Failed to save updated configs for " + bot.servers[i].name);
+                    }
+                });
+                logMsg(new Date().getTime(), "INFO", bot.servers[i].id, null, info.length + " new in feed " + configs.servers[svr.id].rss[2][i]);
+                for(var j=0; j<configs.servers[svr.id].rss[3][i][0].length; j++) {
+                    var ch = svr.channels.get("id", configs.servers[svr.id].rss[3][i][0][j]);
+                    if(ch) {
+                        bot.sendMessage(ch, "__" + info.length + " new in feed `" + configs.servers[svr.id].rss[2][i] + "`:__\n\n" + info.join(""));
+                    }
+                }
+            }
+        }
+    });
+}
+
 // Add a select menu to a channel
 function selectMenu(ch, callback, max) {
-    if(!selectmenu[ch.id] && typeof(callback)=="function" && max && !isNaN(max)) {
+    if(!selectmenu[ch.id] && typeof(callback)=="function" && max!=null && !isNaN(max)) {
         selectmenu[ch.id] = {
             process: callback,
             max: max
@@ -4840,20 +5220,22 @@ function parseMaintainerConfig(delta, consoleid, callback) {
                 saveData("./data/config.json", function(err) {
                     if(err) {
                         logMsg(new Date().getTime(), "ERROR", "General", null, "Could not save new config");
-                        throw new Error;
                     }
                     callback(err);
                 });
                 break;
             case "msgserver":
-                var svr = bot.servers.get("id", delta[key][0]);
-                if(!svr) {
+                var ch = bot.channels.get("id", delta[key][0]);
+                if(!ch || ch.isPrivate) {
                     callback(true);
                     return;
                 }
-                bot.sendMessage(svr.defaultChannel, delta[key][1]);
-                logMsg(new Date().getTime(), "INFO", "General", null, "Sent message '" + delta[key][1] + "' to " + svr.name + " from maintainer");
-                callback();
+                bot.sendMessage(ch, delta[key][1], function(err) {
+                    if(!err) {
+                        logMsg(new Date().getTime(), "INFO", "General", null, "Sent message '" + delta[key][1] + "' to " + ch.server.name + " from maintainer");
+                    }
+                    callback(err);
+                });
                 break;
             case "rmserver":
                 var svr = bot.servers.get("id", delta[key]);
@@ -4903,6 +5285,20 @@ function parseMaintainerConfig(delta, consoleid, callback) {
                 } else {
                     callback(true);
                 }
+                break;
+            case "pmforward":
+                if(typeof(delta[key])!="boolean") {
+                    callback(true);
+                    return;
+                }
+                logMsg(new Date().getTime(), "INFO", "General", null, "Turned PM forwarding to maintainer " + (delta[key] ? "on" : "off"));
+                configs.pmforward = delta[key];
+                saveData("./data/config.json", function(err) {
+                    if(err) {
+                        logMsg(new Date().getTime(), "ERROR", "General", null, "Could not save new config");
+                    }
+                    callback(err);
+                });
                 break;
             case "status":
                 bot.setStatus(delta[key], configs.game, function(err) {
@@ -5081,10 +5477,12 @@ function parseAdminConfig(delta, svr, consoleid, callback) {
                             logMsg(new Date().getTime(), "INFO", svr.id, null, "Removed " + usr.username + " from " + key + " list (@" + consoleusr.username + ")");
                             configs.servers[svr.id][key].list.splice(configs.servers[svr.id][key].list.indexOf(usr.id), 1);
                             configs.servers[svr.id][key].langs.splice(configs.servers[svr.id][key].list.indexOf(usr.id), 1);
-                        } else if(delta[key][1]) {
+                            configs.servers[svr.id][key].channels.splice(configs.servers[svr.id][key].list.indexOf(usr.id), 1);
+                        } else if(delta[key][1] && delta[key][2] && Array.isArray(delta[key][2])) {
                             logMsg(new Date().getTime(), "INFO", svr.id, null, "Added " + usr.username + " to " + key + " list (@" + consoleusr.username + ")");
                             configs.servers[svr.id][key].list.push(usr.id);
                             configs.servers[svr.id][key].langs.push(delta[key][1]);
+                            configs.servers[svr.id][key].channels.push(delta[key][2]);
                         } else {
                             callback(true);
                             return;
@@ -5240,6 +5638,21 @@ function parseAdminConfig(delta, svr, consoleid, callback) {
                     configs.servers[svr.id][key][0] = delta[key];
                     var yn = delta[key] ? "on" : "off";
                     logMsg(new Date().getTime(), "INFO", svr.id, null, "Command " + key + " turned " + yn + " (@" + consoleusr.username + ")");
+                } else if(typeof(delta[key])=="object" && delta[key].chid && !isNaN(delta[key].chid) && !isNaN(delta[key].i) && delta[key].i>=0 && delta[key].i<configs.servers[svr.id].rss[1].length) {
+                    var ch = svr.channels.get("id", delta[key].chid);
+                    if(ch) {
+                        if(configs.servers[svr.id].rss[3][delta[key].i][0].indexOf(delta[key].chid)==-1) {
+                            var yn = "removed from";
+                            configs.servers[svr.id].rss[3][delta[key].i][0].push(delta[key].chid);
+                        } else {
+                            var yn = "added to";
+                            configs.servers[svr.id].rss[3][delta[key].i][0].splice(configs.servers[svr.id].rss[3][delta[key].i][0].indexOf(delta[key].chid), 1);
+                        }
+                        logMsg(new Date().getTime(), "INFO", svr.id, null, ch.name + " " + yn + " rss updates list for " + configs.servers[svr.id].rss[2][delta[key].i] + " (@" + consoleusr.username + ")");
+                    } else {
+                        callback(true);
+                        return;
+                    }
                 } else if(!Array.isArray(delta[key])) {
                     if(configs.servers[svr.id].rss[2][delta[key]]) {
                         logMsg(new Date().getTime(), "INFO", svr.id, null, "Feed " + configs.servers[svr.id].rss[2][delta[key]] + " removed (@" + consoleusr.username + ")");
@@ -5250,9 +5663,9 @@ function parseAdminConfig(delta, svr, consoleid, callback) {
                         return;
                     }
                 } else {
-                    if(configs.servers[svr.id].rss[2].indexOf(delta[key][1])==-1) {
+                    if(configs.servers[svr.id].rss[2].indexOf(delta[key][1])==-1 && configs.servers[svr.id].rss[1].indexOf(delta[key][0])==-1 && (/(http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/).test(delta[key][0])) {
                         configs.servers[svr.id].rss[1].push(delta[key][0]);
-                        configs.servers[svr.id].rss[2].push(delta[key][1]);
+                        configs.servers[svr.id].rss[2].push(delta[key][1].toLowerCase());
                         logMsg(new Date().getTime(), "INFO", svr.id, null, "Feed " + delta[key][1] + " added (@" + consoleusr.username + ")");
                     } else {
                         callback(true);
@@ -5413,13 +5826,25 @@ function parseAdminConfig(delta, svr, consoleid, callback) {
             case "endtrivia":
                 try {
                     var ch = svr.channels.get("id", delta[key]);
-                    bot.sendMessage(ch, "Sorry to interrupt your game, but an admin has closed this trivia session.");
-                    commands["trivia"].process(bot, {"channel": ch}, "end");
+                    bot.sendMessage(ch, "Sorry to interrupt your game, but an admin has closed this trivia session.", function() {
+                        bot.sendMessage(msg.channel, endTrivia(trivia[ch.id], ch.server, true));
+                    });
                     logMsg(new Date().getTime(), "INFO", svr.id, null, "Closed trivia game in " + ch.name + ", (@" + consoleusr.username + ")");
                     delete trivia[ch.id];
                     callback();
                 } catch(err) {
-                    callback(true);
+                    callback(err);
+                }
+                return;
+            case "endgiveaway":
+                try {
+                    var ch = svr.channels.get("id", giveaways[delta[key]].channel);
+                    logMsg(new Date().getTime(), "INFO", svr.id, null, "Closed giveaway in " + ch.name + ", (@" + consoleusr.username + ")");
+                    bot.sendMessage(ch, "The giveaway `" + giveaways[delta[key]].name + "` started by " + svr.members.get("id", delta[key]) + " has been closed by an admin.");
+                    delete giveaways[delta[key]];
+                    callback();
+                } catch(err) {
+                    callback(err);
                 }
                 return;
             case "autoprune":
@@ -5781,6 +6206,29 @@ function checkConfig(svr) {
             "mute"
         ];
     }
+    if(!configs.servers[svr.id].rss[3]) {
+        changed = true;
+        configs.servers[svr.id].rss[3] = [];
+        for(var i=0; i<configs.servers[svr.id].rss[1].length; i++) {
+            configs.servers[svr.id].rss[3].push([
+                [],
+                ""
+            ]);
+        }
+    }
+    if(!configs.servers[svr.id].translated.channels) {
+        changed = true;
+        configs.servers[svr.id].translated.channels = [];
+        var channels = [];
+        for(var i=0; i<svr.channels.length; i++) {
+            if(!(svr.channels[i] instanceof Discord.VoiceChannel)) {
+                channels.push(svr.channels[i].id);
+            }
+        }   
+        for(var i=0; i<configs.servers[svr.id].translated.list.length; i++) {
+            configs.servers[svr.id].translated.channels.push(channels);
+        }
+    }
     
     if(changed) {
         saveData("./data/config.json", function(err) {
@@ -5835,6 +6283,16 @@ function activeAdmins(svrid) {
         }
     }
     return false;
+}
+
+// Finds an active giveaway by name
+function getGiveaway(name) {
+    for(var usrid in giveaways) {
+        if(giveaways[usrid].name.toLowerCase()==name.toLowerCase()) {
+            return usrid;
+        }
+    }
+    return;
 }
 
 // Check if there are other polls on the same channel
@@ -6018,7 +6476,7 @@ String.prototype.replaceAll = function(target, replacement) {
     return this.split(target).join(replacement);
 };
 
-// Searches for a server member based on name or ID
+// Searches for a server member based on name, ID, or nick
 function userSearch(str, svr) {
     var usr;
     str = str.trim();
@@ -6042,6 +6500,40 @@ function userSearch(str, svr) {
         }
     }
     return usr;
+}
+
+// Searches for a server based on name, ID, or shortcut
+function serverSearch(str, usr) {
+    var svr = bot.servers.get("name", str);
+    if(checkServer(svr, usr)) {
+        return svr;
+    }
+
+    svr = bot.servers.get("id", str);
+    if(checkServer(svr, usr)) {
+        return svr;
+    }
+
+    for(var i=0; i<bot.servers.length; i++) {
+        if(str.toLowerCase()==bot.servers[i].name.toLowerCase() && checkServer(bot.servers[i], usr)) {
+            return bot.servers[i];
+        }
+    }
+
+    if(profileData[usr.id] && profileData[usr.id].svrnicks[str.toLowerCase()]) {
+        svr = bot.servers.get("id", profileData[usr.id].svrnicks[str.toLowerCase()]);
+        if(checkServer(svr, usr)) {
+            return svr;
+        }
+    }
+
+    logMsg(new Date().getTime(), "WARN", null, usr.id, "User provided invalid server '" + str + "'");
+    return;
+}
+
+// Checks if a server is fine
+function checkServer(svr, usr) {
+    return svr && svr.members.get("id", usr.id) && configs.servers[svr.id].blocked.indexOf(usr.id)==-1;
 }
 
 // Searches Google Images for keyword(s)
@@ -6224,7 +6716,7 @@ function getStats(svr) {
             info["Most active members"].push(getName(svr, usr) + ": " + sortedMembers[i][1] + " message" + (sortedMembers[i][1]==1 ? "" : "s"));
         }
     }
-    if(configs.servers[msg.channel.server.id].points) {
+    if(configs.servers[svr.id].points) {
         for(var i=sortedRichest.length-1; i>sortedRichest.length-6; i--) {
             if(i<0) {
                 break;
@@ -6312,7 +6804,7 @@ function getProfile(usr, svr) {
     if(!profileData[usr.id]) {
         profileData[usr.id] = {
             points: 0
-        }
+        };
         saveData("./data/profiles.json", function(err) {
             if(err) {
                 logMsg(new Date().getTime(), "ERROR", "General", null, "Failed to save profile data for " + usr.username);
@@ -6320,7 +6812,7 @@ function getProfile(usr, svr) {
         });
     }
     for(var field in profileData[usr.id]) {
-        if(!configs.servers[svr.id].points && field=="points") {
+        if((!configs.servers[svr.id].points && field=="points") || ["svrnicks", "afk"].indexOf(field)>-1) {
             continue;
         }
         usrinfo[field.charAt(0).toUpperCase() + field.slice(1)] = profileData[usr.id][field].toString();
@@ -6461,8 +6953,8 @@ function parseReminder(str, usr, ch) {
         timestr = str.split("|")[0];
         remind = str.split("|")[1];
     } else {
-        timestr = str.substring(str.indexOf(" in ")+4);
-        remind = str.indexOf("to ")==0 ? str.substring(3, str.indexOf(" in ")) : str.substring(0, str.indexOf(" in "));
+        timestr = str.substring(str.toLowerCase().indexOf(" in ")+4);
+        remind = str.indexOf("to ")==0 ? str.substring(3, str.toLowerCase().indexOf(" in ")) : str.substring(0, str.indexOf(" in "));
     }
     var time = parseTime(timestr);
     if(!time) {
@@ -6633,7 +7125,7 @@ function checkCommandConflicts(name, svr) {
 // Generate help text
 function getHelp(svr, usr) {
     var help = [];
-    var info = "";
+    var info = [];
     for(var cmd in commands) {
         if(commands[cmd]) {
             if(configs.servers[svr.id][cmd]==false || cmd=="eval") {
@@ -6653,12 +7145,14 @@ function getHelp(svr, usr) {
             if(configs.servers[svr.id].admincommands.indexOf(cmd)>-1 && configs.servers[svr.id].admins.indexOf(usr.id)==-1) {
                 continue;
             }
-            info += "\n\t" + cmd;
+            var tmpinfo = "\n\t" + cmd;
             if(commands[cmd].usage) {
-                info += " " + commands[cmd].usage;
+                tmpinfo += " " + commands[cmd].usage;
             }
+            info.push(tmpinfo);
         }
     }
+    info = info.sort().join("");
     if(info) {
         help.push(info);
         info = "";
@@ -6731,7 +7225,7 @@ function getHelp(svr, usr) {
         help.push("\nFinally: *AwesomePoints*, a karma system for Discord. You can upvote someone with `@user <\"^\", \"+1\", or \"up\">`, and give 10 of your own points with `@user gild`. You'll lose points for doing bad things, and get a reward for being the most active user at the end of the week.");
     }
     
-    help.push("\nOn top of all this, you can talk to me about anything privately or in the main chat (by tagging me). Learn more on my wiki: https://git.io/vVHvQ \n\nVersion " + version + " by **@BitQuote**, https://git.io/vaa2F. *This project is in no way affiliated with Alphabet, Inc., who does not own or endorse this product.*");
+    help.push("\nOn top of all this, you can talk to me about anything privately or in the main chat (by tagging me). Learn more on my wiki: https://git.io/vVHvQ \n\nVersion " + version + " by **@BitQuote**, http://awesomebot.xyz. *This project is in no way affiliated with Alphabet, Inc., who does not own or endorse this product.*");
     return help;
 }
 
@@ -6858,7 +7352,7 @@ function getLogIDs() {
 function checkLogID(id) {
     var svr = bot.servers.get("id", id);
     if(svr) {
-        return configs.servers[svr.id].showpub;
+        return configs.servers[svr.id].showsvr && configs.servers[svr.id].showpub;
     }
     return true;
 }
@@ -6908,7 +7402,7 @@ function checkVersion() {
                         send += response.body[i][1];
                     }
                 }
-                send += "\nLearn more at https://git.io/vaa2F";
+                send += "\nLearn more at http://awesomebot.xyz";
                 
                 if(configs.maintainer && configs.maintainer!="") {
                     var usr = bot.users.get("id", configs.maintainer);

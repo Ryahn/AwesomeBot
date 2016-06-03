@@ -4,7 +4,8 @@
         "blocked": [],
         "translated": {
             "list": [],
-            "langs": []
+            "langs": [],
+            "channels": []
         },
         "newgreeting": "",
         "rss": [
@@ -14,6 +15,12 @@
             ],
             [
                 "gnews"
+            ],
+            [
+                [
+                    [],
+                    ""
+                ]
             ]
         ],
         "tags": {
@@ -201,7 +208,8 @@
                 "max": 200,
                 "role": null
             }
-        ]
+        ],
+        "showsvr": true
     },
     "full": {
         "servermod": true,
@@ -227,10 +235,12 @@
         ],
         "customcolors": true,
         "anime": true,
+        "manga": true,
         "meme": true,
         "urban": true,
         "choose": true,
         "tag": true,
+        "info": true,
         "stats": true,
         "points": true,
         "ranks": true,
@@ -242,6 +252,7 @@
         "say": true,
         "convert": true,
         "twitter": true,
+        "imdb": true,
         "youtube": true,
         "image": true,
         "gif": true,
@@ -255,6 +266,7 @@
         "profile": true,
         "tagreaction": true,
         "poll": true,
+        "giveaway": true,
         "trivia": true,
         "afk": true,
         "joke": true,
@@ -262,8 +274,10 @@
         "shorten": true,
         "emoji": true,
         "time": true,
+        "calc": true,
         "list": true,
         "room": true,
+        "chatterbot": true,
         "showpub": true,
         "defaultcount": 5
     },
@@ -291,8 +305,10 @@
         ],
         "customcolors": false,
         "tag": false,
+        "info": true,
         "meme": false,
         "anime": false,
+        "manga": false,
         "urban": false,
         "choose": false,
         "stats": false,
@@ -306,6 +322,7 @@
         "say": false,
         "convert": false,
         "twitter": false,
+        "imdb": false,
         "youtube": true,
         "image": true,
         "gif": true,
@@ -319,6 +336,7 @@
         "profile": false,
         "tagreaction": false,
         "poll": true,
+        "giveaway": false,
         "trivia": false,
         "afk": false,
         "joke": false,
@@ -326,8 +344,10 @@
         "shorten": false,
         "emoji": false,
         "time": false,
+        "calc": false,
         "list": false,
         "room": false,
+        "chatterbot": false,
         "showpub": false,
         "defaultcount": 1
     },
@@ -355,8 +375,10 @@
         ],
         "customcolors": true,
         "tag": true,
+        "info": true,
         "meme": false,
         "anime": false,
+        "manga": true,
         "urban": true,
         "choose": false,
         "stats": true,
@@ -370,6 +392,7 @@
         "say": true,
         "convert": true,
         "twitter": false,
+        "imdb": false,
         "youtube": true,
         "image": true,
         "gif": true,
@@ -383,6 +406,7 @@
         "profile": true,
         "tagreaction": false,
         "poll": true,
+        "giveaway": false,
         "trivia": true,
         "afk": true,
         "joke": false,
@@ -390,8 +414,10 @@
         "shorten": false,
         "emoji": false,
         "time": true,
+        "calc": false,
         "list": false,
         "room": true,
+        "chatterbot": true,
         "showpub": false,
         "defaultcount": 3
     }  

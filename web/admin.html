@@ -13,6 +13,9 @@
     <link href="./css/bootstrap-select.min.css" rel="stylesheet">
     <link href="./css/awesome-bootstrap-checkbox.css" rel="stylesheet">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.1/css/font-awesome.min.css">
+    <link href="https://fonts.googleapis.com/css?family=Montserrat:400,700" rel="stylesheet" type="text/css">
+    <link href='https://fonts.googleapis.com/css?family=Droid+Serif:400,700,400italic,700italic' rel='stylesheet' type='text/css'>
+    <link href='https://fonts.googleapis.com/css?family=Roboto+Slab:400,100,300,700' rel='stylesheet' type='text/css'>
     <style>
     .popover {
         max-width: 800px;
@@ -76,7 +79,7 @@
         </div>
 
         <!-- Page Content -->
-        <div id="page-content-wrapper" class="header">
+        <div id="header" ondblclick="loadBackground();" style="background-color:#000000;background-repeat:none;background-attachment:scroll;background-position:center center;-webkit-background-size:cover;-moz-background-size:cover;background-size:cover;-o-background-size:cover;color:#fff;">
             <div class="container-fluid">
                 <div class="row">
                     <div class="col-xs-2">
@@ -415,6 +418,7 @@
                                             <th>Avatar</th>
                                             <th>Username</th>
                                             <th>Language</th>
+                                            <th>Channel(s)</th>
                                             <th>Action</th>
                                         </tr>
                                     </thead>
@@ -428,6 +432,9 @@
                                 <div id="translatedinput-block" style="display:inline-block;">
                                     <input type="text" class="form-control" id="translatedinput" style="width:200px;" maxlength="2" placeholder="Source language">
                                 </div>
+                                <div id="translatedchannels-block" style="display:inline-block;">
+                                    <select id="translatedchannels" class="selectpicker" data-width="fit" title="Select Channel(s)" multiple></select>
+                                </div>
                                 <input type="submit" class="btn btn-default" value="Add">
                             </form>
                         </div>
@@ -439,21 +446,29 @@
                         <h2 id="public" data-toggle="collapse" data-target="#public-body" aria-expanded="false" aria-controls="collapsepublic">Public Data</h2>
                         <div id="public-body" class="collapse">
                             <div class="checkbox">
-                                <input id="publicentry-showpub" type="checkbox" onclick="javascript:config(this.id.substring(12), this.checked, switchPublic);">
-                                <label for="publicentry-showpub">
-                                    Show logs and data for this server on public status page
+                                <input id="publicentry-showsvr" type="checkbox" onclick="javascript:config(this.id.substring(12), this.checked, switchPublic);">
+                                <label for="publicentry-showsvr">
+                                    Show this server on the public server list
                                 </label>
                             </div>
-                            <div class="checkbox">
-                                <input id="publicentry-enable-listing" type="checkbox" onclick="javascript:config(this.id.substring(19), this.checked, switchPublic);">
-                                <label for="publicentry-enable-listing">
-                                    Allow anyone to find and join this server from the public status page
-                                </label>
-                            </div>
-                            <div id="publicentry-description" class="input-group">
-                                <textarea id="publicentry-description-listing" class="form-control custom-control" rows="3" style="resize:none" placeholder="Public server listing description, in markdown" maxlength="1000"></textarea>
-                                <span class="input-group-addon btn btn-primary" onclick="javascript:config('listing', document.getElementById('publicentry-description-listing').value, switchPublic);"><span class="glyphicon glyphicon-ok" aria-hidden="true"></span> Submit</span>
-                            </div>
+                            <span id="public-showsvr-block">
+                                <div class="checkbox">
+                                    <input id="publicentry-showpub" type="checkbox" onclick="javascript:config(this.id.substring(12), this.checked, switchPublic);">
+                                    <label for="publicentry-showpub">
+                                        Show logs and data for this server on public status page
+                                    </label>
+                                </div>
+                                <div class="checkbox">
+                                    <input id="publicentry-enable-listing" type="checkbox" onclick="javascript:config(this.id.substring(19), this.checked, switchPublic);">
+                                    <label for="publicentry-enable-listing">
+                                        Allow anyone to find and join this server from the public status page
+                                    </label>
+                                </div>
+                                <div id="publicentry-description" class="input-group">
+                                    <textarea id="publicentry-description-listing" class="form-control custom-control" rows="3" style="resize:none" placeholder="Public server listing description, in markdown" maxlength="1000"></textarea>
+                                    <span class="input-group-addon btn btn-primary" onclick="javascript:config('listing', document.getElementById('publicentry-description-listing').value, switchPublic);"><span class="glyphicon glyphicon-ok" aria-hidden="true"></span> Submit</span>
+                                </div>
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -741,6 +756,10 @@
                                 Ongoing trivia games:
                                 <ul id="manageentry-trivia-block"></ul>
                             </span>
+                            <span id="manageentry-giveaways">
+                                Ongoing giveaways:
+                                <ul id="manageentry-giveaways-block"></ul>
+                            </span>
                             
                             <br>
                             <form class="form-inline" id="caform">
@@ -813,7 +832,7 @@
                 
                 <div class="row">
                     <div class="col-lg-12">
-                        <br><i>Created by @BitQuote, <a href="https://git.io/vaa2F">https://git.io/vaa2F</a>. This project is in no way affiliated with Alphabet, Inc., who does not own or endorse this product.</i>
+                        <br><i>Created by @BitQuote, <a href="http://awesomebot.xyz">http://awesomebot.xyz</a>. This project is in no way affiliated with Alphabet, Inc., who does not own or endorse this product.</i>
                     </div>
                 </div>
             </div>

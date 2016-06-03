@@ -37,6 +37,15 @@
     width: 250px;
 }
 
+#header {
+    width: 100%;
+    padding: 15px;
+}
+
+#wrapper.toggled #header {
+    margin-right: -250px;
+}
+
 #page-content-wrapper {
     width: 100%;
     position: absolute;
@@ -44,7 +53,6 @@
 }
 
 #wrapper.toggled #page-content-wrapper {
-    position: absolute;
     margin-right: -250px;
 }
 
@@ -111,6 +119,16 @@
 
     #wrapper.toggled #sidebar-wrapper {
         width: 0;
+    }
+
+    #header {
+        padding: 20px;
+        position: relative;
+    }
+
+    #wrapper.toggled #header {
+        position: relative;
+        margin-right: 0;
     }
 
     #page-content-wrapper {
