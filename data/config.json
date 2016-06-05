@@ -3,6 +3,7 @@
     "maintainer": "",
     "game": "default",
     "botblocked": [],
+    "pmforward": false,
     "setup": false,
     "servers": {}
 }

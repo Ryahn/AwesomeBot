@@ -418,7 +418,7 @@ function switchCommands() {
         "profile": "An all-in-one command to view or set information about users", 
         "tagreaction": "Responds when tagged without a command", 
         "poll": "Allows users to create live, in-chat polls", 
-        "trivia": "AwesomeTrivia, a fun question-and-answer group quiz game", 
+        "trivia": "<a href='#triviasets'>AwesomeTrivia</a>, a fun question-and-answer group quiz game", 
         "meme": "Generates a dank new meme", 
         "urban": "Defines the given word from Urban Dictionary", 
         "choose": "Randomly chooses from a set of options", 
@@ -443,14 +443,22 @@ function switchCommands() {
         "info": "Lists basic stats about this server",
         "calc": "Quickly evaluate a mathematical expression",
         "manga": "Searches manga data",
-        "imdb": "Provides movie and TV show data"
+        "imdb": "Provides movie and TV show data",
+        "search": "Displays Google search and Knowledge Graph results",
+        "ddg": "DuckDuckGo Instant Answers",
+        "countdown": "Set a timer for an event"
     }
-    var blacklist = ["admins", "blocked", "extensions", "newgreeting", "nsfwfilter", "servermod", "spamfilter", "customroles", "customcolors", "customkeys", "cmdtag", "newmembermsg", "onmembermsg", "offmembermsg", "changemembermsg", "rankmembermsg", "twitchmembermsg", "editmembermsg", "deletemembermsg", "rmmembermsg", "banmembermsg", "unbanmembermsg", "triviasets", "newrole", "showpub", "defaultcount", "maxcount", "autoprune", "translated", "filter", "usenicks", "usediscriminators", "listsrc", "listing", "tagcommands", "cooldown", "stats", "points", "ranks", "rankslist", "messages", "games", "lottery", "admincommands", "showsvr"];
+    var blacklist = ["admins", "blocked", "extensions", "newgreeting", "nsfwfilter", "servermod", "spamfilter", "customroles", "customcolors", "customkeys", "cmdtag", "newmembermsg", "onmembermsg", "offmembermsg", "changemembermsg", "rankmembermsg", "twitchmembermsg", "editmembermsg", "deletemembermsg", "rmmembermsg", "banmembermsg", "unbanmembermsg", "triviasets", "newrole", "showpub", "defaultcount", "maxcount", "autoprune", "translated", "filter", "usenicks", "usediscriminators", "listsrc", "listing", "tagcommands", "cooldown", "stats", "points", "ranks", "rankslist", "messages", "games", "lottery", "admincommands", "showsvr", "chrestrict"];
+
+    var cmdchannelselect = "";
+    for(var i=0; i<botData.channels.length; i++) {
+        cmdchannelselect += "<option value=\"" + botData.channels[i][1] + "\">#" + botData.channels[i][0] + "</option>";
+    }
 
     var commands = [];
     for(var cmd in botData.configs) {
         if(blacklist.indexOf(cmd)==-1) {
-            commands.push("<div class=\"checkbox\"><input style=\"height: auto;\" id=\"commandsentry-" + cmd + "\" type=\"checkbox\" onclick=\"javascript:config(this.id.substring(14), this.checked, switchCommands);\" " + ((cmd=="rss" ? botData.configs[cmd][0] : botData.configs[cmd]) ? "checked " : "") + "/><label for=\"commandsentry-" + cmd + "\">" + cmd + "&nbsp;&nbsp;<p class=\"help-block\" style=\"display:inline\">" + descs[cmd] + "</p></label>&nbsp;&nbsp;<select id=\"" + cmd + "-admincommands-select\" onChange=\"javascript:config('admincommands', '" + cmd + "', switchCommands);\" class=\"selectpicker\" data-width=\"fit\"><option" + (botData.configs.admincommands.indexOf(cmd)==-1 ? " selected" : "") + ">Everyone</option><option" + (botData.configs.admincommands.indexOf(cmd)>-1 ? " selected" : "") + ">Admins only</option></select></div>");
+            commands.push("<div class=\"checkbox\"><input style=\"height: auto;\" id=\"commandsentry-" + cmd + "\" type=\"checkbox\" onclick=\"javascript:config(this.id.substring(14), this.checked, switchCommands);\" " + ((cmd=="rss" ? botData.configs[cmd][0] : botData.configs[cmd]) ? "checked " : "") + "/><label for=\"commandsentry-" + cmd + "\">" + cmd + "&nbsp;&nbsp;<p class=\"help-block\" style=\"display:inline\">" + descs[cmd] + "</p></label>&nbsp;&nbsp;<select id=\"" + cmd + "-admincommands-select\" onChange=\"javascript:config('admincommands', '" + cmd + "', switchCommands);\" class=\"selectpicker\" data-width=\"fit\"><option" + (botData.configs.admincommands.indexOf(cmd)==-1 ? " selected" : "") + ">Everyone</option><option" + (botData.configs.admincommands.indexOf(cmd)>-1 ? " selected" : "") + ">Admins only</option></select>&nbsp;<select id=\"" + cmd + "-chrestrict-select\" onChange=\"javascript:config('chrestrict', ['" + cmd + "', $('#' + this.id).val()], switchCommands);\" class=\"selectpicker\" data-width=\"fit\" data-selected-text-format=\"count\" multiple>" + cmdchannelselect + "</select></div>");
         }
     }
     commands.sort();
@@ -460,10 +468,22 @@ function switchCommands() {
         if(blacklist.indexOf(cmd)==-1) {
             if((cmd=="rss" && botData.configs[cmd][0]) || botData.configs[cmd]) {
                 document.getElementById(cmd + "-admincommands-select").removeAttribute("disabled");
+                document.getElementById(cmd + "-chrestrict-select").removeAttribute("disabled");
             } else {
                 document.getElementById(cmd + "-admincommands-select").setAttribute("disabled", "disable");
+                document.getElementById(cmd + "-chrestrict-select").setAttribute("disabled", "disable");
             }
             $("#" + cmd + "-admincommands-select").selectpicker("refresh");
+
+            var enabledChannels = [];
+            for(var i=0; i<botData.channels.length; i++) {
+                if(botData.configs.chrestrict[botData.channels[i][1]] && botData.configs.chrestrict[botData.channels[i][1]].indexOf(cmd)>-1) {
+                    continue;
+                }
+                enabledChannels.push(botData.channels[i][1]);
+            }
+            $("#" + cmd + "-chrestrict-select").val(enabledChannels);
+            $("#" + cmd + "-chrestrict-select").selectpicker("refresh");
         }
     }
 

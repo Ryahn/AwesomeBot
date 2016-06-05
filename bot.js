@@ -68,15 +68,7 @@ try {
 
     TODO:
      - default extensions for throw, slash, rip, etc
-     - automatic RSS posting option
-     - steam command
-     - imdb command
-     - enable/disable commands per-channel
-     - Amazon command
-     - XKCD command
-     - duckduckgo command
      - awesome self host builder
-     - music: youtube, playlists
      - extension builder in admin console
      - public extension gallery
      - interface for gallery outside of admin console
@@ -217,7 +209,7 @@ app.get("/data", function(req, res) {
     } else if(req.query.section=="servers" && ["svrnm", "messages", "members"].indexOf(req.query.sort)>-1) {
         data.stream = [];
         for(var i=0; i<bot.servers.length; i++) {
-            if(configs.servers[svr.id].showsvr) {
+            if(configs.servers[bot.servers[i].id].showsvr) {
                 var icon = bot.servers[i].iconURL || "http://i.imgur.com/fU70HJK.png";
                 var name = bot.servers[i].name;
                 var owner = bot.servers[i].owner.username;
@@ -431,7 +423,7 @@ app.get("/data", function(req, res) {
                             b = b[0].toUpperCase();
                             return a < b ? -1 : a > b ? 1 : 0;
                         });
-                    } else if(["tags", "muted"].indexOf(key)==-1) {
+                    } else if(["tags", "muted", "countdowns"].indexOf(key)==-1) {
                         currentConfig[key] = configs.servers[svr.id][key];
                     }
                 }
@@ -728,7 +720,47 @@ var commands = {
                 }
             } else {
                 logMsg(new Date().getTime(), "WARN", msg.channel.server.id, msg.channel.id, "Calc expresison not provided");
-                bot.sendMessage(msg.channel, ":rolling_eyes:");
+                bot.sendMessage(msg.channel, msg.author + " :rolling_eyes:");
+            }
+        }
+    },
+    // Sets a countdown for an event
+    "countdown": {
+        usage: "<time from now>|<event name>",
+        process: function(bot, msg, suffix) {
+            if(suffix && suffix.indexOf("|")>0 && suffix.length>=3) {
+                var time = parseTime(suffix.substring(0, suffix.indexOf("|")));
+                var event = suffix.substring(suffix.indexOf("|")+1).toLowerCase();
+                if(!time) {
+                    logMsg(new Date().getTime(), "WARN", msg.channel.server.id, msg.channel.id, "Invalid time provided for countdown");
+                    bot.sendMessage(msg.channel, msg.author + " That's not a valid time. Use the syntax `<no.> <\"s\", \"m\", \"h\", or \"d\">`");
+                } else if(configs.servers[msg.channel.server.id].countdowns[event]) {
+                    logMsg(new Date().getTime(), "WARN", msg.channel.server.id, msg.channel.id, msg.author.username + " tried to overwrite a countdown");
+                    bot.sendMessage(msg.channel, msg.author + " A countdown called `" + suffix.substring(suffix.indexOf("|")+1) + "` already exists. Try a different name.");
+                } else {
+                    var timestamp = new Date().getTime() + time.countdown;
+                    configs.servers[msg.channel.server.id].countdowns[event] = {
+                        timestamp: timestamp,
+                        chid: msg.channel.id,
+                        name: suffix.substring(suffix.indexOf("|")+1)
+                    };
+                    setTimeout(function() {
+                        if(stats[msg.channel.server.id].botOn[msg.channel.id]) {
+                            bot.sendMessage(msg.channel, "3...2...1...**" + suffix.substring(suffix.indexOf("|")+1) + "**");
+                            delete configs.servers[msg.channel.server.id].countdowns[event];
+                            logMsg(new Date().getTime(), "INFO", msg.channel.server.id, msg.channel.id, "Countdown " + event + " expired");
+                        }
+                    }, time.countdown);
+                    bot.sendMessage(msg.channel, "I gotchu bro, countdown set to expire at " + prettyDate(new Date(timestamp)));
+                    saveData("./data/config.json", function(err) {
+                        if(err) {
+                            logMsg(new Date().getTime(), "ERROR", "General", null, "Failed to save updated configs for " + msg.channel.server.name);
+                        }
+                    });
+                }
+            } else {
+                logMsg(new Date().getTime(), "WARN", msg.channel.server.id, msg.channel.id, "Invalid countdown parameters provided");
+                bot.sendMessage(msg.channel, "Huh?");
             }
         }
     },
@@ -1053,6 +1085,28 @@ var commands = {
             }
         }
     },
+    // DuckDuckGo Instant Answers 
+    "ddg": {
+        usage: "<query>",
+        process: function(bot, msg, suffix) {
+            if(suffix) {
+                unirest.get("http://api.duckduckgo.com/?format=json&q=" + encodeURI(suffix.replace(/&/g, '')))
+                .header("Accept", "application/json")
+                .end(function(result) {
+                    
+                    if(result.status==200 && JSON.parse(result.body).Results.length>0 && JSON.parse(result.body).AbstractText) {
+                        bot.sendMessage(msg.channel, "```" + JSON.parse(result.body).AbstractText + "```" + JSON.parse(result.body).Results[0].FirstURL);
+                    } else {
+                        logMsg(new Date().getTime(), "WARN", msg.channel.server.id, msg.channel.id, "No DDG answer for '" + suffix + "'");
+                        bot.sendMessage(msg.channel, "DuckDuckGo can't answer that. Maybe try Google? :wink:");
+                    }
+                });
+            } else {
+                logMsg(new Date().getTime(), "WARN", msg.channel.server.id, msg.channel.id, "No parameters provided for ddg command");
+                bot.sendMessage(msg.channel, msg.author + " Wtf am I supposed to do with that? #rekt");
+            }
+        }
+    },
     // Searches Google for a given query
     "search": {
         usage: "<query> [<count>]",
@@ -1112,12 +1166,27 @@ var commands = {
     },
     // Gets TV and movie data from IMDB
     "imdb": {
-        usage: "<TV show or movie>",
+        usage: "[<\"series\", \"episode\", or \"movie\">] <query>",
         process: function(bot, msg, suffix) {
-            if(suffix) {
-                
+            var query = suffix;
+            var type = "";
+            if(query.toLowerCase().indexOf("series ")==0 || query.toLowerCase().indexOf("episode ")==0 || query.toLowerCase().indexOf("movie ")==0) {
+                type = "&type=" + query.substring(0, query.indexOf(" ")).toLowerCase();
+                query = query.substring(query.indexOf(" ")+1);
+            }
+            if(query) {
+                unirest.get("http://www.omdbapi.com/?t=" + encodeURI(query.replace(/&/g, '')) + "&r=json" + type)
+                .header("Accept", "application/json")
+                .end(function(result) {
+                    if(result.status==200 && result.body.Response=="True") {
+                        bot.sendMessage(msg.channel, "__**" + result.body.Title + (type ? "" : (" (" + result.body.Type.charAt(0).toUpperCase() + result.body.Type.slice(1) + ")")) + "**__```" + result.body.Plot + "```**Year:** " + result.body.Year + "\n**Rated:** " + result.body.Rated + "\n**Runtime:** " + result.body.Runtime + "\n**Actors:**\n\t" + result.body.Actors.replaceAll(", ", "\n\t") + "\n**Director:** " + result.body.Director + "\n**Writer:** " + result.body.Writer + "\n**Genre(s):**\n\t" + result.body.Genre.replaceAll(", ", "\n\t") + "\n**Rating:** " + result.body.imdbRating + " out of " + result.body.imdbVotes + " votes\n**Awards:** " + result.body.Awards + "\n**Country:** " + result.body.Country + "\nhttp://www.imdb.com/title/" + result.body.imdbID + "/");
+                    } else {
+                        logMsg(new Date().getTime(), "WARN", msg.channel.server.id, msg.channel.id, "No IMBD entries for '" + query + "'");
+                        bot.sendMessage(msg.channel, ":no_mouth: :no_entry_sign:");
+                    }
+                });
             } else {
-                logMsg(new Date().getTime(), "WARN", msg.channel.server.id, msg.channel.id, "No IMDB parameters");
+                logMsg(new Date().getTime(), "WARN", msg.channel.server.id, msg.channel.id, "Invalid IMDB parameters");
                 bot.sendMessage(msg.channel, msg.author + " U WOT M8");
             }
         }
@@ -1863,7 +1932,7 @@ var commands = {
     },
     // Sends reminders in given time for given note
     "remindme": {
-        usage: "<no.> <\"d\", \"h\", \"m\", or \"s\"> <note>",
+        usage: "<time from now> <note>",
         process: function(bot, msg, suffix) {
             parseReminder(suffix, msg.author, msg.channel);
         }
@@ -2374,6 +2443,69 @@ var commands = {
             }
         }
     },
+    // Google Play Store bot
+    "linkme": {
+        usage: "<app1>[,<app2>,...]",
+        process: function(bot, msg, suffix) {
+            var apps = getAppList(suffix);
+            if(apps.length>0) {
+                for(var i=0; i<apps.length; i++) {
+                    var basePath = "https://play.google.com/store/search?&c=apps&q=" + apps[i] + "&hl=en";
+                    var data;
+                    // Scrapes Play Store search results webpage for information
+                    var u;
+                    unirest.get(basePath)
+                    .end(function(response) {
+                        data = scrapeSearch(response.raw_body);
+                        var send = "";
+                        if(data.items[0]) {
+                            send = data.items[0].name + " by " + data.items[0].company + ", ";
+                            if(data.items[0].price.indexOf("$")>-1) {
+                                send += data.items[0].price.substring(0, data.items[0].price.lastIndexOf("$"));
+                            } else {
+                                send += "free"
+                            }
+                            send += " and rated " + data.items[0].rating + " stars: " + data.items[0].url + "\n";
+                        } else {
+                            logMsg(new Date().getTime(), "WARN", msg.channel.server.id, msg.channel.id, "App " + apps[i] + " not found to link for " + msg.author.username);
+                            send = msg.author + " Sorry, no such app exists.\n";
+                        }
+                        bot.sendMessage(msg.channel, send);
+                    });
+                }
+            } else {
+                bot.sendMessage(msg.channel, "https://play.google.com/store/apps");
+            }
+        }
+    },
+    // Apple App Store bot
+    "appstore": {
+        usage: "<app1>[,<app2>,...]",
+        process: function(bot, msg, suffix) {
+            var apps = getAppList(suffix);
+            if(apps.length>0) {
+                for(var i=0; i<apps.length; i++) {
+                    itunes({
+                        entity: "software",
+                        country: "US",
+                        term: apps[i],
+                        limit: 1
+                    }, function (err, data) {
+                        var send = "";
+                        if(!err) {
+                            send = data.results[0].trackCensoredName + " by " + data.results[0].artistName + ", " + data.results[0].formattedPrice + " and rated " + data.results[0].averageUserRating + " stars: " + data.results[0].trackViewUrl + "\n";
+                        } else {
+                            logMsg(new Date().getTime(), "WARN", msg.channel.server.id, msg.channel.id, "App " + apps[i] + " not found to link for " + msg.author.username);
+                            send = msg.author + " Sorry, no such app exists.\n";
+                        }
+                        bot.sendMessage(msg.channel, send);
+                    });
+                }
+            } else {
+                bot.sendMessage(msg.channel, "http://www.apple.com/itunes/charts/free-apps/");
+            }
+        }
+    },
     // Quickly gets a user's points
     "points": {
         usage: "[<username or \"lottery\">]",
@@ -2834,10 +2966,6 @@ var pmcommands = {
                     bot.sendMessage(msg.channel, "Huh, that's not a server I know of.");
                     return;
                 }
-                if(!configs.servers[svr.id].giveaway) {
-                    bot.sendMessage(msg.channel, "Giveaways aren't allowed on " + svr.name + ". They encourage hoarding over there, I guess.");
-                    return;
-                }
                 if(configs.servers[svr.id].admincommands.indexOf("giveaway")>-1 && configs.servers[svr.id].admins.indexOf(msg.author.id)==-1) {
                     logMsg(new Date().getTime(), "WARN", null, msg.author.id, "Cannot start giveaway because user is not a bot admin in " + svr.name);
                     bot.sendMessage(msg.channel, "You're not an admin in that server :P");
@@ -2849,6 +2977,10 @@ var pmcommands = {
                 if(!ch) {
                     logMsg(new Date().getTime(), "WARN", null, msg.author.id, "User provided invalid channel for giveaway");
                     bot.sendMessage(msg.channel, "There's no such channel on " + svr.name);
+                    return;
+                }
+                if(!configs.servers[svr.id].giveaway || (configs.servers[svr.id].chrestrict[ch.id] && configs.servers[svr.id].chrestrict[ch.id].indexOf("giveaway")>-1)) {
+                    bot.sendMessage(msg.channel, "Giveaways aren't allowed on #" + ch.name + " in " + svr.name + ". They encourage hoarding over there, I guess.");
                     return;
                 }
                 var suffix = suffix.substring(svrnm.length+1);
@@ -2984,7 +3116,7 @@ var pmcommands = {
                         logMsg(new Date().getTime(), "WARN", null, msg.author.id, "Invalid channel provided for new poll");
                         bot.sendMessage(msg.channel, "Invalid channel.");
                     } else if(stats[svr.id].botOn[ch.id]) {
-                        if(configs.servers[svr.id].poll && (configs.servers[svr.id].admincommands.indexOf("poll")==-1 || configs.servers[svr.id].admins.indexOf(msg.author.id)>-1)) {
+                        if(configs.servers[svr.id].poll && (configs.servers[svr.id].admincommands.indexOf("poll")==-1 || configs.servers[svr.id].admins.indexOf(msg.author.id)>-1) && (!configs.servers[svr.id].chrestrict[ch.id] || configs.servers[svr.id].chrestrict[ch.id].indexOf("poll")==-1)) {
                             if(polls[msg.author.id]) {
                                 logMsg(new Date().getTime(), "WARN", null, msg.author.id, "User has already started a poll");
                                 bot.sendMessage(msg.channel, "You've already started a poll. Close it before starting a new one.");
@@ -3008,6 +3140,8 @@ var pmcommands = {
                                 logMsg(new Date().getTime(), "WARN", null, msg.author.id, "Poll already active in " + ch.name + ", " + ch.server.name);
                                 bot.sendMessage(msg.channel, "There's already a poll going on in that channel. Try again later.");
                             }
+                        } else {
+                            bot.sendMessage(msg.channel, "Polls aren't allowed over there. To hell with surveys!");
                         }
                     }
                 }
@@ -3072,7 +3206,7 @@ var pmcommands = {
     // Get help with the bot
     "help": {
         process: function(bot, msg) {
-            bot.sendMessage(msg.author, "Use `@" + bot.user.username + " help` in the public chat to get help, or head over to the wiki: https://git.io/vwhGe");
+            bot.sendMessage(msg.author, "Use `@" + bot.user.username + " help` in the public chat to get help, or head over to the wiki: http://wiki.awesomebot.xyz/");
         }
     },
     // Gets OAuth URL
@@ -3199,7 +3333,7 @@ var pmcommands = {
 var bot = new Discord.Client({forceFetchUsers: true});
 bot.on("ready", function() {
     // Authorize AwesomeBot
-    unirest.post("http://awesome-botmakersinc.rhcloud.com/botauth?token=" + AuthDetails.awesome_token)
+    unirest.post("http://awesome.awesomebot.xyz/botauth?token=" + AuthDetails.awesome_token)
     .end(function(response) {
         if(response.status==200) {
             postData();
@@ -3350,7 +3484,7 @@ bot.on("message", function(msg) {
             var cmd = pmcommands[cmdTxt];
             if(cmd) {
                 if(cmdTxt!="config" || suffix) {
-                    logMsg(new Date().getTime(), "INFO", null, msg.author.id, "Treating '" + msg.cleanContent + "' from as a PM command");
+                    logMsg(new Date().getTime(), "INFO", null, msg.author.id, "Treating '" + msg.cleanContent + "' as a PM command");
                 }
                 cmd.process(bot, msg, suffix);
                 return;
@@ -3654,96 +3788,6 @@ bot.on("message", function(msg) {
                     return;
                 }
             }
-
-            // Google Play Store/Apple App Store links bot
-            if((((msg.content.toLowerCase().indexOf("linkme ")>-1 || msg.content.toLowerCase().indexOf("linkme: ")>-1 || msg.content.toLowerCase().indexOf("linkme! ")>-1) && configs.servers[msg.channel.server.id].linkme && (configs.servers[msg.channel.server.id].admincommands.indexOf("linkme")==-1 || configs.servers[msg.channel.server.id].admins.indexOf(msg.author.id)>-1)) || msg.content.toLowerCase().indexOf("appstore ")>-1 && configs.servers[msg.channel.server.id].appstore && (configs.servers[msg.channel.server.id].admincommands.indexOf("appstore")==-1 || configs.servers[msg.channel.server.id].admins.indexOf(msg.author.id)>-1))) {                
-                if(msg.content.toLowerCase().indexOf("linkme ")>-1) {
-                    var app = msg.content.substring(msg.content.indexOf("linkme"));
-                    if(!stats[msg.channel.server.id].commands.linkme) {
-                        stats[msg.channel.server.id].commands.linkme = 0;
-                    }
-                    stats[msg.channel.server.id].commands.linkme++;
-                } else if(msg.content.toLowerCase().indexOf("appstore ")>-1) {
-                    var app = msg.content.substring(msg.content.indexOf("appstore"));
-                    if(!stats[msg.channel.server.id].commands.appstore) {
-                        stats[msg.channel.server.id].commands.appstore = 0;
-                    }
-                    stats[msg.channel.server.id].commands.appstore++;
-                }
-                app = app.substring(app.indexOf(" ")+1);
-                var apps = [];
-                
-                // Check for multiple apps
-                while(app.indexOf(",")>-1 && apps.length<=10) {
-                    var cand = app.substring(0, app.indexOf(","));
-                    app = app.substring(app.indexOf(",")+1);
-                    if(apps.indexOf(cand)==-1 && cand) {
-                        apps.push(cand);
-                    }
-                }
-                if(apps.indexOf(app)==-1 && app) {
-                    apps.push(app);
-                }
-                
-                // Make sure query is not empty
-                if(apps.length==0) {
-                    logMsg(new Date().getTime(), "WARN", msg.channel.server.id, msg.channel.id, msg.author.username + " did not provide an app to link");
-                    bot.sendMessage(msg.channel, msg.author + " You need to give me an app to link!");
-                    return;
-                }
-                
-                // Fetch app links
-                if(msg.content.toLowerCase().indexOf("linkme ")>-1 || msg.content.toLowerCase().indexOf("appstore ")>-1) {
-                    if(msg.content.toLowerCase().indexOf("linkme ")>-1) {
-                        logMsg(new Date().getTime(), "INFO", msg.channel.server.id, msg.channel.id, msg.author.username + " requested the following Play Store app(s): " + apps);
-                        for(var i=0; i<apps.length; i++) {
-                            var basePath = "https://play.google.com/store/search?&c=apps&q=" + apps[i] + "&hl=en";
-                            var data;
-                            // Scrapes Play Store search results webpage for information
-                            var u;
-                            unirest.get(basePath)
-                            .end(function(response) {
-                                data = scrapeSearch(response.raw_body);
-                                var send = "";
-                                if(data.items[0]) {
-                                    send = data.items[0].name + " by " + data.items[0].company + ", ";
-                                    if(data.items[0].price.indexOf("$")>-1) {
-                                        send += data.items[0].price.substring(0, data.items[0].price.lastIndexOf("$"));
-                                    } else {
-                                        send += "free"
-                                    }
-                                    send += " and rated " + data.items[0].rating + " stars: " + data.items[0].url + "\n";
-                                } else {
-                                    logMsg(new Date().getTime(), "WARN", msg.channel.server.id, msg.channel.id, "App " + apps[i] + " not found to link for " + msg.author.username);
-                                    send = msg.author + " Sorry, no such app exists.\n";
-                                }
-                                bot.sendMessage(msg.channel, send);
-                            });
-                        }
-                    } else if(msg.content.toLowerCase().indexOf("appstore ")>-1) {
-                        logMsg(new Date().getTime(), "INFO", msg.channel.server.id, msg.channel.id, msg.author.username + " requested the following App Store app(s): " + apps);
-                        for(var i=0; i<apps.length; i++) {
-                            itunes({
-                                entity: "software",
-                                country: "US",
-                                term: apps[i],
-                                limit: 1
-                            }, function (err, data) {
-                                var send = "";
-                                if(!err) {
-                                    send = data.results[0].trackCensoredName + " by " + data.results[0].artistName + ", " + data.results[0].formattedPrice + " and rated " + data.results[0].averageUserRating + " stars: " + data.results[0].trackViewUrl + "\n";
-                                } else {
-                                    logMsg(new Date().getTime(), "WARN", msg.channel.server.id, msg.channel.id, "App " + apps[i] + " not found to link for " + msg.author.username);
-                                    send = msg.author + " Sorry, no such app exists.\n";
-                                }
-                                bot.sendMessage(msg.channel, send);
-                            });
-                        }
-                    }
-                    setCooldown(msg.channel);
-                    return;
-                }
-            }
         }
 
         // Check if message is a command (bot tagged and matches commands list)
@@ -3761,7 +3805,7 @@ bot.on("message", function(msg) {
                     return;
                 }
             }
-            if(configs.servers[msg.channel.server.id].admincommands.indexOf(cmdTxt)>-1 && configs.servers[msg.channel.server.id].admins.indexOf(msg.author.id)==-1) {
+            if((configs.servers[msg.channel.server.id].admincommands.indexOf(cmdTxt)>-1 && configs.servers[msg.channel.server.id].admins.indexOf(msg.author.id)==-1) || (configs.servers[msg.channel.server.id].chrestrict[msg.channel.id] && configs.servers[msg.channel.server.id].chrestrict[msg.channel.id].indexOf(cmdTxt)>-1)) {
                 return;
             }
             if(checkFiltered(msg, true, false) && configs.servers[msg.channel.server.id].admins.indexOf(msg.author.id)==-1 && configs.servers[msg.channel.server.id].servermod && configs.servers[msg.channel.server.id].nsfwfilter[0] && configs.servers[msg.channel.server.id].nsfwfilter[1].indexOf(msg.channel.id)==-1 && ["image", "youtube", "gif", "search"].indexOf(cmdTxt)>-1) {
@@ -3830,7 +3874,7 @@ bot.on("message", function(msg) {
             });
         // Otherwise, check if it's a self-message or just does the tag reaction
         } else {  
-            if(msg.author!=bot.user && msg.isMentioned(bot.user) && configs.servers[msg.channel.server.id].tagreaction && (configs.servers[msg.channel.server.id].admincommands.indexOf("tagreaction")==-1 || configs.servers[msg.channel.server.id].admins.indexOf(msg.author.id)>-1)) {
+            if(msg.author!=bot.user && msg.isMentioned(bot.user) && configs.servers[msg.channel.server.id].tagreaction && (configs.servers[msg.channel.server.id].admincommands.indexOf("tagreaction")==-1 || configs.servers[msg.channel.server.id].admins.indexOf(msg.author.id)>-1) && (!configs.servers[msg.channel.server.id].chrestrict[msg.channel.id] || configs.servers[msg.channel.server.id].chrestrict[ch.id].indexOf("tagreaction")>-1)) {
                 logMsg(new Date().getTime(), "INFO", msg.channel.server.id, msg.channel.id, "Bot tagged by " + msg.author.username);
                 bot.sendMessage(msg.channel,msg.author + ", you called?");
             }
@@ -3872,6 +3916,23 @@ function readyServer(svr) {
     messages[svr.id] = 0;
     spams[svr.id] = {};
     filterviolations[svr.id] = {};
+
+    // Restart countdowns
+    for(var event in configs.servers[svr.id].countdowns) {
+        setTimeout(function() {
+            var ch = svr.channels.get("id", configs.servers[svr.id].countdowns[event].chid);
+            if(ch) {
+                bot.sendMessage(ch, "3...2...1...**" + configs.servers[svr.id].countdowns[event].name + "**");
+                delete configs.servers[svr.id].countdowns[event];
+                logMsg(new Date().getTime(), "INFO", svr.id, ch.id, "Countdown " + event + " expired");
+                saveData("./data/config.json", function(err) {
+                    if(err) {
+                        logMsg(new Date().getTime(), "ERROR", "General", null, "Failed to save updated configs for " + svr.name);
+                    }
+                });
+            }
+        }, configs.servers[svr.id].countdowns[event].timestamp - new Date().getTime());
+    }
     
     // Run timer extensions
     domain.run(runTimerExtensions);
@@ -3886,7 +3947,7 @@ function newServer(svr) {
 
 function postData() {
     postCarbon();
-    unirest.post("http://awesome-botmakersinc.rhcloud.com/botdata?token=" + AuthDetails.awesome_token + "&svrcount=" + bot.servers.length + "&usrcount=" + bot.users.length)
+    unirest.post("http://awesome.awesomebot.xyz/botdata?token=" + AuthDetails.awesome_token + "&svrcount=" + bot.servers.length + "&usrcount=" + bot.users.length)
     .end(function(response) {
         if(response.status==200) {
             logMsg(new Date().getTime(), "INFO", "General", null, "Successfully POSTed to Awesome");
@@ -4187,6 +4248,7 @@ function serverMemberRemovedHandler(svr, usr) {
 
 bot.on("messageUpdated", function(oldmsg, newmsg) {
     if(oldmsg && newmsg && oldmsg.cleanContent && newmsg.cleanContent && oldmsg.cleanContent!=newmsg.cleanContent && !oldmsg.channel.isPrivate && configs.servers[oldmsg.channel.server.id].editmembermsg[0] && configs.servers[oldmsg.channel.server.id].servermod && stats[msg.channel.server.id].botOn[msg.channel.id]) {
+        logMsg(new Date().getTime(), "INFO", msg.channel.server.id, null, "Message by " + msg.author.username + " edited");
         bot.sendMessage(oldmsg.channel, "Message by **@" + getName(oldmsg.channel.server, oldmsg.author) + "** edited. Original:\n```" + oldmsg.cleanContent + "```Updated:\n```" + newmsg.cleanContent + "```");
     }
 });
@@ -4216,6 +4278,7 @@ bot.on("messageDeleted", function(msg) {
                 });
             }
             if(configs.servers[msg.channel.server.id].deletemembermsg[0] && configs.servers[msg.channel.server.id].servermod && msg.author.id!=bot.user.id && stats[msg.channel.server.id].botOn[msg.channel.id]) {
+                logMsg(new Date().getTime(), "INFO", msg.channel.server.id, null, "Message by " + msg.author.username + " deleted");
                 bot.sendMessage(msg.channel, "Message by **@" + getName(msg.channel.server, msg.author) + "** deleted:\n```" + msg.cleanContent + "```");
             }
         }
@@ -4246,21 +4309,25 @@ bot.on("presence", function(oldusr, newusr) {
                 checkStats(oldusr.id, bot.servers[i].id);
 
                 if(newusr.game && newusr.game.type==1 && (!oldusr.game || oldusr.game.type!=1) && configs.servers[bot.servers[i].id].twitchmembermsg[0] && configs.servers[bot.servers[i].id].servermod && bot.servers[i].channels.get("id", configs.servers[bot.servers[i].id].twitchmembermsg[1]) && stats[bot.servers[i].id].botOn(bot.servers[i].channels.get("id", configs.servers[bot.servers[i].id].twitchmembermsg[1]).id)) {
-                    bot.sendMessage(bot.servers[i].channels.get("id", configs.servers[bot.servers[i].id].twitchmembermsg[1]), "**@" + getName(bot.servers[i], oldusr) + "** is streaming on Twitch: " + newusr.game.url);
+                    logMsg(new Date().getTime(), "INFO", svr.id, null, newusr.username + " started streaming on Twitch");
+                    bot.sendMessage(bot.servers[i].channels.get("id", configs.servers[bot.servers[i].id].twitchmembermsg[1]), "**@" + getName(bot.servers[i], newusr) + "** is streaming on Twitch: " + newusr.game.url);
                 }
                 
                 if(oldusr.status=="online" && newusr.status!="online") {
                     stats[bot.servers[i].id].members[oldusr.id].seen = new Date().getTime();
                     
                     if(newusr.status=="offline" && configs.servers[bot.servers[i].id].servermod && configs.servers[bot.servers[i].id].offmembermsg[0] && bot.servers[i].channels.get("id", configs.servers[bot.servers[i].id].offmembermsg[2]) && stats[bot.servers[i].id].botOn[bot.servers[i].channels.get("id", configs.servers[bot.servers[i].id].offmembermsg[2]).id]) { 
+                        logMsg(new Date().getTime(), "INFO", svr.id, null, newusr.username + " went offline");
                         bot.sendMessage(bot.servers[i].channels.get("id", configs.servers[bot.servers[i].id].offmembermsg[2]), configs.servers[bot.servers[i].id].offmembermsg[1][getRandomInt(0, configs.servers[bot.servers[i].id].offmembermsg[1].length-1)].replaceAll("++", "**@" + getName(bot.servers[i], newusr) + "**"));
                     }
                 } else if(oldusr.status=="offline" && newusr.status=="online" && configs.servers[bot.servers[i].id].servermod && configs.servers[bot.servers[i].id].onmembermsg[0] && bot.servers[i].channels.get("id", configs.servers[bot.servers[i].id].onmembermsg[2]) && stats[bot.servers[i].id].botOn[bot.servers[i].channels.get("id", configs.servers[bot.servers[i].id].onmembermsg[2]).id]) {
+                    logMsg(new Date().getTime(), "INFO", svr.id, null, newusr.username + " came online");
                     bot.sendMessage(bot.servers[i].channels.get("id", configs.servers[bot.servers[i].id].onmembermsg[2]), configs.servers[bot.servers[i].id].onmembermsg[1][getRandomInt(0, configs.servers[bot.servers[i].id].onmembermsg[1].length-1)].replaceAll("++", "**@" + getName(bot.servers[i], newusr) + "**"));
                 }
                 
                 if(oldusr.username!=newusr.username && oldusr.username && newusr.username) {
                     if(configs.servers[bot.servers[i].id].changemembermsg[0] && configs.servers[bot.servers[i].id].servermod && bot.servers[i].channels.get("id", configs.servers[bot.servers[i].id].changemembermsg[1]) && stats[bot.servers[i].id].botOn[bot.servers[i].channels.get("id", configs.servers[bot.servers[i].id].changemembermsg[1]).id]) {
+                        logMsg(new Date().getTime(), "INFO", svr.id, null, oldusr.username + " changed username to " + newusr.username);
                         bot.sendMessage(bot.servers[i].channels.get("id", configs.servers[bot.servers[i].id].changemembermsg[1]), "**@" + oldusr.username + (configs.servers[bot.servers[i].id].usediscriminators ? ("#" + oldusr.discriminator) : "") + "** is now **@" + newusr.username + (configs.servers[bot.servers[i].id].usediscriminators ? ("#" + oldusr.discriminator) : "") + "**");
                     }
                     
@@ -5888,7 +5955,7 @@ function parseAdminConfig(delta, svr, consoleid, callback) {
                     return;
                 }
             case "admincommands":
-                if(!commands[delta[key]] && delta[key]!="start") {
+                if(!commands[delta[key]] && delta[key]!="tagreaction") {
                     callback(true);
                     return;
                 }
@@ -5898,6 +5965,30 @@ function parseAdminConfig(delta, svr, consoleid, callback) {
                 } else {
                     configs.servers[svr.id].admincommands.splice(configs.servers[svr.id].admincommands.indexOf(delta[key]), 1);
                     logMsg(new Date().getTime(), "INFO", svr.id, null, "Removed " + delta[key] + " from " + key + " list (@" + consoleusr.username + ")");
+                }
+                break;
+            case "chrestrict":
+                if(!Array.isArray(delta[key]) || delta[key].length!=2 || typeof(delta[key][0])!="string" || (!commands[delta[key][0]] && delta[key][0]!="tagreaction") || !Array.isArray(delta[key][1])) {
+                    callback(true);
+                    return;
+                }
+                for(var i=0; i<svr.channels.length; i++) {
+                    if(!(svr.channels[i] instanceof Discord.VoiceChannel)) {
+                        if(delta[key][1].indexOf(svr.channels[i].id)==-1) {
+                            if(!configs.servers[svr.id][key][svr.channels[i].id]) {
+                                configs.servers[svr.id][key][svr.channels[i].id] = [];
+                            }
+                            if(configs.servers[svr.id][key][svr.channels[i].id].indexOf(delta[key][0])==-1) {
+                                configs.servers[svr.id][key][svr.channels[i].id].push(delta[key][0]);
+                                logMsg(new Date().getTime(), "INFO", svr.id, null, "Command " + delta[key][0] + " turned off in " + svr.channels[i].name + " (@" + consoleusr.username + ")");
+                            }
+                        } else {
+                            if(configs.servers[svr.id][key][svr.channels[i].id] && configs.servers[svr.id][key][svr.channels[i].id].indexOf(delta[key][0])>-1) {
+                                configs.servers[svr.id][key][svr.channels[i].id].splice(configs.servers[svr.id][key][svr.channels[i].id].indexOf(delta[key][0]), 1);
+                                logMsg(new Date().getTime(), "INFO", svr.id, null, "Command " + delta[key][0] + " turned on in " + svr.channels[i].name + " (@" + consoleusr.username + ")");
+                            }
+                        }
+                    }
                 }
                 break;
             case "leave":
@@ -6060,7 +6151,7 @@ function addExtension(extension, svr, consoleid, callback) {
 
 // Default game: rotates between stats
 function defaultGame(i, force) {
-    var games = [bot.servers.length + " server" + (bot.servers.length==1 ? "" : "s") + " connected", "serving " + bot.users.length + " users", "git.io/vaa2F", "v" + version, "by @BitQuote", configs.hosting || "limited mode", "the best Discord bot!"];
+    var games = [bot.servers.length + " server" + (bot.servers.length==1 ? "" : "s") + " connected", "serving " + bot.users.length + " users", "awesomebot.xyz", "v" + version, "by @BitQuote", configs.hosting || "limited mode", "the best Discord bot!"];
     if(configs.game=="default" || force) {
         if(i>=games.length) {
             i = 0;
@@ -6346,6 +6437,9 @@ function muteUser(ch, usr, callback) {
                     callback(err, false);
                 } else {
                     configs.servers[ch.server.id].muted[ch.id].splice(configs.servers[ch.server.id].muted[ch.id].indexOf(usr.id), 1);
+                    if(configs.servers[ch.server.id].muted[ch.id].length==0) {
+                        delete configs.servers[ch.server.id].muted[ch.id];
+                    }
                     saveData("./data/config.json", function(err) {
                         callback(err, false);
                     });
@@ -6534,6 +6628,17 @@ function serverSearch(str, usr) {
 // Checks if a server is fine
 function checkServer(svr, usr) {
     return svr && svr.members.get("id", usr.id) && configs.servers[svr.id].blocked.indexOf(usr.id)==-1;
+}
+
+// Parses app list for linkme/appstore
+function getAppList(suffix) {
+    var apps = suffix.split(",");
+    for(var i=0; i<apps.length; i++) {
+        if(!apps[i] || (apps.indexOf(apps[i])!=i && apps.indexOf(apps[i])>-1)) {
+            apps.splice(i, 1);
+        }
+    }
+    return apps;
 }
 
 // Searches Google Images for keyword(s)
@@ -7145,7 +7250,7 @@ function getHelp(svr, usr) {
             if(configs.servers[svr.id].admincommands.indexOf(cmd)>-1 && configs.servers[svr.id].admins.indexOf(usr.id)==-1) {
                 continue;
             }
-            var tmpinfo = "\n\t" + cmd;
+            var tmpinfo = cmd;
             if(commands[cmd].usage) {
                 tmpinfo += " " + commands[cmd].usage;
             }
@@ -7154,7 +7259,7 @@ function getHelp(svr, usr) {
     }
     info = info.sort().join("");
     if(info) {
-        help.push(info);
+        help.push("```" + info + "```");
         info = "";
     }
     for(var ext in configs.servers[svr.id].extensions) {
@@ -7193,21 +7298,6 @@ function getHelp(svr, usr) {
         help.push(info);
         info = "";
     }
-
-    if(configs.servers[svr.id].linkme) {
-        info += "\nYou can get app links from the Google Play store by using `linkme <some app>`";
-        if(configs.servers[svr.id].appstore) {
-            info += " or `appstore <some app>` for the Apple App Store.";
-        } else {
-            info += ".";
-        }
-    } else if(configs.servers[svr.id].appstore) {
-        info += "\nYou can get app links from the Apple App Store by using `appstore <some app>`.";
-    }
-    if(info) {
-        help.push(info);
-        info = "";
-    }
     
     info += "\nThe following commands are also available via PM:";
     for(var cmd in pmcommands) {
@@ -7225,7 +7315,7 @@ function getHelp(svr, usr) {
         help.push("\nFinally: *AwesomePoints*, a karma system for Discord. You can upvote someone with `@user <\"^\", \"+1\", or \"up\">`, and give 10 of your own points with `@user gild`. You'll lose points for doing bad things, and get a reward for being the most active user at the end of the week.");
     }
     
-    help.push("\nOn top of all this, you can talk to me about anything privately or in the main chat (by tagging me). Learn more on my wiki: https://git.io/vVHvQ \n\nVersion " + version + " by **@BitQuote**, http://awesomebot.xyz. *This project is in no way affiliated with Alphabet, Inc., who does not own or endorse this product.*");
+    help.push("\nOn top of all this, you can talk to me about anything privately or in the main chat (by tagging me). Learn more on my wiki: http://wiki.awesomebot.xyz/ \n\nVersion " + version + " by **@BitQuote**, http://awesomebot.xyz. *This project is in no way affiliated with Alphabet, Inc., who does not own or endorse this product.*");
     return help;
 }
 
@@ -7280,19 +7370,23 @@ function printLog(log) {
     try {
         info = "[" + prettyDate(new Date(log.timestamp)) + "] [" + log.level + "] [";
         if(!log.id && !isNaN(log.ch)) {
-            info += "@" + bot.users.get("id", log.ch).username;
+            var usr = bot.users.get("id", log.ch);
+            info += "@" + (usr ? usr.username : "invalid-user");
         } else if(log.id=="General") {
             info += "General";
         } else if(!isNaN(log.id) && !log.ch) {
-            info += bot.servers.get("id", log.id).name;
+            var svr = bot.servers.get("id", log.id);
+            info += svr ? svr.name : "invalid-server";
         } else if(!isNaN(log.id) && !isNaN(log.ch)) {
-            info += bot.servers.get("id", log.id).name + ", " + bot.channels.get("id", log.ch).name;
+            var svr = bot.servers.get("id", log.id);
+            var ch = bot.channels.get("id", log.ch);
+            info += (svr ? svr.name : "invalid-server") + ", " + (ch ? ch.name : "invalid-channel");
         }
         info += "] " + log.msg;
+        return info;
     } catch (err) {
-        ;
+        return "";
     }
-    return info;
 }
 
 // Filter and print logs by parameter
@@ -7359,7 +7453,7 @@ function checkLogID(id) {
 
 // Check for updates
 function checkVersion() {
-    unirest.get("http://awesome-botmakersinc.rhcloud.com/updates")
+    unirest.get("http://awesome.awesomebot.xyz/updates")
     .header("Accept", "application/json")
     .end(function(response) {
         try {
