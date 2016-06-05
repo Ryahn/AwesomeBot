@@ -102,7 +102,7 @@ function switchServers(sort, search, callback) {
     getJSON("data?section=servers&sort=" + sort, function(data) {
         var servertablebody = "";
         for(var i=0; i<data.stream.length; i++) {
-            if(svrSearch && data.stream[i][1].toLowerCase().indexOf(svrSearch)==-1 && data.stream[i][2].toLowerCase().indexOf(svrSearch)==-1 && data.stream[i][5].description.toLowerCase().indexOf(svrSearch)==-1) {
+            if(svrSearch && data.stream[i][1].toLowerCase().indexOf(svrSearch)==-1 && data.stream[i][2].toLowerCase().indexOf(svrSearch)==-1 && (data.stream[i][5].description && data.stream[i][5].description.toLowerCase().indexOf(svrSearch)==-1)) {
                 continue;
             }
             servertablebody += "<tr><td id=\"serverentry-" + i + "\" class=\"serverentry\">" + data.stream[i][1] + "</td><td>" + data.stream[i][3] + "</td><td>" + data.stream[i][4] + "</td></tr>";

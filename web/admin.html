@@ -258,7 +258,7 @@
                                         <input type="text" class="form-control" id="ranksinput" style="width:200px;" maxlength="200" placeholder="Rank name">
                                     </div>
                                     <div id="ranksmax-block" style="display:inline-block;">
-                                        <input id="ranksmax" class="form-control" type="number" placeholder="Max score" min="1" style="width:150px;" data-toggle="tooltip" data-placement="bottom" title="Score is calculated by adding the number of messages and minutes connected to voice, then dividing by 10"></input>
+                                        <input id="ranksmax" class="form-control" type="number" placeholder="Max score" min="1" style="width:150px;" data-toggle="tooltip" data-placement="bottom" title="Score is calculated by adding the number of messages and 5-minute voice intervals, then dividing by 10"></input>
                                     </div>
                                     <select id="ranksselect" class="selectpicker" data-width="fit" data-live-search="true" title="Select Role"></select>
                                     <input type="submit" class="btn btn-default" value="Add">
@@ -653,6 +653,12 @@
                                 </span>
                                 
                                 <br>
+                                <div class="checkbox">
+                                    <input id="manageentry-newmemberpm" type="checkbox" onclick="javascript:config(this.id.substring(12), this.checked, function() {});">
+                                    <label for="manageentry-newmemberpm">
+                                        Send PM to new members
+                                    </label>
+                                </div>
                                 <div id="manageentry-newgreeting" class="input-group">
                                     <span id="newgreetingremove" class="input-group-addon btn btn-danger" onclick="javascript:configNewgreeting('');">Remove</span>
                                     <textarea id="newgreetinginput" class="form-control custom-control" rows="3" style="resize:none" placeholder="Message shown to new members via PM, in markdown" maxlength="1500"></textarea>

@@ -671,10 +671,10 @@ function switchManage() {
     $("#manageentry-nsfwfilter-action").selectpicker("refresh");
     
     document.getElementById("manageentry-newgreeting").style.display = "";
-    if(botData.configs.newgreeting && botData.configs.servermod) {
+    if(botData.configs.newgreeting && botData.configs.newmemberpm && botData.configs.servermod) {
         document.getElementById("newgreetingremove").style.display = "";
         document.getElementById("newgreetinginput").value = botData.configs.newgreeting;
-    } else if(!botData.configs.servermod) {
+    } else if(!botData.configs.servermod || !botData.configs.newmemberpm) {
         document.getElementById("manageentry-newgreeting").style.display = "none";
     } else {
         document.getElementById("newgreetingremove").style.display = "none";

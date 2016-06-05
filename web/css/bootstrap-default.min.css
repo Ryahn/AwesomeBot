@@ -1444,3 +1444,4 @@ td.visible-print,th.visible-print{display:table-cell!important}
 @media print{.visible-print-inline-block{display:inline-block!important}
 .hidden-print{display:none!important}
 }
+::-moz-selection{text-shadow:none;background:#009688}::selection{text-shadow:none;background:#009688}img::selection{background:0 0}img::-moz-selection{background:0 0}body{webkit-tap-highlight-color:#009688}

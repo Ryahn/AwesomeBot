@@ -67,6 +67,8 @@ try {
 /**
 
     TODO:
+     - option to disable newmembermsg PM
+     - option to send commands from admin console
      - default extensions for throw, slash, rip, etc
      - awesome self host builder
      - extension builder in admin console
@@ -77,7 +79,7 @@ try {
 
 
 // Bot setup
-var version = "3.4";
+var version = "3.4-Alpha";
 var outOfDate = 0;
 var readyToGo = false;
 var disconnects = 0;
@@ -728,35 +730,56 @@ var commands = {
     "countdown": {
         usage: "<time from now>|<event name>",
         process: function(bot, msg, suffix) {
-            if(suffix && suffix.indexOf("|")>0 && suffix.length>=3) {
-                var time = parseTime(suffix.substring(0, suffix.indexOf("|")));
-                var event = suffix.substring(suffix.indexOf("|")+1).toLowerCase();
-                if(!time) {
-                    logMsg(new Date().getTime(), "WARN", msg.channel.server.id, msg.channel.id, "Invalid time provided for countdown");
-                    bot.sendMessage(msg.channel, msg.author + " That's not a valid time. Use the syntax `<no.> <\"s\", \"m\", \"h\", or \"d\">`");
-                } else if(configs.servers[msg.channel.server.id].countdowns[event]) {
-                    logMsg(new Date().getTime(), "WARN", msg.channel.server.id, msg.channel.id, msg.author.username + " tried to overwrite a countdown");
-                    bot.sendMessage(msg.channel, msg.author + " A countdown called `" + suffix.substring(suffix.indexOf("|")+1) + "` already exists. Try a different name.");
+            if(suffix) {
+                if(suffix.indexOf("|")>0 && suffix.length>=3) {
+                    var time = parseTime(suffix.substring(0, suffix.indexOf("|")));
+                    var event = suffix.substring(suffix.indexOf("|")+1).toLowerCase().trim();
+                    if(!time) {
+                        logMsg(new Date().getTime(), "WARN", msg.channel.server.id, msg.channel.id, "Invalid time provided for countdown");
+                        bot.sendMessage(msg.channel, msg.author + " That's not a valid time. Use the syntax `<no.> <\"s\", \"m\", \"h\", or \"d\">`");
+                    } else if(configs.servers[msg.channel.server.id].countdowns[event]) {
+                        logMsg(new Date().getTime(), "WARN", msg.channel.server.id, msg.channel.id, msg.author.username + " tried to overwrite a countdown");
+                        bot.sendMessage(msg.channel, msg.author + " A countdown called `" + suffix.substring(suffix.indexOf("|")+1) + "` already exists. Try a different name.");
+                    } else {
+                        var timestamp = new Date().getTime() + time.countdown;
+                        configs.servers[msg.channel.server.id].countdowns[event] = {
+                            timestamp: timestamp,
+                            chid: msg.channel.id,
+                            name: suffix.substring(suffix.indexOf("|")+1)
+                        };
+                        setTimeout(function() {
+                            if(stats[msg.channel.server.id].botOn[msg.channel.id]) {
+                                bot.sendMessage(msg.channel, "3...2...1...**" + suffix.substring(suffix.indexOf("|")+1) + "**");
+                                delete configs.servers[msg.channel.server.id].countdowns[event];
+                                logMsg(new Date().getTime(), "INFO", msg.channel.server.id, msg.channel.id, "Countdown " + event + " expired");
+                            }
+                        }, time.countdown);
+                        bot.sendMessage(msg.channel, "I gotchu bro, countdown set to expire at " + prettyDate(new Date(timestamp)));
+                        saveData("./data/config.json", function(err) {
+                            if(err) {
+                                logMsg(new Date().getTime(), "ERROR", "General", null, "Failed to save updated configs for " + msg.channel.server.name);
+                            }
+                        });
+                    }
                 } else {
-                    var timestamp = new Date().getTime() + time.countdown;
-                    configs.servers[msg.channel.server.id].countdowns[event] = {
-                        timestamp: timestamp,
-                        chid: msg.channel.id,
-                        name: suffix.substring(suffix.indexOf("|")+1)
-                    };
-                    setTimeout(function() {
-                        if(stats[msg.channel.server.id].botOn[msg.channel.id]) {
-                            bot.sendMessage(msg.channel, "3...2...1...**" + suffix.substring(suffix.indexOf("|")+1) + "**");
-                            delete configs.servers[msg.channel.server.id].countdowns[event];
-                            logMsg(new Date().getTime(), "INFO", msg.channel.server.id, msg.channel.id, "Countdown " + event + " expired");
+                    if(configs.servers[msg.channel.server.id].countdowns[suffix.toLowerCase()]) {
+                        bot.sendMessage(msg.channel, "**" + configs.servers[msg.channel.server.id].countdowns[suffix.toLowerCase()].name + "** set to expire in " + secondsToString((configs.servers[msg.channel.server.id].countdowns[suffix.toLowerCase()].timestamp - new Date().getTime()) / 1000));
+                    } else {
+                        var info = "Select from one of the following:";
+                        var options = [];
+                        var count = 0;
+                        for(var event in configs.servers[msg.channel.server.id].countdowns) {
+                            info += "\n\t" + count + ") " + configs.servers[msg.channel.server.id].countdowns[event].name;
+                            options.push(event);
+                            count++;
                         }
-                    }, time.countdown);
-                    bot.sendMessage(msg.channel, "I gotchu bro, countdown set to expire at " + prettyDate(new Date(timestamp)));
-                    saveData("./data/config.json", function(err) {
-                        if(err) {
-                            logMsg(new Date().getTime(), "ERROR", "General", null, "Failed to save updated configs for " + msg.channel.server.name);
+                        bot.sendMessage(msg.channel, options.length==0 ? ("No countdowns have been started. Use `" + getPrefix(msg.channel.server) + "countdown <time from now>|<event name>` to start one.") : info);
+                        if(options.length>0) {
+                            selectMenu(msg.channel, msg.author.id, function(i) {
+                                bot.sendMessage(msg.channel, "**" + configs.servers[msg.channel.server.id].countdowns[options[i]].name + "** set to expire in " + secondsToString((configs.servers[msg.channel.server.id].countdowns[options[i]].timestamp - new Date().getTime()) / 1000));
+                            }, count-1);
                         }
-                    });
+                    }
                 }
             } else {
                 logMsg(new Date().getTime(), "WARN", msg.channel.server.id, msg.channel.id, "Invalid countdown parameters provided");
@@ -833,7 +856,7 @@ var commands = {
                     }
                     if(found) {
                         var url = "http://apimeme.com/meme?meme=" + encodeURI(name.replace(/&/g, '')) + "&top=" + encodeURI(top.replace(/&/g, '')) + "&bottom=" + encodeURI(bottom.replace(/&/g, ''));
-                        base64.base64encoder(url, {filename: "meme.jpg"}, function(error, image) {
+                        base64.encode(url, {filename: "meme.jpg"}, function(error, image) {
                             if(!error) {
                                 bot.sendFile(msg.channel, image);
                             } else {
@@ -882,7 +905,7 @@ var commands = {
                             info += (result.body[i].started_airing ? ("\n**Started Airing:** " + result.body[i].started_airing) : "") + (result.body[i].finished_airing ? ("\n**Finished Airing:** " + result.body[i].finished_airing) : "") + "\n" + result.body[i].url;
                             results.push(info);
                         }
-                        var select = selectMenu(msg.channel, function(i) {
+                        var select = selectMenu(msg.channel, msg.author.id, function(i) {
                             bot.sendMessage(msg.channel, results[i]);
                         }, results.length-1);
                         if(select) {
@@ -934,7 +957,7 @@ var commands = {
                     logMsg(new Date().getTime(), "WARN", msg.channel.server.id, msg.channel.id, "No manga found for '" + query + "'");
                     bot.sendMessage(msg.channel, "Nope, no manga found.");
                 } else {
-                    selectMenu(msg.channel, function(i) {
+                    selectMenu(msg.channel, msg.author.id, function(i) {
                         unirest.get("https://www.mangaeden.com/api/manga/" + results[i][1])
                         .header("Accept", "application/json")
                         .end(function(result) {
@@ -1589,17 +1612,25 @@ var commands = {
                 bot.sendMessage(msg.channel, msg.author + " You need to provide a search term.");
                 return;
             }
-            new Wiki().search(suffix,1).then(function(data) {
+            var wiki = new Wiki.default();
+            wiki.search(suffix).then(function(data) {
                 if(data.results.length==0) {
                     logMsg(new Date().getTime(), "WARN", msg.channel.server.id, msg.channel.id, "Wikipedia article not found for " + suffix);
                     bot.sendMessage(msg.channel, "I don't think Wikipedia has an article on that.");
                     return;
                 }
-                new Wiki().page(data.results[0]).then(function(page) {
+                wiki.page(data.results[0]).then(function(page) {
                     page.summary().then(function(summary) {
                         if(summary.indexOf(" may refer to:") > -1 || summary.indexOf(" may stand for:") > -1) {
-                            logMsg(new Date().getTime(), "WARN", msg.channel.server.id, msg.channel.id, "Ambiguous search term '" + suffix + "' provided");
-                            bot.sendMessage(msg.channel, "There are several matching Wikipedia articles; try making your query more specific.");
+                            var options = summary.split("\n").slice(1);
+                            var info = "Select one of the following:";
+                            for(var i=0; i<options.length; i++) {
+                                info += "\n\t" + i + ") " + options[i];
+                            }
+                            bot.sendMessage(msg.channel, info);
+                            selectMenu(msg.channel, msg.author.id, function(i) {
+                                commands.wiki.process(bot, msg, options[i].substring(0, options[i].indexOf(",")));
+                            }, options.length-1);
                         } else {
                             var sumText = summary.split("\n");
                             var count = 0;
@@ -2089,11 +2120,11 @@ var commands = {
                 }
                 if(giveaways[g].enrolled.indexOf(msg.author.id)>-1) {
                     giveaways[g].enrolled.splice(giveaways[g].enrolled.indexOf(msg.author.id), 1);
-                    logMsg(new Date().getTime(), "INFO", msg.channel.server.id, msg.channel.id, "Disenrolled " + msg.author.id + " in giveaway " + giveaways[g].name);
+                    logMsg(new Date().getTime(), "INFO", msg.channel.server.id, msg.channel.id, "Disenrolled " + msg.author.username + " in giveaway " + giveaways[g].name);
                     bot.sendMessage(msg.channel, msg.author + " I disenrolled you");
                 } else {
                     giveaways[g].enrolled.push(msg.author.id);
-                    logMsg(new Date().getTime(), "INFO", msg.channel.server.id, msg.channel.id, "Enrolled " + msg.author.id + " in giveaway " + giveaways[g].name);
+                    logMsg(new Date().getTime(), "INFO", msg.channel.server.id, msg.channel.id, "Enrolled " + msg.author.username + " in giveaway " + giveaways[g].name);
                     bot.sendMessage(msg.channel, "Ok " + msg.author + " you've been entered to win!");
                 }
             } else if(msg.content.indexOf(suffix)>-1) {
@@ -2109,7 +2140,7 @@ var commands = {
                 }
                 if(count>0) {
                     bot.sendMessage(msg.channel, info);
-                    selectMenu(msg.channel, function(i) {
+                    selectMenu(msg.channel, msg.author.id, function(i) {
                         commands.giveaway.process(bot, msg, results[i]);
                     }, count-1);
                 }
@@ -2265,7 +2296,7 @@ var commands = {
                             }
                             bot.sendMessage(msg.channel, info);
                             if(availableRoles.length>0) {
-                                selectMenu(msg.channel, function(i) {
+                                selectMenu(msg.channel, msg.author.id, function(i) {
                                     commands.profile.process(bot, msg, "role " + availableRoles[i]);
                                 }, availableRoles.length-1);
                             }
@@ -2554,7 +2585,7 @@ var commands = {
                         points: 0
                     }
                 }
-                var cost = pointsball<500 ? Math.ceil(pointsball/10) : Math.ceil(pointsball/20)
+                var cost = pointsball<500 ? Math.ceil(pointsball/7) : Math.ceil(pointsball/10)
                 if(profileData[msg.author.id].points>=cost) {
                     profileData[msg.author.id].points -= cost;
                     lottery[msg.channel.server.id].members.push(msg.author.id);
@@ -2666,7 +2697,7 @@ var commands = {
                     rankOptions.push(i + ") " + configs.servers[msg.channel.server.id].rankslist[i].name);
                 }
                 bot.sendMessage(msg.channel, "Select one of the following:\n\t" + rankOptions.join("\n\t"));
-                selectMenu(msg.channel, function(i) {
+                selectMenu(msg.channel, msg.author.id, function(i) {
                     commands.ranks.process(bot, msg, rankOptions[i].substring(rankOptions[i].indexOf(")")+2));
                 }, rankOptions.length-1);
             }
@@ -3347,7 +3378,7 @@ bot.on("ready", function() {
     
     // Set avatar if necessary
     if(AuthDetails.avatar_url) {
-        base64.base64encoder(AuthDetails.avatar_url, {filename: "avatar"}, function(error, image) {
+        base64.encode(AuthDetails.avatar_url, {filename: "avatar"}, function(error, image) {
             if(!error) {
                 bot.setAvatar(image, function(err) {
                     if(err) {
@@ -3741,11 +3772,11 @@ bot.on("message", function(msg) {
             }
 
             // Check for active select menu
-            if(selectmenu[msg.channel.id]) {
+            if(selectmenu[msg.channel.id] && msg.author.id==selectmenu[msg.channel.id].usrid) {
                 if(msg.content.toLowerCase()=="quit") {
                     delete selectmenu[msg.channel.id];
-                } else if(!isNaN(msg.content) && parseInt(msg.content)>=0 && parseInt(msg.content)<=selectmenu[msg.channel.id].max) {
-                    selectmenu[msg.channel.id].process(parseInt(msg.content));
+                } else if(!isNaN(msg.content.trim()) && parseInt(msg.content.trim())>=0 && parseInt(msg.content.trim())<=selectmenu[msg.channel.id].max) {
+                    selectmenu[msg.channel.id].process(parseInt(msg.content.trim()));
                     delete selectmenu[msg.channel.id];
                 } else {
                     bot.sendMessage(msg.channel, "Invalid selection. Type a number from 0 to " + selectmenu[msg.channel.id].max + " or `quit`.");
@@ -3874,7 +3905,7 @@ bot.on("message", function(msg) {
             });
         // Otherwise, check if it's a self-message or just does the tag reaction
         } else {  
-            if(msg.author!=bot.user && msg.isMentioned(bot.user) && configs.servers[msg.channel.server.id].tagreaction && (configs.servers[msg.channel.server.id].admincommands.indexOf("tagreaction")==-1 || configs.servers[msg.channel.server.id].admins.indexOf(msg.author.id)>-1) && (!configs.servers[msg.channel.server.id].chrestrict[msg.channel.id] || configs.servers[msg.channel.server.id].chrestrict[ch.id].indexOf("tagreaction")>-1)) {
+            if(msg.author!=bot.user && msg.isMentioned(bot.user) && configs.servers[msg.channel.server.id].tagreaction && (configs.servers[msg.channel.server.id].admincommands.indexOf("tagreaction")==-1 || configs.servers[msg.channel.server.id].admins.indexOf(msg.author.id)>-1) && (!configs.servers[msg.channel.server.id].chrestrict[msg.channel.id] || configs.servers[msg.channel.server.id].chrestrict[msg.channel.id].indexOf("tagreaction")>-1)) {
                 logMsg(new Date().getTime(), "INFO", msg.channel.server.id, msg.channel.id, "Bot tagged by " + msg.author.username);
                 bot.sendMessage(msg.channel,msg.author + ", you called?");
             }
@@ -4049,10 +4080,17 @@ bot.on("serverMemberUpdated", function(svr, usr) {
 
 bot.on("serverNewMember", function(svr, usr) {
     // Check if this has been enabled in admin console and the bot is listening
-    if(configs.servers[svr.id].servermod && configs.servers[svr.id].newmembermsg[0] && stats[svr.id].botOn[svr.defaultChannel.id]) {
-        logMsg(new Date().getTime(), "INFO", svr.id, null, "New member: " + usr.username);
-        bot.sendMessage(svr.channels.get("id", configs.servers[svr.id].newmembermsg[2]), configs.servers[svr.id].newmembermsg[1][getRandomInt(0, configs.servers[svr.id].newmembermsg[1].length-1)].replaceAll("++", usr));
-        bot.sendMessage(usr, "Welcome to the " + svr.name + " Discord chat! " + configs.servers[svr.id].newgreeting + " I'm " + (svr.detailsOfUser(bot.user).nick || bot.user.username) + " by the way. Learn more with `" + getPrefix(svr) + "help` in the public chat.");
+    if(configs.servers[svr.id].servermod) {
+        if(configs.servers[svr.id].newmembermsg[0]) {
+            logMsg(new Date().getTime(), "INFO", svr.id, null, "New member: " + usr.username);
+            var ch = svr.channels.get("id", configs.servers[svr.id].newmembermsg[2]);
+            if(ch && stats[svr.id].botOn[ch.id]) {
+                bot.sendMessage(ch, configs.servers[svr.id].newmembermsg[1][getRandomInt(0, configs.servers[svr.id].newmembermsg[1].length-1)].replaceAll("++", usr));
+            }
+        }
+        if(configs.servers[svr.id].newmemberpm) {
+            bot.sendMessage(usr, "Welcome to the " + svr.name + " Discord chat! " + configs.servers[svr.id].newgreeting + " I'm " + (svr.detailsOfUser(bot.user).nick || bot.user.username) + " by the way. Learn more with `" + getPrefix(svr) + "help` in the public chat.");
+        }
     }
     if(configs.servers[svr.id].servermod && configs.servers[svr.id].newrole.length>0) {
         for(var i=0; i<configs.servers[svr.id].newrole.length; i++) {
@@ -4143,7 +4181,7 @@ function checkStats(usrid, svrid) {
 
 // Computes current rank and checks for level up
 function checkRank(usr, svr) {
-    if(usr && svr) {
+    if(usr && !usr.bot && svr) {
         var currentRankscore = stats[svr.id].members[usr.id].rankscore + ((stats[svr.id].members[usr.id].messages + (stats[svr.id].members[usr.id].voice * 10)) / 10);
         for(var i=0; i<configs.servers[svr.id].rankslist.length; i++) {
             if(currentRankscore<=configs.servers[svr.id].rankslist[i].max || i==configs.servers[svr.id].rankslist.length-1) {
@@ -4223,9 +4261,12 @@ function serverMemberRemovedHandler(svr, usr) {
     if(configs.servers[svr.id].blocked.indexOf(usr.id)>-1) {
         configs.servers[svr.id].blocked.splice(configs.servers[svr.id].blocked.indexOf(usr.id), 1);
     }
-    if(configs.servers[svr.id].servermod && configs.servers[svr.id].rmmembermsg[0] && stats[svr.id].botOn[svr.defaultChannel.id]) {
+    if(configs.servers[svr.id].servermod && configs.servers[svr.id].rmmembermsg[0]) {
         logMsg(new Date().getTime(), "INFO", svr.id, null, "Member removed: " + usr.username);
-        bot.sendMessage(svr.channels.get("id", configs.servers[svr.id].rmmembermsg[2]), configs.servers[svr.id].rmmembermsg[1][getRandomInt(0, configs.servers[svr.id].rmmembermsg[1].length-1)].replaceAll("++", "**@" + getName(svr, usr) + "**"));
+        var ch = svr.channels.get("id", configs.servers[svr.id].rmmembermsg[2]);
+        if(ch && stats[svr.id].botOn[ch.id]) {
+            bot.sendMessage(ch, configs.servers[svr.id].rmmembermsg[1][getRandomInt(0, configs.servers[svr.id].rmmembermsg[1].length-1)].replaceAll("++", "**@" + getName(svr, usr) + "**"));
+        }
     }
 
     var changed = false;
@@ -4287,17 +4328,23 @@ bot.on("messageDeleted", function(msg) {
 
 // Message on user banned
 bot.on("userBanned", function(usr, svr) {
-    if(configs.servers[svr.id].servermod && configs.servers[svr.id].banmembermsg[0] && stats[svr.id].botOn[svr.defaultChannel.id]) {
+    if(configs.servers[svr.id].servermod && configs.servers[svr.id].banmembermsg[0]) {
         logMsg(new Date().getTime(), "INFO", svr.id, null, "User " + usr.username + " has been banned");
-        bot.sendMessage(svr.channels.get("id", configs.servers[svr.id].banmembermsg[2]), configs.servers[svr.id].banmembermsg[1][getRandomInt(0, configs.servers[svr.id].banmembermsg[1].length-1)].replaceAll("++", "**@" + getName(svr, usr) + "**"));
+        var ch = svr.channels.get("id", configs.servers[svr.id].banmembermsg[2]);
+        if(ch && stats[svr.id].botOn[ch.id]) {
+            bot.sendMessage(ch, configs.servers[svr.id].banmembermsg[1][getRandomInt(0, configs.servers[svr.id].banmembermsg[1].length-1)].replaceAll("++", "**@" + getName(svr, usr) + "**"));
+        }
     }
 });
 
 // Message on user unbanned
 bot.on("userUnbanned", function(usr, svr) {
-    if(configs.servers[svr.id].servermod && configs.servers[svr.id].unbanmembermsg[0] && stats[svr.id].botOn[svr.defaultChannel.id]) {
+    if(configs.servers[svr.id].servermod && configs.servers[svr.id].unbanmembermsg[0]) {
         logMsg(new Date().getTime(), "INFO", svr.id, null, "User " + usr.username + " has been unbanned");
-        bot.sendMessage(svr.channels.get("id", configs.servers[svr.id].unbanmembermsg[2]), configs.servers[svr.id].unbanmembermsg[1][getRandomInt(0, configs.servers[svr.id].unbanmembermsg[1].length-1)].replaceAll("++", "**@" + getName(svr, usr) + "**"));
+        var ch = svr.channels.get("id", configs.servers[svr.id].unbanmembermsg[2]);
+        if(ch && stats[svr.id].botOn[ch.id]) {
+            bot.sendMessage(ch, configs.servers[svr.id].unbanmembermsg[1][getRandomInt(0, configs.servers[svr.id].unbanmembermsg[1].length-1)].replaceAll("++", "**@" + getName(svr, usr) + "**"));
+        }
     }
 });
 
@@ -4326,9 +4373,12 @@ bot.on("presence", function(oldusr, newusr) {
                 }
                 
                 if(oldusr.username!=newusr.username && oldusr.username && newusr.username) {
-                    if(configs.servers[bot.servers[i].id].changemembermsg[0] && configs.servers[bot.servers[i].id].servermod && bot.servers[i].channels.get("id", configs.servers[bot.servers[i].id].changemembermsg[1]) && stats[bot.servers[i].id].botOn[bot.servers[i].channels.get("id", configs.servers[bot.servers[i].id].changemembermsg[1]).id]) {
+                    if(configs.servers[bot.servers[i].id].servermod && configs.servers[bot.servers[i].id].changemembermsg[0]) {
                         logMsg(new Date().getTime(), "INFO", svr.id, null, oldusr.username + " changed username to " + newusr.username);
-                        bot.sendMessage(bot.servers[i].channels.get("id", configs.servers[bot.servers[i].id].changemembermsg[1]), "**@" + oldusr.username + (configs.servers[bot.servers[i].id].usediscriminators ? ("#" + oldusr.discriminator) : "") + "** is now **@" + newusr.username + (configs.servers[bot.servers[i].id].usediscriminators ? ("#" + oldusr.discriminator) : "") + "**");
+                        var ch = bot.servers[i].channels.get("id", configs.servers[bot.servers[i].id].changemembermsg[1]);
+                        if(ch && stats[bot.servers[i].id].botOn[ch.id]) {
+                            bot.sendMessage(ch, "**@" + oldusr.username + (configs.servers[bot.servers[i].id].usediscriminators ? ("#" + oldusr.discriminator) : "") + "** is now **@" + newusr.username + (configs.servers[bot.servers[i].id].usediscriminators ? ("#" + oldusr.discriminator) : "") + "**");
+                        }
                     }
                     
                     if(!profileData[oldusr.id]) {
@@ -4846,11 +4896,7 @@ function getExtensionParams(extension, svr, ch, msg, keywordcontains, suffix) {
             getRSS(svr.id, site, count, callback);
         },
         bot: {
-            username: bot.user.username,
-            nick: svr.detailsOfUser(bot.user).nick,
-            discriminator: bot.user.discriminator,
-            id: bot.user.id,
-            avatar: bot.user.avatarURL,
+            user: getExtensionUser(bot.user, svr),
             sendMessage: function(message) {
                 bot.sendMessage(ch, message);
             },
@@ -4899,8 +4945,8 @@ function getExtensionParams(extension, svr, ch, msg, keywordcontains, suffix) {
                     callback(true);
                 }
             },
-            createSelectMenu: function(callback, max) {
-                return selectMenu(ch, callback, max);
+            createSelectMenu: function(callback, usrid, max) {
+                return selectMenu(ch, usrid, callback, max);
             }
         },
         parseTime: parseTime,
@@ -5142,10 +5188,11 @@ function rssUpdates(svr, i) {
 }
 
 // Add a select menu to a channel
-function selectMenu(ch, callback, max) {
+function selectMenu(ch, usrid, callback, max) {
     if(!selectmenu[ch.id] && typeof(callback)=="function" && max!=null && !isNaN(max)) {
         selectmenu[ch.id] = {
             process: callback,
+            usrid: usrid,
             max: max
         };
         return true;
@@ -5251,7 +5298,7 @@ function parseMaintainerConfig(delta, consoleid, callback) {
                 });
                 break;
             case "avatar":
-                base64.base64encoder(delta[key], {filename: "avatar"}, function(error, image) {
+                base64.encode(delta[key], {filename: "avatar"}, function(error, image) {
                     if(!error) {
                         bot.setAvatar(image, function(err) {
                             if(err) {
@@ -6019,7 +6066,7 @@ function parseAdminConfig(delta, svr, consoleid, callback) {
                 if(configs.servers[svr.id][key]!=null) {
                     configs.servers[svr.id][key] = delta[key];
                     var yn = delta[key] ? "on" : "off";
-                    logMsg(new Date().getTime(), "INFO", svr.id, null, "Command " + key + " turned " + yn + " (@" + consoleusr.username + ")");
+                    logMsg(new Date().getTime(), "INFO", svr.id, null, key + " turned " + yn + " (@" + consoleusr.username + ")");
                 } else {
                     callback(true);
                     return;
@@ -6614,7 +6661,7 @@ function serverSearch(str, usr) {
         }
     }
 
-    if(profileData[usr.id] && profileData[usr.id].svrnicks[str.toLowerCase()]) {
+    if(profileData[usr.id] && profileData[usr.id].svrnicks && profileData[usr.id].svrnicks[str.toLowerCase()]) {
         svr = bot.servers.get("id", profileData[usr.id].svrnicks[str.toLowerCase()]);
         if(checkServer(svr, usr)) {
             return svr;
@@ -7250,7 +7297,7 @@ function getHelp(svr, usr) {
             if(configs.servers[svr.id].admincommands.indexOf(cmd)>-1 && configs.servers[svr.id].admins.indexOf(usr.id)==-1) {
                 continue;
             }
-            var tmpinfo = cmd;
+            var tmpinfo = "\n" + cmd;
             if(commands[cmd].usage) {
                 tmpinfo += " " + commands[cmd].usage;
             }
@@ -7264,14 +7311,14 @@ function getHelp(svr, usr) {
     }
     for(var ext in configs.servers[svr.id].extensions) {
         if(configs.servers[svr.id].extensions[ext].type.toLowerCase()=="command") {
-            info += "\n\t" + configs.servers[svr.id].extensions[ext].key;
+            info += "\n" + configs.servers[svr.id].extensions[ext].key;
             if(configs.servers[svr.id].extensions[ext].usage) {
                 info += " " + configs.servers[svr.id].extensions[ext].usage;
             }
         }
     }
     if(info) {
-        help.push(info);
+        help.push("```" + info + "```");
         info = "";
     }
     
@@ -7299,15 +7346,15 @@ function getHelp(svr, usr) {
         info = "";
     }
     
-    info += "\nThe following commands are also available via PM:";
+    info = "";
     for(var cmd in pmcommands) {
-        info += "\n\t" + cmd;
+        info += "\n" + cmd;
         if(pmcommands[cmd].usage) {
             info += " " + pmcommands[cmd].usage.replace("<server>", svr.name);
         }
     }
     if(info) {
-        help.push(info);
+        help.push("The following commands are also available via PM:```" + info + "```");
         info = "";
     }
     
