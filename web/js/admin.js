@@ -29,7 +29,7 @@ function doAdminSetup() {
     switchExtensions();
     $("#extensions-body").collapse("show");
     
-    $("#loading-modal").modal("hide");
+    NProgress.done();
 }
 
 function configNickname() {
@@ -103,6 +103,7 @@ function switchBlocked() {
             for(var j=0; j<botData.channels.length; j++) {
                 popovercontent += "<div class=\"checkbox\"><input type=\"checkbox\" id=\"blockedentry-mute-" + j + "\" onclick=\"javascript:newMute(['" + botData.configs.blocked[i][2] + "', '" + botData.channels[j][1] + "'], " + i + ");\"" + (botData.configs.blocked[i][4][botData.channels[j][1]] ? " checked" : "") + "><label for=\"blockedentry-mute-" + j + "\">#" + botData.channels[j][0] + "</label></div>";
             }
+            popovercontent += "<button type=\"button\" class=\"btn btn-default\" onclick=\"javascript:newMute(['" + botData.configs.blocked[i][2] + "', 'all'], " + i + ");\">All Channels</button>";
             return popovercontent;
         },
         selector: ".blockedmute",
@@ -429,7 +430,7 @@ function switchCommands() {
         "emoji": "Fetches the large version of an emoji", 
         "time": "Gets the time in a city or country",
         "avatar": "Posts a user's profile picture",
-        "list": "Admin-only to-do list",
+        "list": "In-chat to-do list",
         "kick": "Removes a member from the server",
         "ban": "Removes a member from the server and prevents them from coming back",
         "nuke": "Deletes messages in a channel, all or from a user",
@@ -446,9 +447,18 @@ function switchCommands() {
         "imdb": "Provides movie and TV show data",
         "search": "Displays Google search and Knowledge Graph results",
         "ddg": "DuckDuckGo Instant Answers",
-        "countdown": "Set a timer for an event"
+        "countdown": "Set a timer for an event",
+        "8ball": "Predicts the answer to a question",
+        "fortune": "Tells your fortune (not really)",
+        "catfact": "Random fact about cats",
+        "numfact": "Random fact about a number",
+        "e621": "Searches by tag on e621.net",
+        "rule34": "Searches by tag on rule34.xxx",
+        "safebooru": "Searches by tag on safebooru.org"
     }
-    var blacklist = ["admins", "blocked", "extensions", "newgreeting", "nsfwfilter", "servermod", "spamfilter", "customroles", "customcolors", "customkeys", "cmdtag", "newmembermsg", "onmembermsg", "offmembermsg", "changemembermsg", "rankmembermsg", "twitchmembermsg", "editmembermsg", "deletemembermsg", "rmmembermsg", "banmembermsg", "unbanmembermsg", "triviasets", "newrole", "showpub", "defaultcount", "maxcount", "autoprune", "translated", "filter", "usenicks", "usediscriminators", "listsrc", "listing", "tagcommands", "cooldown", "stats", "points", "ranks", "rankslist", "messages", "games", "lottery", "admincommands", "showsvr", "chrestrict"];
+    var newcmds = ["kick", "ban", "nuke", "list", "avatar", "archive", "mute", "anime", "manga", "room", "giveaway", "calc", "countdown", "ddg", "imdb", "8ball", "fortune", "catfact", "numfact", "e621", "rule34", "safebooru"];
+    var nsfwcmds = ["e621", "rule34", "safebooru"];
+    var blacklist = ["admins", "blocked", "extensions", "newgreeting", "nsfwfilter", "servermod", "spamfilter", "customroles", "customcolors", "customkeys", "cmdtag", "newmembermsg", "onmembermsg", "offmembermsg", "changemembermsg", "rankmembermsg", "twitchmembermsg", "editmembermsg", "deletemembermsg", "rmmembermsg", "banmembermsg", "unbanmembermsg", "triviasets", "newrole", "showpub", "defaultcount", "maxcount", "autoprune", "translated", "filter", "usenicks", "usediscriminators", "listsrc", "listing", "tagcommands", "cooldown", "stats", "points", "ranks", "rankslist", "messages", "games", "lottery", "admincommands", "showsvr", "chrestrict", "newmemberpm"];
 
     var cmdchannelselect = "";
     for(var i=0; i<botData.channels.length; i++) {
@@ -458,7 +468,7 @@ function switchCommands() {
     var commands = [];
     for(var cmd in botData.configs) {
         if(blacklist.indexOf(cmd)==-1) {
-            commands.push("<div class=\"checkbox\"><input style=\"height: auto;\" id=\"commandsentry-" + cmd + "\" type=\"checkbox\" onclick=\"javascript:config(this.id.substring(14), this.checked, switchCommands);\" " + ((cmd=="rss" ? botData.configs[cmd][0] : botData.configs[cmd]) ? "checked " : "") + "/><label for=\"commandsentry-" + cmd + "\">" + cmd + "&nbsp;&nbsp;<p class=\"help-block\" style=\"display:inline\">" + descs[cmd] + "</p></label>&nbsp;&nbsp;<select id=\"" + cmd + "-admincommands-select\" onChange=\"javascript:config('admincommands', '" + cmd + "', switchCommands);\" class=\"selectpicker\" data-width=\"fit\"><option" + (botData.configs.admincommands.indexOf(cmd)==-1 ? " selected" : "") + ">Everyone</option><option" + (botData.configs.admincommands.indexOf(cmd)>-1 ? " selected" : "") + ">Admins only</option></select>&nbsp;<select id=\"" + cmd + "-chrestrict-select\" onChange=\"javascript:config('chrestrict', ['" + cmd + "', $('#' + this.id).val()], switchCommands);\" class=\"selectpicker\" data-width=\"fit\" data-selected-text-format=\"count\" multiple>" + cmdchannelselect + "</select></div>");
+            commands.push("<div class=\"checkbox\"><input style=\"height: auto;\" id=\"commandsentry-" + cmd + "\" type=\"checkbox\" onclick=\"javascript:config(this.id.substring(14), this.checked, switchCommands);\" " + ((cmd=="rss" ? botData.configs[cmd][0] : botData.configs[cmd]) ? "checked " : "") + "/><label for=\"commandsentry-" + cmd + "\">" + cmd + "&nbsp;" + (nsfwcmds.indexOf(cmd)>-1 ? "<span class=\"label label-danger newlabel\">NSFW</span>&nbsp;" : "") + (newcmds.indexOf(cmd)>-1 ? "<span class=\"label label-info newlabel\">New</span>&nbsp;" : "") + "&nbsp;<p class=\"help-block\" style=\"display:inline\">" + descs[cmd] + "</p></label>&nbsp;&nbsp;<select id=\"" + cmd + "-admincommands-select\" onChange=\"javascript:config('admincommands', '" + cmd + "', switchCommands);\" class=\"selectpicker\" data-width=\"fit\"><option" + (botData.configs.admincommands.indexOf(cmd)==-1 ? " selected" : "") + ">Everyone</option><option" + (botData.configs.admincommands.indexOf(cmd)>-1 ? " selected" : "") + ">Admins only</option></select>&nbsp;<select id=\"" + cmd + "-chrestrict-select\" onChange=\"javascript:config('chrestrict', ['" + cmd + "', $('#' + this.id).val()], switchCommands);\" class=\"selectpicker\" data-width=\"fit\" data-selected-text-format=\"count\" multiple>" + cmdchannelselect + "</select></div>");
         }
     }
     commands.sort();
@@ -839,10 +849,10 @@ function configCA(type) {
             }
         });
     } else if(type=="archive") {
-        $("#loading-modal").modal("show");
+        NProgress.start();
         getJSON("archive?auth=" + authtoken + "&type=" + authtype + "&svrid=" + JSON.parse(localStorage.getItem("auth")).svrid + "&chid=" + document.getElementById("caselector").value + "&num=" + parseInt(document.getElementById("cainput").value), function(archive) {
             window.open("data:text/json;charset=utf-8," + escape(JSON.stringify(archive)));
-            $("#loading-modal").modal("hide");
+            NProgress.done();
         });
     }
 }

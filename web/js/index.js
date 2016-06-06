@@ -2,6 +2,7 @@ var statsSelect = "null";
 var logID = "null";
 var logLevel = "null";
 var svrSearch;
+var svrData;
 
 function doSetup() {
     var param = Object.keys(getQueryParams(document.URL))[0];
@@ -37,7 +38,7 @@ function getQueryParams(qs) {
 }
     
 function writeInterface() {
-    $("#loading-modal").modal("show");
+    NProgress.start();
 
     getJSON("data?section=list&type=bot", function(data) {
         document.title = data.username + " Status";
@@ -74,25 +75,15 @@ function writeInterface() {
                 switchLog(true);
                 
                 switchServers("messages", null, function() {
-                    $("#loading-modal").modal("hide");
+                    NProgress.done();
                 });
             });
         });
     });
 }
 
-if(document.getElementById("wait")) {
-    var dots = window.setInterval( function() {
-    var wait = document.getElementById("wait");
-    if(wait.innerHTML.length > 3) 
-        wait.innerHTML = "";
-    else 
-        wait.innerHTML += ".";
-    }, 100);
-}
-
 function switchServers(sort, search, callback) {
-    document.getElementById("loading").style.display = "";
+    NProgress.start();
     $(document).on('focus', ':not(.popover)', function(){
         $('.popover').popover('hide');
     });
@@ -100,12 +91,14 @@ function switchServers(sort, search, callback) {
         svrSearch = search.toLowerCase();
     }
     getJSON("data?section=servers&sort=" + sort, function(data) {
+        svrData = data.stream;
+
         var servertablebody = "";
-        for(var i=0; i<data.stream.length; i++) {
-            if(svrSearch && data.stream[i][1].toLowerCase().indexOf(svrSearch)==-1 && data.stream[i][2].toLowerCase().indexOf(svrSearch)==-1 && (data.stream[i][5].description && data.stream[i][5].description.toLowerCase().indexOf(svrSearch)==-1)) {
-                continue;
+        for(var i=0; i<svrData.length; i++) {
+            if(!svrSearch || (svrData[i][1].toLowerCase().indexOf(svrSearch)>-1 || svrData[i][2].toLowerCase().indexOf(svrSearch)>-1 || (svrData[i][5].description && svrData[i][5].description.toLowerCase().indexOf(svrSearch)>-1))) {
+                servertablebody += "<tr><td id=\"serverentry-" + i + "\" class=\"serverentry\">" + svrData[i][1] + "</td><td>" + svrData[i][3] + "</td><td>" + svrData[i][4] + "</td></tr>";
+                $("#serverentry-" + i).popover("disable");
             }
-            servertablebody += "<tr><td id=\"serverentry-" + i + "\" class=\"serverentry\">" + data.stream[i][1] + "</td><td>" + data.stream[i][3] + "</td><td>" + data.stream[i][4] + "</td></tr>";
         }
         document.getElementById("servertablebody").innerHTML = servertablebody;
 
@@ -113,22 +106,23 @@ function switchServers(sort, search, callback) {
             html: true,
             title: function() {
                 i = parseInt(this.id.substring(this.id.indexOf("-")+1));
-                return "<button type=\"button\" class=\"close\" id=\"serverentry-" + i + "-popoverclose\" onclick=\"$('#" + this.id + "').popover('hide');\" aria-label=\"Close\"><span aria-hidden=\"true\">&times;</span></button><h4 class=\"modal-title\">Server Info</h4>";
+                console.log(svrData[i][1]);
+                return "<button type=\"button\" class=\"close\" id=\"serverentry-" + i + "-popoverclose\" onclick=\"$('#" + this.id + "').popover('hide');\" aria-label=\"Close\"><span aria-hidden=\"true\">&times;</span></button><h4 class=\"modal-title\">" + svrData[i][1] + "</h4>";
             },
             content: function() {
                 i = parseInt(this.id.substring(this.id.indexOf("-")+1));
                 setTimeout(function() {
-                    document.getElementById("serverimg-" + i).src = data.stream[i][0];
+                    document.getElementById("serverimg-" + i).src = svrData[i][0];
                 }, 10);
-                return "<img id=\"serverimg-" + i + "\" style=\"width:100%;\" src=\"data:image/gif;base64,R0lGODlhAQABAIAAAHd3dwAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==\" /><br><br>Owned by <b>@" + data.stream[i][2] + "</b><br>Total: <b>" + data.stream[i][4].substring(0, data.stream[i][4].indexOf(" ")) + "</b> members<br><b>" + data.stream[i][3] + "</b> message" + (data.stream[i][3]==1 ? "" : "s") + " today" + (data.stream[i][5].enabled ? ("<hr>" + micromarkdown.parse(data.stream[i][5].description) + "<br><br><a href=\"" + data.stream[i][5].invite + "\" role=\"button\" class=\"btn btn-primary\">Join " + data.stream[i][1] + "</a>") : "") + "<script>document.getElementById(\"" + this.id + "\").parentNode.parentNode.style.maxWidth = \"350px\";</script>";
+                return "<img id=\"serverimg-" + i + "\" style=\"width:100%;\" src=\"data:image/gif;base64,R0lGODlhAQABAIAAAHd3dwAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==\" /><br><br>Owned by <b>@" + svrData[i][2] + "</b><br>Total: <b>" + svrData[i][4].substring(0, svrData[i][4].indexOf(" ")) + "</b> members<br><b>" + svrData[i][3] + "</b> message" + (svrData[i][3]==1 ? "" : "s") + " today" + (svrData[i][5].enabled ? ("<hr>" + micromarkdown.parse(svrData[i][5].description) + "<br><br><a href=\"" + svrData[i][5].invite + "\" role=\"button\" class=\"btn btn-primary\">Join " + svrData[i][1] + "</a>") : "") + "<script>document.getElementById(\"" + this.id + "\").parentNode.parentNode.style.maxWidth = \"400px\";</script>";
             },
             selector: ".serverentry",
-            placement: "top",
+            placement: "right",
             container: "body",
             trigger: "click"
         });
         
-        document.getElementById("loading").style.display = "none";
+        NProgress.done();
         if(callback) {
             callback();
         }
@@ -157,7 +151,7 @@ function loadBackground() {
 }
 
 function switchStats(n, nodestroy) {
-    $("#loading-modal").modal("show");
+    NProgress.start();
     
     statsSelect = n;
     document.getElementById("statsselect").value = n;
@@ -171,7 +165,7 @@ function switchStats(n, nodestroy) {
                 
                 document.getElementById("stats-body").innerHTML = html || "<i>Nothing here</i>";
                 if(!nodestroy) {
-                    $("#loading-modal").modal("hide");
+                    NProgress.done();
                 }
             });
         } else {
@@ -207,7 +201,7 @@ function switchStats(n, nodestroy) {
                     
                     document.getElementById("stats-body").innerHTML = html || "<i>Nothing here</i>";
                     if(!nodestroy) {
-                        $("#loading-modal").modal("hide");
+                        NProgress.done();
                     }
                 });
             });
@@ -216,7 +210,7 @@ function switchStats(n, nodestroy) {
 }
 
 function switchProfile(n) {
-    $("#loading-modal").modal("show");
+    NProgress.start();
     
     document.getElementById("profileselect").value = n;
     if(statsSelect) {
@@ -245,7 +239,7 @@ function switchProfile(n) {
                 html += "</div><div class=\"col-xs-3\"><img style=\"float:right;\" src=\"" + avatar + "\" width=\"100\" height=\"100\" class=\"img-responsive\" alt=\"User Avatar\"></div>";
                 
                 document.getElementById("stats-body").innerHTML = html || "<i>Nothing here</i>";
-                $("#loading-modal").modal("hide");
+                NProgress.done();
             });
         }
     }, 125);
@@ -268,7 +262,7 @@ function switchLogLevel(n) {
 }
 
 function switchLog(nodestroy) {
-    $("#loading-modal").modal("show");
+    NProgress.start();
     
     if(logID) {
         document.getElementById("id-" + logID).selected = true;
@@ -291,7 +285,7 @@ function switchLog(nodestroy) {
             document.getElementById("console").innerHTML = html || "<i>Nothing here</i>";
             document.getElementById("console").scrollTop = document.getElementById("console").scrollHeight;
             if(!nodestroy) {
-                $("#loading-modal").modal("hide");
+                NProgress.done();
             }
         });    
     }, 125);
@@ -331,7 +325,7 @@ function getJSON(url, callback) {
         if(status==200) {
             callback(xhr.response);
         } else {
-            $("#loading-modal").modal("hide");
+            NProgress.done();
             richModal("Something went wrong");
         }
     };

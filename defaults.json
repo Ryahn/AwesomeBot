@@ -285,7 +285,14 @@
         "room": true,
         "chatterbot": true,
         "showpub": true,
-        "defaultcount": 5
+        "defaultcount": 5,
+        "8ball": true,
+        "fortune": true,
+        "catfact": true,
+        "numfact": true,
+        "e621": false,
+        "rule34": false,
+        "safebooru": false
     },
     "lite": {
         "servermod": true,
@@ -358,7 +365,14 @@
         "room": false,
         "chatterbot": false,
         "showpub": false,
-        "defaultcount": 1
+        "defaultcount": 1,
+        "8ball": false,
+        "fortune": false,
+        "catfact": false,
+        "numfact": false,
+        "e621": false,
+        "rule34": false,
+        "safebooru": false
     },
     "sense": {
         "servermod": true,
@@ -431,6 +445,13 @@
         "room": true,
         "chatterbot": true,
         "showpub": false,
-        "defaultcount": 3
+        "defaultcount": 3,
+        "8ball": false,
+        "fortune": false,
+        "catfact": false,
+        "numfact": false,
+        "e621": false,
+        "rule34": false,
+        "safebooru": false
     }  
 }

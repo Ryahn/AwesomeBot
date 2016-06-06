@@ -12,6 +12,7 @@
     <link href="./css/simple-sidebar.css" rel="stylesheet">
     <link href="./css/bootstrap-select.min.css" rel="stylesheet">
     <link href="./css/awesome-bootstrap-checkbox.css" rel="stylesheet">
+    <link rel="stylesheet" href="./css/nprogress.css">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.1/css/font-awesome.min.css">
     <link href="https://fonts.googleapis.com/css?family=Montserrat:400,700" rel="stylesheet" type="text/css">
     <link href='https://fonts.googleapis.com/css?family=Droid+Serif:400,700,400italic,700italic' rel='stylesheet' type='text/css'>
@@ -25,6 +26,7 @@
     <script src="./js/jquery.min.js"></script>
     <script src="./js/bootstrap.min.js"></script>
     <script src="./js/bootstrap-select.min.js"></script>
+    <script src="./js/nprogress.js"></script>
     <script src="./js/index.js"></script>
     <script src="./js/config.js"></script>
     <script src="./js/admin.js"></script>
@@ -79,7 +81,7 @@
         </div>
 
         <!-- Page Content -->
-        <div id="header" ondblclick="loadBackground();" style="background-color:#000000;background-repeat:none;background-attachment:scroll;background-position:center center;-webkit-background-size:cover;-moz-background-size:cover;background-size:cover;-o-background-size:cover;color:#fff;">
+        <div id="header" ondblclick="loadBackground();" style="background-color:#000000;background-repeat:none;background-attachment:scroll;background-position:center center;-webkit-background-size:cover;-moz-background-size:cover;background-size:cover;-o-background-size:cover;color:#fff !important;">
             <div class="container-fluid">
                 <div class="row">
                     <div class="col-xs-2">
@@ -201,7 +203,7 @@
 
                 <div class="row">
                     <div class="col-lg-12">
-                        <h2 id="statspoints" data-toggle="collapse" data-target="#statspoints-body" aria-expanded="false" aria-controls="collapsestatspoints">Stats &amp; Points</h2>
+                        <h2 id="statspoints" data-toggle="collapse" data-target="#statspoints-body" aria-expanded="false" aria-controls="collapsestatspoints">Stats &amp; Points <span class="label label-info newlabel">New</span></h2>
                         <div id="statspoints-body" class="collapse">
                             <div class="checkbox">
                                 <input id="statspoints-stats" type="checkbox" onclick="javascript:config(this.id.substring(12), this.checked, switchStatspoints);">
@@ -443,7 +445,7 @@
 
                 <div class="row">
                     <div class="col-lg-12">
-                        <h2 id="public" data-toggle="collapse" data-target="#public-body" aria-expanded="false" aria-controls="collapsepublic">Public Data</h2>
+                        <h2 id="public" data-toggle="collapse" data-target="#public-body" aria-expanded="false" aria-controls="collapsepublic">Public Data <span class="label label-info newlabel">New</span></h2>
                         <div id="public-body" class="collapse">
                             <div class="checkbox">
                                 <input id="publicentry-showsvr" type="checkbox" onclick="javascript:config(this.id.substring(12), this.checked, switchPublic);">
@@ -581,7 +583,7 @@
                                 <div class="checkbox">
                                     <input id="manageentry-twitchmembermsg" type="checkbox" onclick="javascript:config(this.id.substring(12), this.checked, function() {});">
                                     <label for="manageentry-twitchmembermsg">
-                                        Twitch streaming messages
+                                        Twitch streaming messages <span class="label label-info newlabel">New</span>
                                     </label>
                                     &nbsp;
                                     <select id="manageentry-select-twitchmembermsg" onchange="javascript:config(this.id.substring(19), this.value, function() {});" class="selectpicker" data-width="fit"></select>
@@ -590,14 +592,14 @@
                                 <div class="checkbox">
                                     <input id="manageentry-editmembermsg" type="checkbox" onclick="javascript:config(this.id.substring(12), this.checked, function() {});">
                                     <label for="manageentry-editmembermsg">
-                                        Message edited messages
+                                        Message edited messages <span class="label label-info newlabel">New</span>
                                     </label>
                                 </div>
 
                                 <div class="checkbox">
                                     <input id="manageentry-deletemembermsg" type="checkbox" onclick="javascript:config(this.id.substring(12), this.checked, function() {});">
                                     <label for="manageentry-deletemembermsg">
-                                        Message deleted messages
+                                        Message deleted messages <span class="label label-info newlabel">New</span>
                                     </label>
                                 </div>
                                 

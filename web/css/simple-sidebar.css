@@ -18,6 +18,10 @@
     padding-left: 250px;
 }
 
+.newlabel {
+    font-size: 0.7em;
+}
+
 #sidebar-wrapper {
     z-index: 1000;
     position: fixed;

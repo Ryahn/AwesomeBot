@@ -50,7 +50,8 @@
     "remove-markdown": "*",
     "emoji-dictionary": "*",
     "wiki-infobox-parser": "*",
-    "mathjs": "*"
+    "mathjs": "*",
+    "xml-parser": "*"
   },
   "scripts": {
     "start": "node bot.js"

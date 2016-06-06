@@ -8,20 +8,22 @@
     <meta name="author" content="BitQuote">
     <title>Maintainer Console</title>
     
-    <link id="theme" href="./../css/bootstrap-default.min.css" rel="stylesheet">
-    <link href="./../css/simple-sidebar.css" rel="stylesheet">
-    <link href="./../css/bootstrap-select.min.css" rel="stylesheet">
+    <link id="theme" href="./css/bootstrap-default.min.css" rel="stylesheet">
+    <link href="./css/simple-sidebar.css" rel="stylesheet">
+    <link href="./css/bootstrap-select.min.css" rel="stylesheet">
     <link href="./css/awesome-bootstrap-checkbox.css" rel="stylesheet">
+    <link rel="stylesheet" href="./css/nprogress.css">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.1/css/font-awesome.min.css">
     <link href="https://fonts.googleapis.com/css?family=Montserrat:400,700" rel="stylesheet" type="text/css">
     <link href='https://fonts.googleapis.com/css?family=Droid+Serif:400,700,400italic,700italic' rel='stylesheet' type='text/css'>
     <link href='https://fonts.googleapis.com/css?family=Roboto+Slab:400,100,300,700' rel='stylesheet' type='text/css'>
-    <script src="./../js/jquery.min.js"></script>
-    <script src="./../js/bootstrap.min.js"></script>
-    <script src="./../js/bootstrap-select.min.js"></script>
-    <script src="./../js/index.js"></script>
-    <script src="./../js/config.js"></script>
-    <script src="./../js/maintainer.js"></script>
+    <script src="./js/jquery.min.js"></script>
+    <script src="./js/bootstrap.min.js"></script>
+    <script src="./js/bootstrap-select.min.js"></script>
+    <script src="./js/nprogress.js"></script>
+    <script src="./js/index.js"></script>
+    <script src="./js/config.js"></script>
+    <script src="./js/maintainer.js"></script>
 </head>
 <body onload="switchColors();doAuth();">
     <div id="wrapper" class="">
@@ -55,7 +57,7 @@
         </div>
 
         <!-- Page Content -->
-        <div id="header" ondblclick="loadBackground();" style="background-color:#000000;background-repeat:none;background-attachment:scroll;background-position:center center;-webkit-background-size:cover;-moz-background-size:cover;background-size:cover;-o-background-size:cover;color:#fff;">
+        <div id="header" ondblclick="loadBackground();" style="background-color:#000000;background-repeat:none;background-attachment:scroll;background-position:center center;-webkit-background-size:cover;-moz-background-size:cover;background-size:cover;-o-background-size:cover;color:#fff !important;">
             <div class="container-fluid">
                 <div class="row">
                     <div class="col-xs-2">
@@ -243,7 +245,7 @@
                             <div class="checkbox">
                                 <input id="pmforward" type="checkbox" onclick="javascript:config('pmforward', this.checked, switchBigmessage);">
                                 <label for="pmforward">
-                                    Forward PMs to me
+                                    Forward PMs to me <span class="label label-info newlabel">New</span>
                                 </label>
                             </div>
                         </div>

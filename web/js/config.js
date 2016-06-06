@@ -13,7 +13,7 @@ function getHelp() {
 }
 
 function doAuth() {
-    $("#loading-modal").modal("show");
+    NProgress.start();
     
     if(localStorage.getItem("auth")) {
         var auth = JSON.parse(localStorage.getItem("auth"));
@@ -89,7 +89,7 @@ function config(key, value, callback) {
         return;
     }
     
-    $("#loading-modal").modal("show");
+    NProgress.start();
     var data = {};
     data[key] = value;
     postJSON(data, function(response) {
@@ -104,7 +104,7 @@ function config(key, value, callback) {
                         switchManage();
                     }
                     callback(false);
-                    $("#loading-modal").modal("hide");
+                    NProgress.done();
                 } else {
                     leaveConsole("Session timeout");
                 }
@@ -117,7 +117,7 @@ function config(key, value, callback) {
                 switchManage();
             }
             callback(true);
-            $("#loading-modal").modal("hide");
+            NProgress.done();
         }
     });
 }

@@ -11,6 +11,7 @@
     <link id="theme" href="./css/bootstrap-default.min.css" rel="stylesheet">
     <link href="./css/bootstrap-select.min.css" rel="stylesheet">
     <link href="./css/navbar-fixed-top.css" rel="stylesheet">
+    <link rel="stylesheet" href="./css/nprogress.css">
     <link href="https://fonts.googleapis.com/css?family=Montserrat:400,700" rel="stylesheet" type="text/css">
     <link href='https://fonts.googleapis.com/css?family=Droid+Serif:400,700,400italic,700italic' rel='stylesheet' type='text/css'>
     <link href='https://fonts.googleapis.com/css?family=Roboto+Slab:400,100,300,700' rel='stylesheet' type='text/css'>
@@ -37,6 +38,7 @@
     <script src="./js/jquery.min.js"></script>
     <script src="./js/bootstrap.min.js"></script>
     <script src="./js/bootstrap-select.min.js"></script>
+    <script src="./js/nprogress.js"></script>
     <script src="./js/micromarkdown.min.js"></script>
     <script src="./js/index.js"></script>
 </head>
@@ -146,11 +148,10 @@
             <div class="col-lg-12">
                 <h2 id="servers">Servers <span id="servers-badge" class="badge"></span></h2>
                 <div id="servers-body">
-                    <p class="help-block col-xs-9" style="margin-left: -15px;">Some servers excluded for privacy. Message count is only for the past 24 hours.&nbsp;
-                    <span id="loading"><b>Loading<span id="wait"></span></b></span></p>
+                    <p class="help-block col-xs-9" style="margin-left: -15px;">Some servers excluded for privacy. Message count is only for the past 24 hours. <span class="label label-info newlabel">New</span></p>
                     <div class="input-group col-xs-3">
-                        <input type="text" id="server-search" class="form-control" onkeydown="if(event.keyCode==13){switchServers('svrnm', this.value);}" style="min-width:200px;" placeholder="Search">
-                        <span class="input-group-addon btn btn-primary" onclick="switchServers('svrnm', document.getElementById('server-search').value);"><span class="glyphicon glyphicon-search" aria-hidden="true"></span></span>
+                        <input type="text" id="server-search" class="form-control" onkeydown="if(event.keyCode==13){switchServers('messages', this.value);}" style="min-width:200px;" placeholder="Search">
+                        <span class="input-group-addon btn btn-primary" onclick="switchServers('messages', document.getElementById('server-search').value);"><span class="glyphicon glyphicon-search" aria-hidden="true"></span></span>
                     </div>
                     <br>
                     <div class="table-responsive">

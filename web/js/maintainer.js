@@ -17,7 +17,7 @@ function doMaintainerSetup() {
     switchBigmessage();
     $("#bigmessage-body").collapse("show");
     
-    $("#loading-modal").modal("hide");
+    NProgress.done();
 }
 
 function configStatus(statstr) {
@@ -28,7 +28,7 @@ function configStatus(statstr) {
 }
 
 function switchUsage() {
-    $("#loading-modal").modal("show");
+    NProgress.start();
     
     var commandusage = ""
     if(botData.commandusage.length>0) {
@@ -41,7 +41,7 @@ function switchUsage() {
     }
     document.getElementById("commandusage-body").innerHTML = commandusage;
 
-    $("#loading-modal").modal("hide");
+    NProgress.done();
 }
 
 function switchServers() {

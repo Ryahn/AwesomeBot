@@ -57,6 +57,7 @@ try {
         client_id: AuthDetails.microsoft_client_id,
         client_secret: AuthDetails.microsoft_client_secret
     });
+    const xmlparser = require("xml-parser");
 } catch(startError) {
     console.log("Failed to start: ");
     console.log(startError);
@@ -67,8 +68,6 @@ try {
 /**
 
     TODO:
-     - option to disable newmembermsg PM
-     - option to send commands from admin console
      - default extensions for throw, slash, rip, etc
      - awesome self host builder
      - extension builder in admin console
@@ -635,7 +634,7 @@ var commands = {
             if(["bug", "suggestion", "feature", "issue"].indexOf(suffix.toLowerCase())>-1) {
                 bot.sendMessage(msg.channel, "Please file your " + suffix.toLowerCase() + " here: https://github.com/BitQuote/AwesomeBot/issues/new");
             } else {
-                bot.sendMessage(msg.channel, "Use `" + getPrefix(msg.channel.server) + "help` to list commands. Created by **@BitQuote**. Built on NodeJS with DiscordJS. Go to http://awesomebot.xyz to learn more.\n\n*This project is in no way affiliated with Alphabet, Inc., who does not own or endorse this product.*");
+                bot.sendMessage(msg.channel, "Use `" + getPrefix(msg.channel.server) + "help` to list commands. Created by **@BitQuote**. Built on NodeJS with DiscordJS. Go to http://awesomebot.xyz to learn more, or join http://discord.awesomebot.xyz/\n\n*This project is in no way affiliated with Alphabet, Inc., who does not own or endorse this product.*");
             }
         }
     },
@@ -799,7 +798,7 @@ var commands = {
                 bot.sendMessage(msg.channel, "It's " + prettyDate(new Date()) + " for me");
                 return;
             }
-            unirest.get("http://maps.googleapis.com/maps/api/geocode/json?address=" + encodeURI(location))
+            unirest.get("http://maps.googleapis.com/maps/api/geocode/json?address=" + encodeURI(location.replace(/&/g, '')))
             .header("Accept", "application/json")
             .end(function(result) {
                 if(result.status==200 && result.body.results.length>0) {
@@ -1079,8 +1078,19 @@ var commands = {
                 }
                 bot.sendMessage(msg.channel, info);
             } else {
-                logMsg(new Date().getTime(), "WARN", msg.channel.server.id, msg.channel.id, msg.author.username + " requested nonexistent tag");
-                bot.sendMessage(msg.channel, msg.author + " That tag isn't registered in my database. Use `" + getPrefix(msg.channel.server) + "tag " + suffix.toLowerCase() + "|<value>` to set it.");
+                var info = "Select one of the following options:";
+                for(var i=0; i<Object.keys(configs.servers[msg.channel.server.id].tags).length; i++) {
+                    var tmpinfo = "\n\t" + i + ") " + Object.keys(configs.servers[msg.channel.server.id].tags)[i];
+                    if((tmpinfo.length + info.length)>2000) {
+                        break;
+                    } else {
+                        info += tmpinfo;
+                    }
+                }
+                bot.sendMessage(msg.channel, info);
+                selectMenu(msg.channel, msg.author.id, function(i) {
+                    bot.sendMessage(msg.channel, configs.servers[msg.channel.server.id].tags[Object.keys(configs.servers[msg.channel.server.id].tags)[i]]);
+                }, Object.keys(configs.servers[msg.channel.server.id].tags).length-1);
             }
         }
     },
@@ -1463,6 +1473,209 @@ var commands = {
 		    });
 		}
 	},
+    // Predicts the answer to a question
+    "8ball": {
+        usage: "<question>",
+        process: function(bot, msg, suffix) {
+            if(suffix) {
+                unirest.get("https://8ball.delegator.com/magic/JSON/" + encodeURI(suffix.replace(/&/g, '')))
+                .header("Accept", "application/json")
+                .end(function(result) {
+                    if(result.status==200) {
+                        bot.sendMessage(msg.channel, "```" + result.body.magic.answer + "```");
+                    } else {
+                        logMsg(new Date().getTime(), "ERROR", msg.channel.server.id, msg.channel.id, "Failed to fetch 8ball answer");
+                        bot.sendMessage(msg.channel, "Broken 8ball :(");
+                    }
+                });
+            } else {
+                logMsg(new Date().getTime(), "WARN", msg.channel.server.id, msg.channel.id, "No parameters provided for 8ball command");
+                bot.sendMessage(msg.channel, msg.author + " You tell me... :P");
+            }
+        }
+    },
+    // Tells your fortune
+    "fortune": {
+        usage: "[<category>]",
+        process: function(bot, msg, suffix) {
+            var categories = ["all", "computers", "cookie", "definitions", "miscellaneous", "people", "platitudes", "politics", "science", "wisdom"];
+            if(suffix && categories.indexOf(suffix.toLowerCase())==-1) {
+                var info = "Select one of the following:";
+                for(var i=0; i<categories.length; i++) {
+                    info += "\n\t" + i + ") " + categories[i].charAt(0) + categories[i].slice(1);
+                }
+                bot.sendMessage(msg.channel, info);
+                selectMenu(msg.channel, msg.author.id, function(i) {
+                    commands.fortune.process(bot, msg, categories[i]);
+                }, categories.length-1);
+            } else {
+                unirest.get("http://yerkee.com/api/fortune/" + (suffix || ""))
+                .header("Accept", "application/json")
+                .end(function(result) {
+                    if(result.status==200) {
+                        bot.sendMessage(msg.channel, result.body.fortune);
+                    } else {
+                        logMsg(new Date().getTime(), "ERROR", msg.channel.server.id, msg.channel.id, "Failed to fetch fortune");
+                        bot.sendMessage(msg.channel, "I honestly don't know :neutral_face:");
+                    }
+                });
+            }
+        }
+    },
+    // Random fact about cats
+    "catfact": {
+        usage: "[<count>]",
+        process: function(bot, msg, suffix) {
+            var count = suffix;
+            if(!count) {
+                count = 1;
+            }
+            if(isNaN(count) || count<1 || count>configs.servers[msg.channel.server.id].maxcount) {
+                count = configs.servers[msg.channel.server.id].defaultcount;
+            }
+            unirest.get("http://catfacts-api.appspot.com/api/facts?number=" + count)
+            .header("Accept", "application/json")
+            .end(function(result) {
+                if(result.status==200) {
+                    sendArray(msg.channel, JSON.parse(result.body).facts);
+                } else {
+                    logMsg(new Date().getTime(), "ERROR", msg.channel.server.id, msg.channel.id, "Failed to fetch cat fact");
+                    bot.sendMessage(msg.channel, "Cats exist and are cute af.");
+                }
+            });
+        }
+    },
+    "numfact": {
+        usage: "[<no.>]",
+        process: function(bot, msg, suffix) {
+            var num = suffix || "random";
+            if(suffix && isNaN(suffix)) {
+                logMsg(new Date().getTime(), "WANR", msg.channel.server.id, msg.channel.id, msg.author.username + " provided an invalid number for numfact command");
+                bot.sendMessage(msg.channel, "`" + suffix + "` is not a number!");
+                return;
+            }
+            unirest.get("http://numbersapi.com/" + num)
+            .end(function(result) {
+                if(result.status==200) {
+                    bot.sendMessage(msg.channel, result.body);
+                } else {
+                    logMsg(new Date().getTime(), "ERROR", msg.channel.server.id, msg.channel.id, "Failed to fetch num fact");
+                    bot.sendMessage(msg.channel, "Oh no! Something went wrong.");
+                }
+            });
+        }
+    },
+    // Searches by tag on e621.net
+    "e621": {
+        usage: "<tags>",
+        process: function(bot, msg, suffix) {
+            if(suffix) {
+                var query = suffix.substring(0, suffix.lastIndexOf(" "));
+                var count = parseInt(suffix.substring(suffix.lastIndexOf(" ")+1));
+
+                if(!query) {
+                    query = suffix;
+                }
+                if(!count || isNaN(count) || count<0 || count>configs.servers[msg.channel.server.id].maxcount) {
+                    count = configs.servers[msg.channel.server.id].defaultcount;
+                }
+
+                unirest.get("https://e621.net/post/index.json?tag=" + encodeURI(query.replace(/&/g, '')) + "&limit=" + count)
+                .headers({
+                  "Accept": "application/json",
+                  "User-Agent": "Unirest Node.js"
+                })
+                .end(function(result) {
+                    if(result.status==200) {
+                        var info = [];
+                        for(var i=0; i<result.body.length; i++) {
+                            info.push((result.body[i].description ? ("```" + result.body[i].description + "```") : "") + "**Author:** " + result.body[i].author + "\n**Rating:** " + result.body[i].rating.toUpperCase() + "\n**Score:** " + result.body[i].score + "\n**Favorites:** " + result.body[i].fav_count + "\n" + result.body[i].file_url);
+                        }
+                        sendArray(msg.channel, info);
+                    } else {
+                        logMsg(new Date().getTime(), "ERROR", msg.channel.server.id, msg.channel.id, "Failed to fetch e621 results");
+                        bot.sendMessage(msg.channel, "I'm so sorry, e621 has failed me  :'(");
+                    }
+                });
+            } else {
+                logMsg(new Date().getTime(), "WARN", msg.channel.server.id, msg.channel.id, "No parameters provided for e621 command");
+                bot.sendMessage(msg.channel, msg.author + " I need some tags to search for, yo!");
+            }
+        }
+    },
+    // Searches by tag on rule32.xxx
+    "rule34": {
+        usage: "<tags>",
+        process: function(bot, msg, suffix) {
+            if(suffix) {
+                var query = suffix.substring(0, suffix.lastIndexOf(" "));
+                var count = parseInt(suffix.substring(suffix.lastIndexOf(" ")+1));
+
+                if(!query) {
+                    query = suffix;
+                }
+                if(!count || isNaN(count) || count<0 || count>configs.servers[msg.channel.server.id].maxcount) {
+                    count = configs.servers[msg.channel.server.id].defaultcount;
+                }
+
+                unirest.get("http://rule34.xxx/index.php?page=dapi&s=post&q=index&tags=" + encodeURI(query.replace(/&/g, '')) + "&limit=" + count)
+                .end(function(result) {
+                    if(result.status==200) {
+                        result.body = xmlparser(result.body).root.children;
+                        var info = [];
+                        for(var i=0; i<result.body.length; i++) {
+                            info.push("**Rating:** " + result.body[i].attributes.rating.toUpperCase() + "\n**Score:** " + result.body[i].attributes.score + "\nhttp:" + result.body[i].attributes.file_url);
+                        }
+                        sendArray(msg.channel, info);
+                    } else {
+                        logMsg(new Date().getTime(), "ERROR", msg.channel.server.id, msg.channel.id, "Failed to fetch rule34 results");
+                        bot.sendMessage(msg.channel, "I'm so sorry, rule34 has failed me  :'(");
+                    }
+                });
+            } else {
+                logMsg(new Date().getTime(), "WARN", msg.channel.server.id, msg.channel.id, "No parameters provided for rule34 command");
+                bot.sendMessage(msg.channel, msg.author + " I need some tags to search for, yo!");
+            }
+        }
+    },
+    // Searches by tag on safebooru.org
+    "safebooru": {
+        usage: "<tags>",
+        process: function(bot, msg, suffix) {
+            if(suffix) {
+                var query = suffix.substring(0, suffix.lastIndexOf(" "));
+                var count = parseInt(suffix.substring(suffix.lastIndexOf(" ")+1));
+
+                if(!query) {
+                    query = suffix;
+                }
+                if(!count || isNaN(count) || count<0 || count>configs.servers[msg.channel.server.id].maxcount) {
+                    count = configs.servers[msg.channel.server.id].defaultcount;
+                }
+
+                unirest.get("http://safebooru.donmai.us/posts.json?page=0&tags=" + encodeURI(query.replace(/&/g, '')) + "&limit=" + count)
+                .headers({
+                  "Accept": "application/json",
+                  "User-Agent": "Unirest Node.js"
+                })
+                .end(function(result) {
+                    if(result.status==200) {
+                        var info = [];
+                        for(var i=0; i<result.body.length; i++) {
+                            info.push((result.body[i].description ? ("```" + result.body[i].description + "```") : "") + "**Author:** " + result.body[i].uploader_name + "\n**Rating:** " + result.body[i].rating.toUpperCase() + "\n**Score:** " + result.body[i].score + "\n**Favorites:** " + result.body[i].fav_count + "\nhttp://safebooru.donmai.us" + result.body[i].file_url);
+                        }
+                        sendArray(msg.channel, info);
+                    } else {
+                        logMsg(new Date().getTime(), "ERROR", msg.channel.server.id, msg.channel.id, "Failed to fetch safebooru results");
+                        bot.sendMessage(msg.channel, "I'm so sorry, safebooru has failed me  :'(");
+                    }
+                });
+            } else {
+                logMsg(new Date().getTime(), "WARN", msg.channel.server.id, msg.channel.id, "No parameters provided for safebooru command");
+                bot.sendMessage(msg.channel, msg.author + " I need some tags to search for, yo!");
+            }
+        }
+    },
     // Create a temporary channel
     "room": {
         usage: "<\"text\" or \"voice\"> <username 1>|<username 2>|...",
@@ -2775,7 +2988,7 @@ var pmcommands = {
                             }, 300000)
                         };
                     } else if(onlineconsole[msg.author.id]) {
-                        bot.sendMessage(msg.channel, "You already have an online console session open. Logout of that first or wait 3 minutes...");
+                        bot.sendMessage(msg.channel, "You already have an online console session open. Logout of that first or wait 5 minutes...");
                         return;
                     } else if(adminconsole[msg.author.id]) {
                         bot.sendMessage(msg.channel, "One step at a time...Finish configuring this server, then come back later!");
@@ -2799,7 +3012,7 @@ var pmcommands = {
                 } else if(configs.servers[svr.id].admins.indexOf(msg.author.id)>-1) {
                     // Check to make sure no one is already using the console
                     if(onlineconsole[msg.author.id] || adminconsole[msg.author.id]) {
-                        bot.sendMessage(msg.channel, "You already have an online console session open. Logout of that first or wait 3 minutes...");
+                        bot.sendMessage(msg.channel, "You already have an online console session open. Logout of that first or wait 5 minutes...");
                         return;
                     }
                     if(!activeAdmins(svr.id)) {
@@ -3690,7 +3903,7 @@ bot.on("message", function(msg) {
                         bot.sendMessage(msg.channel, "**@" + getName(msg.channel.server, usr) + "** is currently AFK: " + (stats[msg.channel.server.id].members[usr.id].AFK || profileData[usr.id].AFK));
                     }
                     
-                    if([msg.author.id, bot.user.id].indexOf(usr.id)==-1 && configs.servers[msg.channel.server.id].points && !novoting[msg.author.id]) {
+                    if([msg.author.id, bot.user.id].indexOf(usr.id)==-1 && configs.servers[msg.channel.server.id].points && !novoting[msg.author.id] && msg.channel.server.members.length>2) {
                         var votestrings = [" +!", " +1", " up", " ^"];
                         var voted;
                         for(var i=0; i<votestrings.length; i++) {
@@ -3744,7 +3957,7 @@ bot.on("message", function(msg) {
                 }
             }
             // Upvote previous message, based on context
-            if((msg.content.indexOf("+1")==0 || msg.content.indexOf("+!")==0 || msg.content.indexOf("^")==0 || msg.content.indexOf("up")==0) && configs.servers[msg.channel.server.id].points) {
+            if((msg.content.indexOf("+1")==0 || msg.content.indexOf("+!")==0 || msg.content.indexOf("^")==0 || msg.content.indexOf("up")==0) && configs.servers[msg.channel.server.id].points && !novoting[msg.author.id] && msg.channel.server.members.length>2) {
                 bot.getChannelLogs(msg.channel, 1, {before: msg}, function(err, messages) {
                     if(!err && messages[0]) {
                         if([msg.author.id, bot.user.id].indexOf(messages[0].author.id)==-1) {
@@ -4196,7 +4409,7 @@ function checkRank(usr, svr) {
                                 bot.sendMessage(usr, "Congratulations, you've leveled up to **" + stats[svr.id].members[usr.id].rank + "** on " + svr.name + ".");
                             }
                         }
-                        if(configs.servers[svr.id].points) {
+                        if(configs.servers[svr.id].points && svr.members.length>2) {
                             if(!profileData[usr.id]) {
                                 profileData[usr.id] = {
                                     points: 0
@@ -4828,7 +5041,7 @@ function endLottery(ch) {
 // Clear stats.json for a server
 function clearServerStats(svrid) {
     var svr = bot.servers.get("id", svrid);
-    if(svr && configs.servers[svrid].points) {
+    if(svr && configs.servers[svrid].points && svr.members.length>2) {
         var topMembers = [];
         for(var usrid in stats[svrid].members) {
             var activityscore = stats[svrid].members[usrid].messages + (stats[svrid].members[usrid].voice*10);
@@ -5189,7 +5402,7 @@ function rssUpdates(svr, i) {
 
 // Add a select menu to a channel
 function selectMenu(ch, usrid, callback, max) {
-    if(!selectmenu[ch.id] && typeof(callback)=="function" && max!=null && !isNaN(max)) {
+    if(!selectmenu[ch.id] && !isNaN(usrid) && typeof(callback)=="function" && max!=null && !isNaN(max)) {
         selectmenu[ch.id] = {
             process: callback,
             usrid: usrid,
@@ -5558,14 +5771,14 @@ function parseAdminConfig(delta, svr, consoleid, callback) {
                     var usr = svr.members.get("id", delta[key]);
                     if(usr) {
                         if(configs.servers[svr.id][key].indexOf(usr.id)>-1) {
-                            if(key=="admins" && (usr.id==consoleid || usr.id==svr.owner.id || usr.id==configs.maintainer)) {
+                            if(key=="admins" && (usr.id==consoleid || usr.id==svr.owner.id || (usr.id==configs.maintainer && consoleid!=configs.maintainer))) {
                                 callback(true);
                                 return;
                             }
                             logMsg(new Date().getTime(), "INFO", svr.id, null, "Removed " + usr.username + " from " + key + " list (@" + consoleusr.username + ")");
                             configs.servers[svr.id][key].splice(configs.servers[svr.id][key].indexOf(usr.id), 1);
                         } else {
-                            if(key=="blocked" && (usr.id==consoleid || usr.id==svr.owner.id || usr.id==configs.maintainer)) {
+                            if(key=="blocked" && (usr.id==consoleid || usr.id==svr.owner.id || (usr.id==configs.maintainer && consoleid!=configs.maintainer))) {
                                 callback(true);
                                 return;
                             } else if(key=="admins" && stats[svr.id].members[usr.id]) {
@@ -5608,18 +5821,40 @@ function parseAdminConfig(delta, svr, consoleid, callback) {
                 }
                 break;
             case "mute":
-                if(!Array.isArray(delta[key])) {
+                if(!Array.isArray(delta[key]) || delta[key].length!=2 || isNaN(delta[key][0]) || (isNaN(delta[key][1]) && delta[key][1]!="all")) {
                     callback(true);
                 } else {
                     var usr = svr.members.get("id", delta[key][0]);
-                    var ch = svr.channels.get("id", delta[key][1]);
-                    if(usr && ch) {
-                        muteUser(ch, usr, function(err) {
-                            if(!err) {
-                                logMsg(new Date().getTime(), "INFO", svr.id, ch.id, "Toggled mute for " + usr.username + " (@" + consoleusr.username + ")");
-                            }
-                            callback(err);
-                        });
+                    if(usr) {
+                        if(delta[key][1]=="all") {
+                            var muteInChannel = function(i) {
+                                if(i>=svr.channels.length) {
+                                    logMsg(new Date().getTime(), "INFO", svr.id, null, "Toggled mute for " + usr.username + " in all channels (@" + consoleusr.username + ")");
+                                    callback();
+                                    return;
+                                }
+                                if(svr.channels[i] instanceof Discord.VoiceChannel) {
+                                    muteInChannel(++i);
+                                    return;
+                                }
+                                muteUser(svr.channels[i], usr, function(err) {
+                                    if(err) {
+                                        callback(err);
+                                    } else {
+                                        muteInChannel(++i);
+                                    }
+                                });
+                            };
+                            muteInChannel(0);
+                        } else {
+                            var ch = svr.channels.get("id", delta[key][1]);
+                            muteUser(ch, usr, function(err) {
+                                if(!err) {
+                                    logMsg(new Date().getTime(), "INFO", svr.id, ch.id, "Toggled mute for " + usr.username + " (@" + consoleusr.username + ")");
+                                }
+                                callback(err);
+                            });
+                        }
                     } else {
                         callback(true);
                     }
