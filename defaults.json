@@ -267,6 +267,7 @@
         "roll": true,
         "games": true,
         "profile": true,
+        "role": true,
         "tagreaction": true,
         "poll": true,
         "giveaway": true,
@@ -292,7 +293,8 @@
         "numfact": true,
         "e621": false,
         "rule34": false,
-        "safebooru": false
+        "safebooru": false,
+        "xkcd": true
     },
     "lite": {
         "servermod": true,
@@ -347,6 +349,7 @@
         "roll": false,
         "games": false,
         "profile": false,
+        "role": false,
         "tagreaction": false,
         "poll": true,
         "giveaway": false,
@@ -372,7 +375,8 @@
         "numfact": false,
         "e621": false,
         "rule34": false,
-        "safebooru": false
+        "safebooru": false,
+        "xkcd": false
     },
     "sense": {
         "servermod": true,
@@ -427,6 +431,7 @@
         "roll": false,
         "games": true,
         "profile": true,
+        "role": false,
         "tagreaction": false,
         "poll": true,
         "giveaway": false,
@@ -452,6 +457,7 @@
         "numfact": false,
         "e621": false,
         "rule34": false,
-        "safebooru": false
+        "safebooru": false,
+        "xkcd": false
     }  
 }

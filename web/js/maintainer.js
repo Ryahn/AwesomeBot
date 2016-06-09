@@ -58,7 +58,7 @@ function switchServers() {
         },
         content: function() {
             i = parseInt(this.id.substring(this.id.indexOf("-")+1, this.id.lastIndexOf("-")));
-            var info= "<div class=\"input-group\"><select id=\"serverentry-" + i + "-msg-ch\" class=\"selectpicker\" data-width=\"fit\">";
+            var info= "<div class=\"input-group\"><select id=\"serverentry-" + i + "-msg-ch\" class=\"selectpicker show-tick\" data-width=\"fit\">";
             for(var j=0; j<botData.servers[i][4].length; j++) {
                 info += "<option value=\"" + botData.servers[i][4][j][1] + "\">#" + botData.servers[i][4][j][0] + "</option>";
             }

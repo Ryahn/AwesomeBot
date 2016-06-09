@@ -106,7 +106,6 @@ function switchServers(sort, search, callback) {
             html: true,
             title: function() {
                 i = parseInt(this.id.substring(this.id.indexOf("-")+1));
-                console.log(svrData[i][1]);
                 return "<button type=\"button\" class=\"close\" id=\"serverentry-" + i + "-popoverclose\" onclick=\"$('#" + this.id + "').popover('hide');\" aria-label=\"Close\"><span aria-hidden=\"true\">&times;</span></button><h4 class=\"modal-title\">" + svrData[i][1] + "</h4>";
             },
             content: function() {

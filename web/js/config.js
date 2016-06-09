@@ -85,7 +85,7 @@ function postJSON(data, callback) {
 }
 
 function config(key, value, callback) {
-    if(typeof value=="string" && value=="" && key!="newgreeting") {
+    if((typeof value=="string" && value=="" && key!="newgreeting") || (key=="chrestrict" && value[1].length==0)) {
         return;
     }
     

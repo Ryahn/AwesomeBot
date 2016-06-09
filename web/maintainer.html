@@ -64,7 +64,7 @@
                         <a style="position:fixed;z-index:1000;" href="#menu-toggle" class="btn btn-default" id="menu-toggle"><span class="glyphicon glyphicon-menu-hamburger" aria-hidden="true"></span></a>
                     </div>
                     <div class="col-xs-10" style="text-align:right;">
-                        <select id="themeswitcher" class="selectpicker" data-width="fit" onChange="javascript:switchColors(this.value);">
+                        <select id="themeswitcher" class="selectpicker show-tick" data-width="fit" onChange="javascript:switchColors(this.value);">
                             <option id="theme-default" value="default">Default</option>
                             <option id="theme-cyborg" value="cyborg">Cyborg</option>
                             <option id="theme-paper" value="paper">Paper</option>
@@ -80,7 +80,7 @@
                     <div class="col-xs-9">
                         <h1 id="overview">
                             <span id="botname" onclick="javascript:configUsername();">BotName</span>
-                            <select id="statusswitcher" class="selectpicker" data-width="fit" onChange="javascript:configStatus(this.value);">
+                            <select id="statusswitcher" class="selectpicker show-tick" data-width="fit" onChange="javascript:configStatus(this.value);">
                                 <option id="status-online" value="online">Online</option>
                                 <option id="status-idle" value="idle">Idle</option>
                             </select>
@@ -169,7 +169,7 @@
                                     <tbody id="botblockedtablebody"></tbody>
                                 </table>
                             </div>
-                            <select id="botblockedselector" class="selectpicker" data-width="fit" data-live-search="true" title="Select User to Block" onChange="javascript:config('botblocked', this.value, switchBotBlocked);"></select>
+                            <select id="botblockedselector" class="selectpicker show-tick" data-width="fit" data-live-search="true" title="Select User to Block" onChange="javascript:config('botblocked', this.value, switchBotBlocked);"></select>
                         </div>
                     </div>
                 </div>
@@ -206,7 +206,7 @@
                                         <a class="btn btn-default" onclick="getFile('profiles');" role="button"><span class="glyphicon glyphicon-download-alt" aria-hidden="true"></span> Download profiles.json</a>
                                         &nbsp;
                                         <div id="profilesselector-block" style="display:inline-block;">
-                                            <select id="profilesselector" class="selectpicker" data-width="fit" data-live-search="true" title="Edit Points for Member" onchange="configProfiles(this.value);"></select>
+                                            <select id="profilesselector" class="selectpicker show-tick" data-width="fit" data-live-search="true" title="Edit Points for Member" onchange="configProfiles(this.value);"></select>
                                         </div>
                                         <div id="profilesinput-block" style="display:inline-block;">
                                             <input type="number" id="profilesinput" class="form-control">

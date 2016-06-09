@@ -88,7 +88,7 @@
                         <a style="position:fixed;z-index:1000;" href="#menu-toggle" class="btn btn-default" id="menu-toggle"><span class="glyphicon glyphicon-menu-hamburger" aria-hidden="true"></span></a>
                     </div>
                     <div class="col-xs-10" style="text-align:right;">
-                        <select id="themeswitcher" class="selectpicker" data-width="fit" onChange="javascript:switchColors(this.value);">
+                        <select id="themeswitcher" class="selectpicker show-tick" data-width="fit" onChange="javascript:switchColors(this.value);">
                             <option id="theme-default" value="default">Default</option>
                             <option id="theme-cyborg" value="cyborg">Cyborg</option>
                             <option id="theme-paper" value="paper">Paper</option>
@@ -140,8 +140,8 @@
                                     <tbody id="adminstablebody"></tbody>
                                 </table>
                             </div>
-                            <select id="adminsselector" class="selectpicker" data-width="fit" data-live-search="true" title="Select Member to Add" onChange="javascript:config('admins', this.value, function() {switchAdmins();switchBlocked();});"></select>
-                            <select id="adminsselector-role" onchange="javascript:config('admins', $('#' + this.id).val(), switchAdmins);" class="selectpicker" data-width="fit" title="Add Admins By Role"></select>
+                            <select id="adminsselector" class="selectpicker show-tick" data-width="fit" data-live-search="true" title="Select Member to Add" onChange="javascript:config('admins', this.value, function() {switchAdmins();switchBlocked();});"></select>
+                            <select id="adminsselector-role" onchange="javascript:config('admins', $('#' + this.id).val(), switchAdmins);" class="selectpicker show-tick" data-width="fit" title="Add Admins By Role"></select>
                         </div>
                     </div>
                 </div>
@@ -164,8 +164,8 @@
                                     <tbody id="blockedtablebody"></tbody>
                                 </table>
                             </div>
-                            <select id="blockedselector" class="selectpicker" data-width="fit" data-live-search="true" title="Select Member to Block" onChange="javascript:config('blocked', this.value, function() {switchAdmins();switchBlocked();});"></select>
-                            <select id="blockedselector-role" onchange="javascript:config('blocked', $('#' + this.id).val(), switchBlocked);" class="selectpicker" data-width="fit" title="Block Members By Role"></select>
+                            <select id="blockedselector" class="selectpicker show-tick" data-width="fit" data-live-search="true" title="Select Member to Block" onChange="javascript:config('blocked', this.value, function() {switchAdmins();switchBlocked();});"></select>
+                            <select id="blockedselector-role" onchange="javascript:config('blocked', $('#' + this.id).val(), switchBlocked);" class="selectpicker show-tick" data-width="fit" title="Block Members By Role"></select>
                         </div>
                     </div>
                 </div>
@@ -190,7 +190,7 @@
                             </div>
                             <form class="form-inline" id="newstrikeform">
                                 <div id="strikesselector-block" style="display:inline-block;">
-                                    <select id="strikesselector" class="selectpicker" data-width="fit" data-live-search="true" title="Select Member"></select>
+                                    <select id="strikesselector" class="selectpicker show-tick" data-width="fit" data-live-search="true" title="Select Member"></select>
                                 </div>
                                 <div id="strikesinput-block" style="display:inline-block;">
                                     <input type="text" class="form-control" id="strikesinput" style="width:300px;" maxlength="200" placeholder="Reason for strike">
@@ -262,7 +262,7 @@
                                     <div id="ranksmax-block" style="display:inline-block;">
                                         <input id="ranksmax" class="form-control" type="number" placeholder="Max score" min="1" style="width:150px;" data-toggle="tooltip" data-placement="bottom" title="Score is calculated by adding the number of messages and 5-minute voice intervals, then dividing by 10"></input>
                                     </div>
-                                    <select id="ranksselect" class="selectpicker" data-width="fit" data-live-search="true" title="Select Role"></select>
+                                    <select id="ranksselect" class="selectpicker show-tick" data-width="fit" data-live-search="true" title="Select Role"></select>
                                     <input type="submit" class="btn btn-default" value="Add">
                                 </form>
                             </span>
@@ -292,7 +292,7 @@
                         <div id="commands-body" class="collapse">
                             Command Prefix:
                             &nbsp;&nbsp;
-                            <select id="commandtag-selector" onchange="javascript:config('cmdtag', this.value, switchCommands);" class="selectpicker" data-width="fit">
+                            <select id="commandtag-selector" onchange="javascript:config('cmdtag', this.value, switchCommands);" class="selectpicker show-tick" data-width="fit">
                                 <option id="commandtag-tag" value="tag"></option>
                                 <option id="commandtag-plus" value="+">+</option>
                                 <option id="commandtag-amp" value="&amp;">&amp;</option>
@@ -327,7 +327,7 @@
                             Default number of items to fetch:
                             &nbsp;&nbsp;
                             <div class="input-group form-inline col-xs-2">
-                                <input type="number" id="commands-defaultcount" class="form-control" min="1" max="100" onkeydown="if(event.keyCode==13){config('defaultcount', this.value, switchCommands);">
+                                <input type="number" id="commands-defaultcount" class="form-control" min="1" max="100" onkeydown="if(event.keyCode==13){config('defaultcount', this.value, switchCommands);" style="min-width:100px;">
                                 <span class="input-group-addon btn btn-primary" onclick="javascript:config('defaultcount', $('#commands-defaultcount').val(), switchCommands);"><span class="glyphicon glyphicon-ok" aria-hidden="true"></span> Set</span>
                             </div>
                             <br>
@@ -335,7 +335,7 @@
                             Maximum number of items to fetch:
                             &nbsp;&nbsp;
                             <div class="input-group form-inline col-xs-2">
-                                <input type="number" id="commands-maxcount" class="form-control" min="1" max="100" onkeydown="if(event.keyCode==13){config('maxcount', this.value, switchCommands);">
+                                <input type="number" id="commands-maxcount" class="form-control" min="1" max="100" onkeydown="if(event.keyCode==13){config('maxcount', this.value, switchCommands);" style="min-width:100px;">
                                 <span class="input-group-addon btn btn-primary" onclick="javascript:config('maxcount', $('#commands-maxcount').val(), switchCommands);"><span class="glyphicon glyphicon-ok" aria-hidden="true"></span> Set</span>
                             </div>
 
@@ -344,7 +344,7 @@
                                 <label for="commands-cooldown">
                                     Command cooldown period of
                                 </label>
-                                <select id="commands-cooldown-select" onchange="javascript:config('cooldown', this.value, switchCommands);" class="selectpicker" data-width="fit">
+                                <select id="commands-cooldown-select" onchange="javascript:config('cooldown', this.value, switchCommands);" class="selectpicker show-tick" data-width="fit">
                                     <option value="2000">2 seconds</option>
                                     <option value="3000">3 seconds</option>
                                     <option value="5000">5 seconds</option>
@@ -429,13 +429,13 @@
                             </div>
                             <form class="form-inline" id="newtranslateform">
                                 <div id="translatedselector-block" style="display:inline-block;">
-                                    <select id="translatedselector" class="selectpicker" data-width="fit" data-live-search="true" title="Select Member"></select>
+                                    <select id="translatedselector" class="selectpicker show-tick" data-width="fit" data-live-search="true" title="Select Member"></select>
                                 </div>
                                 <div id="translatedinput-block" style="display:inline-block;">
                                     <input type="text" class="form-control" id="translatedinput" style="width:200px;" maxlength="2" placeholder="Source language">
                                 </div>
                                 <div id="translatedchannels-block" style="display:inline-block;">
-                                    <select id="translatedchannels" class="selectpicker" data-width="fit" title="Select Channel(s)" multiple></select>
+                                    <select id="translatedchannels" class="selectpicker show-tick" data-width="fit" title="Select Channel(s)" multiple></select>
                                 </div>
                                 <input type="submit" class="btn btn-default" value="Add">
                             </form>
@@ -491,7 +491,7 @@
                                 <label for="manageentry-autoprune">
                                     Automatically kick inactive members after
                                 </label>
-                                <select id="manageentry-select-autoprune" onchange="javascript:config(this.id.substring(19), this.value, function() {});" class="selectpicker" data-width="fit">
+                                <select id="manageentry-select-autoprune" onchange="javascript:config(this.id.substring(19), this.value, function() {});" class="selectpicker show-tick" data-width="fit">
                                     <option value="21600">6 hours</option>
                                     <option value="43200">12 hours</option>
                                     <option value="86400">1 day</option>
@@ -510,7 +510,7 @@
                                         Member joined messages
                                     </label>
                                     &nbsp;
-                                    <select id="manageentry-select-newmembermsg" onchange="javascript:config(this.id.substring(19), this.value, function() {});" class="selectpicker" data-width="fit"></select>
+                                    <select id="manageentry-select-newmembermsg" onchange="javascript:config(this.id.substring(19), this.value, function() {});" class="selectpicker show-tick" data-width="fit"></select>
                                 </div>
                                 <span id="manageentry-newmembermsg-body" class="collapse">
                                     <span id="manageentry-newmembermsg-block"></span>
@@ -522,7 +522,7 @@
                                     <br>
                                 </span>
                                 
-                                Role(s) for new members: <select id="manageentry-select-newrole" onchange="javascript:config(this.id.substring(19), $('#' + this.id).val(), function() {});" class="selectpicker" data-width="fit" multiple></select>
+                                Role(s) for new members: <select id="manageentry-select-newrole" onchange="javascript:config(this.id.substring(19), $('#' + this.id).val(), function() {});" class="selectpicker show-tick" data-width="fit" multiple></select>
                                 
                                 <div class="checkbox">
                                     <input id="manageentry-onmembermsg" type="checkbox" onclick="javascript:config(this.id.substring(12), this.checked, function() {});">
@@ -530,7 +530,7 @@
                                         Member came online messages
                                     </label>
                                     &nbsp;
-                                    <select id="manageentry-select-onmembermsg" onchange="javascript:config(this.id.substring(19), this.value, function() {});" class="selectpicker" data-width="fit"></select>
+                                    <select id="manageentry-select-onmembermsg" onchange="javascript:config(this.id.substring(19), this.value, function() {});" class="selectpicker show-tick" data-width="fit"></select>
                                 </div>
                                 <span id="manageentry-onmembermsg-body" class="collapse">
                                     <span id="manageentry-onmembermsg-block"></span>
@@ -547,7 +547,7 @@
                                         Member went offline messages
                                     </label>
                                     &nbsp;
-                                    <select id="manageentry-select-offmembermsg" onchange="javascript:config(this.id.substring(19), this.value, function() {});" class="selectpicker" data-width="fit"></select>
+                                    <select id="manageentry-select-offmembermsg" onchange="javascript:config(this.id.substring(19), this.value, function() {});" class="selectpicker show-tick" data-width="fit"></select>
                                 </div>
                                 <span id="manageentry-offmembermsg-body" class="collapse">
                                     <span id="manageentry-offmembermsg-block"></span>
@@ -564,7 +564,7 @@
                                         Member changed username messages
                                     </label>
                                     &nbsp;
-                                    <select id="manageentry-select-changemembermsg" onchange="javascript:config(this.id.substring(19), this.value, function() {});" class="selectpicker" data-width="fit"></select>
+                                    <select id="manageentry-select-changemembermsg" onchange="javascript:config(this.id.substring(19), this.value, function() {});" class="selectpicker show-tick" data-width="fit"></select>
                                 </div>
 
                                 <div class="checkbox" id="rankmembermsg">
@@ -572,12 +572,12 @@
                                     <label for="manageentry-rankmembermsg">
                                         Rank change 
                                     </label>
-                                    <select id="manageentry-select-pm-rankmembermsg" onchange="javascript:config(this.id.substring(22), 'pm', function() {});" class="selectpicker" data-width="fit">
+                                    <select id="manageentry-select-pm-rankmembermsg" onchange="javascript:config(this.id.substring(22), 'pm', function() {});" class="selectpicker show-tick" data-width="fit">
                                         <option value="messages">messages</option>
                                         <option value="pms">PMs</option>
                                     </select>
                                     &nbsp;
-                                    <select id="manageentry-select-rankmembermsg" onchange="javascript:config(this.id.substring(19), this.value, function() {});" class="selectpicker" data-width="fit"></select>
+                                    <select id="manageentry-select-rankmembermsg" onchange="javascript:config(this.id.substring(19), this.value, function() {});" class="selectpicker show-tick" data-width="fit"></select>
                                 </div>
 
                                 <div class="checkbox">
@@ -586,7 +586,7 @@
                                         Twitch streaming messages <span class="label label-info newlabel">New</span>
                                     </label>
                                     &nbsp;
-                                    <select id="manageentry-select-twitchmembermsg" onchange="javascript:config(this.id.substring(19), this.value, function() {});" class="selectpicker" data-width="fit"></select>
+                                    <select id="manageentry-select-twitchmembermsg" onchange="javascript:config(this.id.substring(19), this.value, function() {});" class="selectpicker show-tick" data-width="fit"></select>
                                 </div>
 
                                 <div class="checkbox">
@@ -609,7 +609,7 @@
                                         Member left messages
                                     </label>
                                     &nbsp;
-                                    <select id="manageentry-select-rmmembermsg" onchange="javascript:config(this.id.substring(19), this.value, function() {});" class="selectpicker" data-width="fit"></select>
+                                    <select id="manageentry-select-rmmembermsg" onchange="javascript:config(this.id.substring(19), this.value, function() {});" class="selectpicker show-tick" data-width="fit"></select>
                                 </div>
                                 <span id="manageentry-rmmembermsg-body" class="collapse">
                                     <span id="manageentry-rmmembermsg-block"></span>
@@ -626,7 +626,7 @@
                                         Member banned messages
                                     </label>
                                     &nbsp;
-                                    <select id="manageentry-select-banmembermsg" onchange="javascript:config(this.id.substring(19), this.value, function() {});" class="selectpicker" data-width="fit"></select>
+                                    <select id="manageentry-select-banmembermsg" onchange="javascript:config(this.id.substring(19), this.value, function() {});" class="selectpicker show-tick" data-width="fit"></select>
                                 </div>
                                 <span id="manageentry-banmembermsg-body" class="collapse">
                                     <span id="manageentry-banmembermsg-block"></span>
@@ -643,7 +643,7 @@
                                         Member unbanned messages
                                     </label>
                                     &nbsp;
-                                    <select id="manageentry-select-unbanmembermsg" onchange="javascript:config(this.id.substring(19), this.value, function() {});" class="selectpicker" data-width="fit"></select>
+                                    <select id="manageentry-select-unbanmembermsg" onchange="javascript:config(this.id.substring(19), this.value, function() {});" class="selectpicker show-tick" data-width="fit"></select>
                                 </div>
                                 <span id="manageentry-unbanmembermsg-body" class="collapse">
                                     <span id="manageentry-unbanmembermsg-block"></span>
@@ -675,7 +675,7 @@
                                         Spam filter
                                     </label>
                                     &nbsp;
-                                    <select id="manageentry-spamfilter-action" onChange="javascript:config('spamfilter', 'action-' + this.value, function() {});" class="selectpicker" data-width="fit">
+                                    <select id="manageentry-spamfilter-action" onChange="javascript:config('spamfilter', 'action-' + this.value, function() {});" class="selectpicker show-tick" data-width="fit">
                                         <option id="spamfilter-kick" value="kick">Kick Violators</option>
                                         <option id="spamfilter-mute" value="mute">Mute Violators</option>
                                         <option id="spamfilter-block" value="block">Block Violators</option>
@@ -684,7 +684,7 @@
                                 <span id="manageentry-spamfilter-body" class="collapse">
                                     <span id="manageentry-spamfilter-block"></span>
                                     &nbsp;&nbsp;&nbsp;&nbsp;
-                                    <select id="manageentry-spamfilter-selector" onChange="javascript:config('spamfilter', this.value, function() {});" class="selectpicker" data-width="fit">
+                                    <select id="manageentry-spamfilter-selector" onChange="javascript:config('spamfilter', this.value, function() {});" class="selectpicker show-tick" data-width="fit">
                                         <option id="spamfilter-high" value="high">High</option>
                                         <option id="spamfilter-medium" value="medium">Medium</option>
                                         <option id="spamfilter-low" value="low">Low</option>
@@ -698,7 +698,7 @@
                                         NSFW filter (blocks NSFW fetching through bot)
                                     </label>
                                     &nbsp;
-                                    <select id="manageentry-nsfwfilter-action" onChange="javascript:config('nsfwfilter', 'action-' + this.value, function() {});" class="selectpicker" data-width="fit">
+                                    <select id="manageentry-nsfwfilter-action" onChange="javascript:config('nsfwfilter', 'action-' + this.value, function() {});" class="selectpicker show-tick" data-width="fit">
                                         <option id="nsfwfilter-kick" value="kick">Kick Violators</option>
                                         <option id="nsfwfilter-mute" value="mute">Mute Violators</option>
                                         <option id="nsfwfilter-block" value="block">Block Violators</option>
@@ -715,7 +715,7 @@
                                     <span class="input-group-addon btn btn-primary" onclick="javascript:configFilter(document.getElementById('filterinput').value);"><span class="glyphicon glyphicon-ok" aria-hidden="true"></span> Submit</span>
                                 </div>
                                 <br>
-                                <select id="manageentry-filter-action" onChange="javascript:config('filter', 'action-' + this.value, function() {});" class="selectpicker" data-width="fit">
+                                <select id="manageentry-filter-action" onChange="javascript:config('filter', 'action-' + this.value, function() {});" class="selectpicker show-tick" data-width="fit">
                                     <option id="filter-kick" value="kick">Kick Violators</option>
                                     <option id="filter-mute" value="mute">Mute Violators</option>
                                     <option id="filter-block" value="block">Block Violators</option>
@@ -740,19 +740,31 @@
                             <br>
                             <h3 id="other">Other</h3>
                             <div class="checkbox">
-                                <input id="manageentry-customcolors" type="checkbox" onclick="javascript:config(this.id.substring(12), this.checked, function() {});">
-                                <label for="manageentry-customcolors">
-                                    Allow members to set a custom color
+                                <input id="manageentry-role" type="checkbox" onclick="javascript:config(this.id.substring(12), this.checked, function() {});">
+                                <label for="manageentry-role">
+                                    role <span class="label label-info newlabel">New</span>
+                                    &nbsp;
+                                    <p class="help-block" style="display: inline">
+                                        Set roles and colors
+                                    </p>
                                 </label>
                             </div>
-                            <div class="checkbox">
-                                <input id="manageentry-customroles" type="checkbox" onclick="javascript:config(this.id.substring(12), this.checked, function() {});">
-                                <label for="manageentry-customroles">
-                                    Allow members to create/join basic roles
-                                </label>
-                            </div>
-                            <span id="manageentry-customroles-body" class="collapse">
-                                <span id="manageentry-customroles-block"></span>
+                            <span id="manageentry-role-block">
+                                <div class="checkbox">
+                                    <input id="manageentry-customcolors" type="checkbox" onclick="javascript:config(this.id.substring(12), this.checked, function() {});">
+                                    <label for="manageentry-customcolors">
+                                        Allow members to set a custom color
+                                    </label>
+                                </div>
+                                <div class="checkbox">
+                                    <input id="manageentry-customroles" type="checkbox" onclick="javascript:config(this.id.substring(12), this.checked, function() {});">
+                                    <label for="manageentry-customroles">
+                                        Allow members to create/join basic roles
+                                    </label>
+                                </div>
+                                <span id="manageentry-customroles-body" class="collapse">
+                                    <span id="manageentry-customroles-block"></span>
+                                </span>
                             </span>
                                 
                             <br>
@@ -771,7 +783,7 @@
                             
                             <br>
                             <form class="form-inline" id="caform">
-                                <select id="catypeselector" class="selectpicker" data-width="fit">
+                                <select id="catypeselector" class="selectpicker show-tick" data-width="fit">
                                     <option value="clean">Clean</option>
                                     <option value="purge">Nuke</option>
                                     <option value="archive">Archive</option>
@@ -780,7 +792,7 @@
                                     <input id="cainput" class="form-control" type="number" placeholder="# of messages" min="1"></input>
                                 </div>
                                 &nbsp;in&nbsp;
-                                <select id="caselector" class="selectpicker" data-width="fit"></select>
+                                <select id="caselector" class="selectpicker show-tick" data-width="fit"></select>
                                 <input type="submit" class="btn btn-default" value="Go">
                             </form>
                         </div>
