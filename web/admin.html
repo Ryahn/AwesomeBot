@@ -13,6 +13,8 @@
     <link href="./css/bootstrap-select.min.css" rel="stylesheet">
     <link href="./css/awesome-bootstrap-checkbox.css" rel="stylesheet">
     <link rel="stylesheet" href="./css/nprogress.css">
+    <link rel="stylesheet" href="./css/codemirror.css">
+    <link rel="stylesheet" href="./css/base16-dark.css">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.1/css/font-awesome.min.css">
     <link href="https://fonts.googleapis.com/css?family=Montserrat:400,700" rel="stylesheet" type="text/css">
     <link href='https://fonts.googleapis.com/css?family=Droid+Serif:400,700,400italic,700italic' rel='stylesheet' type='text/css'>
@@ -30,6 +32,7 @@
     <script src="./js/index.js"></script>
     <script src="./js/config.js"></script>
     <script src="./js/admin.js"></script>
+    <script src="./js/codemirror.js"></script>
 </head>
 <body onload="switchColors();doAuth();">
     <div id="wrapper" class="">
@@ -51,6 +54,9 @@
                     <a href="#blocked">Blocklist</a>
                 </li>
                 <li>
+                    <a href="#muted">Muted <span class="label label-info newlabel">New</span></a>
+                </li>
+                <li>
                     <a href="#strikes">Strikes</a>
                 </li>
                 <li>
@@ -60,13 +66,13 @@
                     <a href="#translated">Auto-Translation</a>
                 </li>
                 <li>
-                    <a href="#statspoints">Stats &amp; Points</a>
+                    <a href="#statspoints">Stats &amp; Points <span class="label label-info newlabel">New</span></a>
                 </li>
                 <li>
                     <a href="#commands">Commands</a>
                 </li>
                 <li>
-                    <a href="#public">Public Data</a>
+                    <a href="#public">Public Data <span class="label label-info newlabel">New</span></a>
                 </li>
                 <li>
                     <a href="#manage">Management</a>
@@ -150,7 +156,7 @@
                     <div class="col-lg-12">
                         <h2 id="blocked" data-toggle="collapse" data-target="#blocked-body" aria-expanded="false" aria-controls="collapseblocked">Blocklist</h2>
                         <div id="blocked-body" class="collapse">
-                            <p class="help-block">Blocked members will not be able to use the bot anywhere on the server. Entries marked with <code>(global)</code> have been blocked by the bot maintainer. You can also block a member to mute them on certain channels.</p>
+                            <p class="help-block">Blocked members will not be able to use the bot anywhere on the server. Entries marked with <code>(global)</code> have been blocked by the bot maintainer.</p>
                             <div class="table-responsive">
                                 <table id="blockedtable" class="table table-striped">
                                     <thead>
@@ -158,7 +164,7 @@
                                             <th>Avatar</th>
                                             <th>Username</th>
                                             <th>ID</th>
-                                            <th>Actions</th>
+                                            <th>Action</th>
                                         </tr>
                                     </thead>
                                     <tbody id="blockedtablebody"></tbody>
@@ -166,6 +172,29 @@
                             </div>
                             <select id="blockedselector" class="selectpicker show-tick" data-width="fit" data-live-search="true" title="Select Member to Block" onChange="javascript:config('blocked', this.value, function() {switchAdmins();switchBlocked();});"></select>
                             <select id="blockedselector-role" onchange="javascript:config('blocked', $('#' + this.id).val(), switchBlocked);" class="selectpicker show-tick" data-width="fit" title="Block Members By Role"></select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-lg-12">
+                        <h2 id="muted" data-toggle="collapse" data-target="#muted-body" aria-expanded="false" aria-controls="collapsemuted">Muted <span class="label label-info newlabel">New</span></h2>
+                        <div id="muted-body" class="collapse">
+                            <p class="help-block">Muted members cannot send messages in the channels you select.</p>
+                            <div class="table-responsive">
+                                <table id="mutedtable" class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Avatar</th>
+                                            <th>Username</th>
+                                            <th>ID</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="mutedtablebody"></tbody>
+                                </table>
+                            </div>
+                            <select id="mutedselector" class="selectpicker show-tick" data-width="fit" data-live-search="true" title="Select Member to Block" onChange="javascript:config('mute', [this.value, 'all'], switchMuted);"></select>
                         </div>
                     </div>
                 </div>
@@ -816,7 +845,7 @@
                                 </table>
                             </div>
                             <label class="btn btn-default btn-file">
-                                Upload New<input id="triviasetsupload" type="file" style="display: none;"accept="application/json" onchange="javascript:newTriviaSet(this.files)" />
+                                <span class="glyphicon glyphicon-plus" aria-hidden="true"></span> Upload New<input id="triviasetsupload" type="file" style="display: none;"accept="application/json" onchange="javascript:newTriviaSet(this.files)" />
                             </label>
                             
                         </div>
@@ -841,11 +870,11 @@
                                     <tbody id="extensionstablebody"></tbody>
                                 </table>
                             </div>
-                            <label class="btn btn-default btn-file">
+                            <!--<label class="btn btn-default btn-file">
                                 Upload New<input id="extensionsupload" type="file" style="display: none;" accept="application/json" onchange="javascript:newExtension(this.files)" />
                             </label>
-                            <br><br>
-                            <a role="button" href="http://awesome-botmakersinc.rhcloud.com/builder" target="_blank" class="btn btn-default" data-toggle="tooltip" data-placement="bottom" title="Easily build and test AwesomeBot extensions"><span class="glyphicon glyphicon-wrench" aria-hidden="true"></span> Extension Builder</a>
+                            <br><br>-->
+                            <a role="button" href="javascript:launchBuilder();" target="_blank" class="btn btn-default" data-toggle="tooltip" data-placement="bottom" title="Easily build and test AwesomeBot extensions"><span class="glyphicon glyphicon-wrench" aria-hidden="true"></span> Extension Builder</a>
                         </div>
                     </div>
                 </div>
@@ -853,6 +882,93 @@
                 <div class="row">
                     <div class="col-lg-12">
                         <br><i>Created by @BitQuote, <a href="http://awesomebot.xyz">http://awesomebot.xyz</a>. This project is in no way affiliated with Alphabet, Inc., who does not own or endorse this product.</i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Extension Builder Modal -->
+        <div class="modal fade" id="extensionbuilder" tabindex="-1" data-backdrop="static" data-keyboard="false" role="dialog">
+            <div class="modal-dialog modal-lg" role="document" style="width:85%">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                        <h4 class="modal-title">Extension Builder&nbsp;&nbsp;<a target="_blank" href="https://github.com/BitQuote/AwesomeBot/wiki/Extensions" class="btn btn-default"><span class="glyphicon glyphicon-question-sign" aria-hidden="true"></span> Help</a></h4>
+                    </div>
+                    <div class="modal-body">
+                        <ul class="nav nav-tabs" role="tablist">
+                            <li class="active">
+                                <a href="#new" role="tab" data-toggle="tab" id="extensionbuilder-current-label">New</a>
+                            </li>
+                            <li class="dropdown">
+                                <a href="#" id="myTabDrop1" class="dropdown-toggle" data-toggle="dropdown">
+                                    Saved <span class="caret"></span>
+                                </a> 
+                                <ul class="dropdown-menu" aria-labelledby="myTabDrop1" id="extensionbuilder-saved-dropdown"></ul>
+                            </li>
+                        </ul>
+
+                        <div class="tab-content">
+                            <div role="tabpanel" class="tab-pane active" id="new"><br>
+                                <div class="container-fluid">
+                                    <div class="row">
+                                        <div class="col-xs-4">
+                                            <input type="text" id="extensionbuilder-input-name" class="form-control" placeholder="Name">
+                                            <br>
+                                            <select id="extensionbuilder-select-channels" class="selectpicker show-tick" data-width="100%" title="Channels" data-selected-text-format="values" data-actions-box="true" multiple></select>
+                                            <br><br>
+                                            <select id="extensionbuilder-select-type" class="selectpicker show-tick" data-width="100%" title="Type" onchange="switchBuilderType(this.value);">
+                                                <option value="command">Command</option>
+                                                <option value="keyword">Keyword</option>
+                                                <option value="timer">Timer</option>
+                                            </select>
+                                            <br><br>
+                                            <div id="extensionbuilder-type-block">
+                                                <p class="help-block">Write some code or select a type to get started</p>
+                                            </div>
+                                            <br>
+                                            <label class="btn btn-default btn-file">
+                                                <span class="glyphicon glyphicon-open" aria-hidden="true"></span> Upload<input id="extensionbuilder-file" type="file" style="display: none;"accept="application/javascript" onchange="javascript:uploadToBuilder();" />
+                                            </label>
+
+
+                                            <div id="extensionbuilder-type-command" class="hide">
+                                                <input type="text" id="extensionbuilder-input-key" class="form-control" placeholder="Key (no spaces)">
+                                                <br>
+                                                <input type="text" id="extensionbuilder-input-usage" class="form-control" placeholder="Usage">
+                                                <br>
+                                                <textarea id="extensionbuilder-input-extended" class="form-control custom-control" rows="3" style="resize:none" placeholder="Extended help" maxlength="500"></textarea>
+                                            </div>
+                                            <div id="extensionbuilder-type-keyword" class="hide">
+                                                <input type="text" id="extensionbuilder-input-key" class="form-control" placeholder="Keywords (comma-separated)">
+                                            </div>
+                                            <div id="extensionbuilder-type-timer" class="hide">
+                                                <input type="number" id="extensionbuilder-input-interval" class="form-control" placeholder="Interval (seconds)" min="10" max="86400">
+                                            </div>
+                                        </div>
+                                        <div class="col-xs-8" id="extensionbuilder-code-block">
+                                            <textarea id="extensionbuilder-code" class="form-control custom-control" style="resize:none" ></textarea>
+                                            <script type="text/javascript">
+                                                var cm = CodeMirror.fromTextArea(document.getElementById("extensionbuilder-code"), {
+                                                    mode: "javascript",
+                                                    lineWrapping: true,
+                                                    lineNumbers: true,
+                                                    fixedGutter: true,
+                                                    styleActiveLine: true,
+                                                    theme: "base16-dark"
+                                                });
+                                                cm.refresh();
+                                            </script>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button id="extensionbuilder-button-output" type="button" class="btn btn-default" style="float:left;"><span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span> Output</button>
+                        <button id="extensionbuilder-button-save" type="button" class="btn btn-default"><span class="glyphicon glyphicon-saved" aria-hidden="true" onclick="saveBuilderContent();"></span> Save</button>
+                        <button id="extensionbuilder-button-run" type="button" class="btn btn-primary"><span class="glyphicon glyphicon-play" aria-hidden="true" onclick="runBuilderContent();"></span> Run</button>
                     </div>
                 </div>
             </div>
@@ -892,16 +1008,6 @@
                         <button type="button" class="btn btn-default" data-dismiss="modal">No</button>
                         <button type="button" class="btn btn-primary" onclick="checkAuth(true);">Yes</button>
                     </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Loading Modal -->
-        <div class="modal fade" id="loading-modal" role="dialog" data-backdrop="static" aria-labelledby="loading">
-            <div class="modal-dialog modal-sm">
-                <div class="modal-content">
-                    <div class="modal-header">Loading...</div>
-                    <div class="modal-body">Please wait</div>
                 </div>
             </div>
         </div>

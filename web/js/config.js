@@ -59,8 +59,8 @@ function setAuthTimer() {
     }, 270000);
 }
 
-function leaveConsole(msg) {
-    richModal(msg);
+function leaveConsole(msg, header) {
+    richModal(msg, header);
     $("#error-modal").on("hidden.bs.modal", function(e) {
         localStorage.removeItem("auth");
         document.location.replace("index.html");
@@ -90,6 +90,10 @@ function config(key, value, callback) {
     }
     
     NProgress.start();
+    if(key=="leave" && authtype=="admin") {
+        leaveConsole("Bot has left this server", "Goodbye");
+        NProgress.done();
+    }
     var data = {};
     data[key] = value;
     postJSON(data, function(response) {

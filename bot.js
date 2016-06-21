@@ -35,7 +35,6 @@ try {
     const fs = require("fs");
     const Wiki = require("wikijs");
     const feed = require("feed-read");
-    const mitsuku = require("mitsuku-api")();
     const convert = require("convert-units");
     const imgur = require("imgur-node-api");
     var wolfram;
@@ -70,11 +69,11 @@ try {
 /**
 
     TODO:
+     - delete and role options for filters
+     - random cat command
      - default extensions for throw, slash, rip, etc
-     - awesome self host builder
      - extension builder in admin console
      - public extension gallery
-     - interface for gallery outside of admin console
 
  */
 
@@ -86,13 +85,11 @@ var readyToGo = false;
 var disconnects = 0;
 var openedweb = false;
 var statsToClear = [];
+var readiedServers = {};
 
 // Set up message counter
 var messages = {};
 var voice = {};
-
-// Chatterbot setup
-var bots = {};
 
 // Active select menus
 var selectmenu = {};
@@ -362,14 +359,14 @@ app.get("/data", function(req, res) {
                         for(var i=0; i<configs.servers[svr.id][key].length; i++) {
                             var usr = svr.members.get("id", configs.servers[svr.id][key][i]);
                             if(usr && configs.botblocked.indexOf(usr.id)==-1) {
-                                currentConfig[key].push([usr.avatarURL || "http://i.imgur.com/fU70HJK.png", usr.username + (usr.bot ? " [BOT]" : ""), usr.id, false, checkUserMute(usr, svr)]);
+                                currentConfig[key].push([usr.avatarURL || "http://i.imgur.com/fU70HJK.png", usr.username + (usr.bot ? " [BOT]" : ""), usr.id, false]);
                             }
                         }
                         if(key=="blocked") {
                             for(var i=0; i<configs.botblocked.length; i++) {
                                 var usr = svr.members.get("id", configs.botblocked[i]);
                                 if(usr && usr.username) {
-                                    currentConfig[key].push([usr.avatarURL || "http://i.imgur.com/fU70HJK.png", usr.username + (usr.bot ? " [BOT]" : "") + " (global)", usr.id, true, checkUserMute(usr, svr)]);
+                                    currentConfig[key].push([usr.avatarURL || "http://i.imgur.com/fU70HJK.png", usr.username + (usr.bot ? " [BOT]" : "") + " (global)", usr.id, true]);
                                 }
                             }
                         }
@@ -404,6 +401,27 @@ app.get("/data", function(req, res) {
                             b = b[1].toUpperCase();
                             return a < b ? -1 : a > b ? 1 : 0;
                         });
+                    } else if(key=="muted") {
+                        var mutedUsers = [];
+                        for(var chid in configs.servers[svr.id].muted) {
+                            for(var i=0; i<configs.servers[svr.id].muted[chid].length; i++) {
+                                if(mutedUsers.indexOf(configs.servers[svr.id].muted[chid][i])==-1) {
+                                    mutedUsers.push(configs.servers[svr.id].muted[chid][i]);
+                                }
+                            }
+                        }
+                        currentConfig[key] = [];
+                        for(var i=0; i<mutedUsers.length; i++) {
+                            var usr = svr.members.get("id", mutedUsers[i]);
+                            if(usr) {
+                                currentConfig[key].push([usr.avatarURL || "http://i.imgur.com/fU70HJK.png", usr.username + (usr.bot ? " [BOT]" : ""), usr.id, checkUserMute(usr, svr)]);
+                            }
+                        }
+                        currentConfig[key].sort(function(a, b) {
+                            a = a[1].toUpperCase();
+                            b = b[1].toUpperCase();
+                            return a < b ? -1 : a > b ? 1 : 0;
+                        });
                     } else if(key=="triviasets") {
                         currentConfig[key] = [];
                         for(var tset in configs.servers[svr.id][key]) {
@@ -424,7 +442,7 @@ app.get("/data", function(req, res) {
                             b = b[0].toUpperCase();
                             return a < b ? -1 : a > b ? 1 : 0;
                         });
-                    } else if(["tags", "muted", "countdowns"].indexOf(key)==-1) {
+                    } else if(["tags", "countdowns"].indexOf(key)==-1) {
                         currentConfig[key] = configs.servers[svr.id][key];
                     }
                 }
@@ -614,7 +632,7 @@ var commands = {
     // Checks if bot is alive and shows version and uptime
     "ping": {
         process: function(bot, msg) {
-            var info = "Pong! " + (msg.channel.server.detailsOfUser(bot.user).nick || bot.user.username) + " v" + version + " by **@BitQuote** running for " + secondsToString(bot.uptime/1000).slice(0, -1) + ". Serving in " + bot.servers.length + " server" + (bot.servers.length==1 ? "" : "s") + " and " + bot.users.length + " user" + (bot.users.length==1 ? "" : "s");
+            var info = "Pong! " + (msg.channel.server.detailsOfUser(bot.user).nick || bot.user.username) + " v" + version + " by **@BitQuote** running for " + secondsToString(process.uptime()).slice(0, -1) + ". Serving in " + bot.servers.length + " server" + (bot.servers.length==1 ? "" : "s") + " and " + bot.users.length + " user" + (bot.users.length==1 ? "" : "s");
             if(configs.hosting!="") {
                 info += ". Status: " + configs.hosting;
             }
@@ -634,7 +652,7 @@ var commands = {
             if(["bug", "suggestion", "feature", "issue"].indexOf(suffix.toLowerCase())>-1) {
                 bot.sendMessage(msg.channel, "Please file your " + suffix.toLowerCase() + " here: https://github.com/BitQuote/AwesomeBot/issues/new");
             } else {
-                bot.sendMessage(msg.channel, "Use `" + getPrefix(msg.channel.server) + "help` to list commands. Created by **@BitQuote**. Built on NodeJS with DiscordJS. Go to http://awesomebot.xyz to learn more, or join http://discord.awesomebot.xyz/\n\n*This project is in no way affiliated with Alphabet, Inc., who does not own or endorse this product.*");
+                bot.sendMessage(msg.channel, "Use `" + getPrefix(msg.channel.server) + "help` to list commands. Created by **@BitQuote**. Built on NodeJS with DiscordJS. Go to http://awesomebot.xyz/ to learn more, or join http://discord.awesomebot.xyz/\n\n*This project is in no way affiliated with Alphabet, Inc., who does not own or endorse this product.*");
             }
         }
     },
@@ -1013,7 +1031,12 @@ var commands = {
                 } else if(configs.servers[msg.channel.server.id].tags[key] && value==".") {
                     delete configs.servers[msg.channel.server.id].tags[key];
                     if(configs.servers[msg.channel.server.id].tagcommands.indexOf(key)>-1) {
-                        configs.servers[msg.channel.server.id].tagcommands.splice(configs.servers[msg.channel.server.id].tagcommands.indexOf(key), 1);
+                        if(configs.servers[msg.channel.server.id].admins.indexOf(msg.author.id)>-1) {
+                            configs.servers[msg.channel.server.id].tagcommands.splice(configs.servers[msg.channel.server.id].tagcommands.indexOf(key), 1);
+                        } else {
+                            logMsg(new Date().getTime(), "WARN", msg.channel.server.id, msg.channel.id, msg.author.username + " tried to remove a tag command but is not an admin");
+                            bot.sendMessage(msg.channel, msg.author + " Are you an admin? Last time I checked you weren't.");
+                        }
                     }
                     logMsg(new Date().getTime(), "INFO", msg.channel.server.id, msg.channel.id, "Deleted tag '" + key + "'");
                     bot.sendMessage(msg.channel, "Deleted.");
@@ -1024,16 +1047,21 @@ var commands = {
                     });
                 } else {
                     if(value.toLowerCase().indexOf("|command")==value.length-8) {
-                        if(checkCommandConflicts(key, msg.channel.server)) {
-                            logMsg(new Date().getTime(), "WARN", msg.channel.server.id, msg.channel.id, msg.author.username + " tried to set tag command key that already exists");
-                            bot.sendMessage(msg.channel, msg.author + " I can't set that tag command because it's a default command!");
-                            return;
-                        } else if(key.indexOf(" ")>-1) {
-                            logMsg(new Date().getTime(), "WARN", msg.channel.server.id, msg.channel.id, msg.author.username + " tried to set tag command with spaces");
-                            bot.sendMessage(msg.channel, msg.author + " Tag commands can't have spaces...");
-                            return;
+                        if(configs.servers[msg.channel.server.id].admins.indexOf(msg.author.id)>-1) {
+                            if(checkCommandConflicts(key, msg.channel.server)) {
+                                logMsg(new Date().getTime(), "WARN", msg.channel.server.id, msg.channel.id, msg.author.username + " tried to set tag command key that already exists");
+                                bot.sendMessage(msg.channel, msg.author + " I can't set that tag command because it's a default command!");
+                                return;
+                            } else if(key.indexOf(" ")>-1) {
+                                logMsg(new Date().getTime(), "WARN", msg.channel.server.id, msg.channel.id, msg.author.username + " tried to set tag command with spaces");
+                                bot.sendMessage(msg.channel, msg.author + " Tag commands can't have spaces...");
+                                return;
+                            }
+                            configs.servers[msg.channel.server.id].tagcommands.push(key);
+                        } else {
+                            logMsg(new Date().getTime(), "WARN", msg.channel.server.id, msg.channel.id, msg.author.username + " tried to set tag command key but is not an admin");
+                            bot.sendMessage(msg.channel, msg.author + " Check ur priv bruh");
                         }
-                        configs.servers[msg.channel.server.id].tagcommands.push(key);
                         value = value.substring(0, value.toLowerCase().indexOf("|command"));
                     }
                     configs.servers[msg.channel.server.id].tags[key] = value;
@@ -1064,19 +1092,20 @@ var commands = {
             } else if(emotes[suffix.toLowerCase()]) {
                 bot.sendFile(msg.channel, "http://emote.3v.fi/2.0/" + emotes[suffix.toLowerCase()] + ".png");
             } else if(!suffix) {
-                var info = ""
+                var info = [""];
+                var index = 0;
                 for(var tag in configs.servers[msg.channel.server.id].tags) {
                     var tmpinfo = "**" + tag + "**: " + configs.servers[msg.channel.server.id].tags[tag] + "\n";
-                    if((tmpinfo.length + info.length)>2000) {
-                        break;
-                    } else {
-                        info += tmpinfo;
-                    }
+                    if((tmpinfo.length + info[index].length)>2000) {
+                        index++;
+                        info[index] = "";
+                    } 
+                    info[index] += tmpinfo;
                 }
-                if(!info) {
-                    info = "No tags found for this server. Use `" + getPrefix(msg.channel.server) + "tag <key>|<value>` to set one.";
+                if(!info[0]) {
+                    info = ["No tags found for this server. Use `" + getPrefix(msg.channel.server) + "tag <key>|<value>` to set one."];
                 }
-                bot.sendMessage(msg.channel, info);
+                sendArray(msg.channel, info);
             } else {
                 var info = "Select one of the following options:";
                 for(var i=0; i<Object.keys(configs.servers[msg.channel.server.id].tags).length; i++) {
@@ -1378,7 +1407,7 @@ var commands = {
             }
         }
     },
-    // Admin-only: bulk delete messages
+    // Bulk delete messages
     "nuke": {
         usage: "<no. of messages> [<username>]",
         process: function(bot, msg, suffix) {
@@ -1680,11 +1709,24 @@ var commands = {
     "room": {
         usage: "<\"text\" or \"voice\"> <username 1>|<username 2>|...",
         process: function(bot, msg, suffix) {
+            if(["delete", "remove"].indexOf(suffix.toLowerCase())>-1 && rooms[msg.channel.id]) {
+                bot.deleteChannel(msg.channel, function(err) {
+                    if(err) {
+                        logMsg(new Date().getTime(), "ERROR", msg.channel.server.id, null, "Failed to delete room " + ch.name);
+                        bot.sendMessage(msg.channel, "Dammit, I ran into trouble. Ask the mods to delete this room.");
+                    } else {
+                        delete rooms[msg.channel.id];
+                        delete stats[msg.channel.server.id].botOn[msg.channel.id];
+                        logMsg(new Date().getTime(), "INFO", msg.channel.server.id, null, "Deleted room " + ch.name);
+                    }
+                });
+                return;
+            }
             if(suffix && ["text", "voice"].indexOf(suffix.split(" ")[0].toLowerCase())>-1) {
                 var type = suffix.split(" ")[0].toLowerCase();
                 suffix = suffix.substring(suffix.indexOf(" ")+1);
                 var users = [bot.user, msg.author];
-                if(suffix && suffix.split("|").length>0) {
+                if(suffix.split("|").length>0) {
                     for(var i=0; i<suffix.split("|").length; i++) {
                         var usr = userSearch(suffix.split("|")[i], msg.channel.server);
                         for(var j=0; j<users.length; j++) {
@@ -1694,16 +1736,6 @@ var commands = {
                         }
                         users.push(usr);
                     }
-                } else if(rooms[msg.channel.id]) {
-                    bot.deleteChannel(msg.channel, function(err) {
-                        if(err) {
-                            logMsg(new Date().getTime(), "ERROR", msg.channel.server.id, null, "Failed to create delete room " + ch.name);
-                            bot.sendMessage(msg.channel, "Dammit, I ran into trouble. Ask the mods to delete this room.");
-                        } else {
-                            delete rooms[msg.channel.id];
-                            logMsg(new Date().getTime(), "INFO", msg.channel.server.id, null, "Deleted room " + ch.name);
-                        }
-                    });
                 }
                 bot.createChannel(msg.channel.server, "awesomebot-room-" + genToken(8), type, function(err, ch) {
                     if(err) {
@@ -1753,6 +1785,7 @@ var commands = {
                                     } else {
                                         logMsg(new Date().getTime(), "INFO", msg.channel.server.id, null, "Created room " + ch.name);
                                         if(type=="text") {
+                                            stats[ch.server.id].botOn[ch.id] = true;
                                             bot.sendMessage(ch, "First! *This room will be deleted after 5 minutes of inactivity.*");
                                         }
                                     }
@@ -2101,6 +2134,7 @@ var commands = {
                         bot.sendMessage(msg.channel, "There isn't a trivia game going on right now. Start one by typing `" + getPrefix(msg.channel.server) + "trivia start [<question set to use>]`");
                     }
                     break;
+                case "skip":
                 case "next":
                     if(triviaOn) {
                         logMsg(new Date().getTime(), "INFO", msg.channel.server.id, msg.channel.id, "Trivia question skipped by " + msg.author.username);
@@ -2122,13 +2156,22 @@ var commands = {
                     break;
                 default:
                     if(triviaOn) {
-                        var compare = function() {
-                            if(stats[msg.channel.server.id].trivia[msg.channel.id].answer.toLowerCase().trim().length<5 || !isNaN(stats[msg.channel.server.id].trivia[msg.channel.id].answer.toLowerCase().trim())) {
-                                return suffix.toLowerCase()==stats[msg.channel.server.id].trivia[msg.channel.id].answer.toLowerCase().trim();
+                        var compare = function(answer) {
+                            if(answer.toLowerCase().trim().length<5 || !isNaN(answer.toLowerCase().trim())) {
+                                return suffix.toLowerCase()==answer.toLowerCase().trim();
                             }
-                            return levenshtein.get(suffix.toLowerCase(), stats[msg.channel.server.id].trivia[msg.channel.id].answer.toLowerCase().trim())<3;
+                            return levenshtein.get(suffix.toLowerCase(), answer.toLowerCase().trim())<3;
                         }
-                        if(compare() && triviaOn) {
+                        var checkAnswer = function() {
+                            var answers = stats[msg.channel.server.id].trivia[msg.channel.id].answer.split("|");
+                            for(var i=0; i<answers.length; i++) {
+                                if(answers[i] && compare(answers[i])) {
+                                    return true;
+                                }
+                            }
+                            return false;
+                        }
+                        if(checkAnswer() && triviaOn) {
                             logMsg(new Date().getTime(), "INFO", msg.channel.server.id, msg.channel.id, "Correct trivia game answer by " + msg.author.username);
 
                             // Award AwesomePoints to author
@@ -2299,7 +2342,7 @@ var commands = {
     },
     // Uses goo.gl to shorten a URL
     "shorten": {
-        usage: " <URL to shorten or decode>",
+        usage: "<URL to shorten or decode>",
         process: function(bot, msg, suffix) {
             if(suffix) {
                 if(suffix.toLowerCase().indexOf("http://goo.gl/")==0 || suffix.toLowerCase().indexOf("goo.gl/")==0) {
@@ -2368,9 +2411,32 @@ var commands = {
             }
         }
     },
+    // Uploads an image to imgur
+    "imgur": {
+        usage: "<*attach an image* or image URL>",
+        process: function(bot, msg, suffix) {
+            if(msg.attachments.length==0 && !suffix) {
+                logMsg(new Date().getTime(), "WARN", msg.channel.server.id, msg.channel.id, "User did not provide image to upload to Imgur");
+                bot.sendMessage(msg.channel, msg.author + " Please attach an image or include an image URL :hushed:");
+                return;
+            }
+            var imageurl = suffix;
+            if(msg.attachments.length>0) {
+                imageurl = msg.attachments[0].url;
+            }
+            imgur.upload(imageurl, function(err, res) {
+                if(err) {
+                    logMsg(new Date().getTime(), "ERROR", msg.channel.server.id, msg.channel.id, "Failed to upload to Imgur");
+                    bot.sendMessage(msg.channel, "Imgur is probably down, ***again***. *Sigh*.")
+                } else {
+                    bot.sendMessage(msg.channel, res.data.link);
+                }
+            });
+        }
+    },
     // Votes on an active poll in public
     "vote": {
-        usage: " [<no. of choice>]",
+        usage: "[<no. of choice>]",
         process: function(bot, msg, suffix) {
             var act = activePolls(msg.channel.id);
             if(!polls[act] || !polls[act].open) {
@@ -3434,6 +3500,23 @@ var pmcommands = {
                 } else {
                     bot.sendMessage(msg.channel, "Check ur priv bruh");
                 }
+            } else if(!suffix) {
+                if(profileData[msg.author.id] && profileData[msg.author.id].svrnicks && Object.keys(profileData[msg.author.id].svrnicks).length>0) {
+                    var info = "You've set the following server nicks:";
+                    var svrnicksinfo = [];
+                    for(var nick in profileData[msg.author.id].svrnicks) {
+                        var svr = bot.servers.get("id", profileData[msg.author.id].svrnicks[nick]);
+                        if(checkServer(svr, msg.author)) {
+                            svrnicksinfo.push("\n\t" + nick + ": " + svr.name);
+                        }
+                    }
+                    if(svrnicksinfo.length>0) {
+                        info += svrnicksinfo.sort().join("") + "\n*Use `servernick <nickanme>|.` to remove one.*";
+                        bot.sendMessage(msg.channel, info);
+                        return;
+                    }
+                }
+                bot.sendMessage(msg.channel, "You haven't set any nicks for servers. They're really useful though! They save a ton of time! Try setting one with `servernick <nickname>|<server>`");
             } else {
                 logMsg(new Date().getTime(), "WARN", null, msg.author.id, "User provided invalid servernick parameters");
                 bot.sendMessage(msg.channel, "I got nothin for ya bro, make sure you're using the right syntax: `servernick <nickname>|<server or \".\">`");
@@ -3706,17 +3789,6 @@ var pmcommands = {
 // Initializes bot and outputs to console
 var bot = new Discord.Client({forceFetchUsers: true});
 bot.on("ready", function() {
-    // Authorize AwesomeBot
-    unirest.post("http://awesome.awesomebot.xyz/botauth?token=" + AuthDetails.awesome_token)
-    .end(function(response) {
-        if(response.status==200) {
-            postData();
-        } else {
-            logMsg(new Date().getTime(), "ERROR", "General", null, "Unauthorized self-hosted AwesomeBot running, exiting. Please see https://github.com/BitQuote/AwesomeBot/wiki/Setup#getting-started");
-            process.exit();
-        }
-    });
-
     //checkVersion();
 
     // Set avatar if necessary
@@ -3739,11 +3811,10 @@ bot.on("ready", function() {
         setReminder(i);
     }
 
-    // Configure all servers
-    for(var i=0; i<bot.servers.length; i++) {
-        readyServer(bot.servers[i]);
+    // Prune old server data sometimes
+    if(Math.random()>0.95) {
+        pruneServerData();
     }
-    pruneServerData();
 
     // Start message and stat tallies
     if(!stats.timestamp) {
@@ -3758,6 +3829,24 @@ bot.on("ready", function() {
         bot.setStatus("online", configs.game);
     }
     defaultGame(0);
+
+    // Run timer extensions
+    domain.run(runTimerExtensions);
+
+    // Start RSS update timer
+    domain.run(rssTimer);
+
+    // Start listening for web interface
+    try {
+        if(disconnects==0 || !openedweb) {
+            app.listen(server_port, server_ip_address, function() {
+                openedweb = true;
+                logMsg(new Date().getTime(), "INFO", "General", null, "Opened web interface on " + server_ip_address + ", server port " + server_port);
+            });
+        }
+    } catch(err) {
+        logMsg(new Date().getTime(), "ERROR", "General", null, "Failed to open web interface");
+    }
 
     // Give 50,000 maintainer points :P
     if(configs.maintainer) {
@@ -3776,504 +3865,496 @@ bot.on("ready", function() {
         });
     }
 
-    // Start RSS update timer
-    domain.run(rssTimer);
-
-    // Start listening for web interface
-    try {
-        if(disconnects==0 || !openedweb) {
-            app.listen(server_port, server_ip_address, function() {
-                openedweb = true;
-                logMsg(new Date().getTime(), "INFO", "General", null, "Opened web interface on " + server_ip_address + ", server port " + server_port);
-            });
-        }
-    } catch(err) {
-        logMsg(new Date().getTime(), "ERROR", "General", null, "Failed to open web interface");
-    }
-
     // Ready to go!
     logMsg(new Date().getTime(), "INFO", "General", null, "Started " + bot.user.username + " v" + version);
-    logMsg(new Date().getTime(), "INFO", "General", null, "This project is in no way affiliated with Alphabet, Inc., who does not own or endorse this product.");
 });
 
 bot.on("message", function(msg) {
-    var msgDomain = domainRoot.create();
-    msgDomain.run(function() {
-        // Stop responding if the sender is another bot or botblocked
-        if(configs.botblocked.indexOf(msg.author.id)>-1 || msg.author.bot || msg.author.id==bot.user.id || !openedweb) {
+    try {
+        messageHandler(msg);
+    } catch(msgError) {
+        console.log(msgError.stack);
+        logMsg(new Date().getTime(), "ERROR", msg.channel.server.id, msg.channel.id, "Something went seriously wrong processing message " + msg.id + ": " + msgError);
+    }
+});
+function messageHandler(msg) {
+    // Stop responding if the sender is another bot or botblocked
+    if(configs.botblocked.indexOf(msg.author.id)>-1 || msg.author.bot || msg.author.id==bot.user.id || !openedweb) {
+        return;
+    }
+
+    // Stuff that only applies to PMs
+    if(msg.channel.isPrivate) {
+        // Update command from maintainer
+        if(updateconsole && msg.author.id==configs.maintainer && msg.content=="update") {
+            updateBot(msg);
+        }
+
+        if(msg.author.id!=configs.maintainer && configs.pmforward) {
+            bot.sendMessage(bot.users.get("id", configs.maintainer), "**@" + msg.author.username + "** just sent me this PM:```" + msg.cleanContent + "```");
+        }
+
+        // Gets poll title from user and asks for poll options
+        if(polls[msg.author.id] && polls[msg.author.id].title=="") {
+            polls[msg.author.id].title = msg.content;
+            saveData("./data/polls.json", function(err) {
+                if(err) {
+                    logMsg(new Date().getTime(), "ERROR", "General", null, "Failed to save updated polls data");
+                }
+            });
+            bot.sendMessage(msg.channel, "Enter poll options, separated by commas, or `.` for yes/no:");
+            return;
+        // Gets poll options from user and starts voting
+        } else if(polls[msg.author.id] && polls[msg.author.id].options.length==0) {
+            if(msg.content==".") {
+                polls[msg.author.id].options = ["No", "Yes"];
+            } else {
+                var optionsProvided = msg.content.split(",");
+                for(var i=0; i<optionsProvided.length; i++) {
+                    if(optionsProvided[i] && optionsProvided.indexOf(optionsProvided[i])==-1) {
+                        polls[msg.author.id].options.push(optionsProvided[i]);
+                    }
+                }
+                if(polls[msg.author.id].options.length==0) {
+                    polls[msg.author.id].options.push(msg.content);
+                }
+            }
+            bot.sendMessage(msg.channel, "OK, got it. You can end the poll by sending me `poll close`.");
+            polls[msg.author.id].open = true;
+            saveData("./data/polls.json", function(err) {
+                if(err) {
+                    logMsg(new Date().getTime(), "ERROR", "General", null, "Failed to save updated polls data");
+                }
+            });
+
+            var ch = bot.channels.get("id", polls[msg.author.id].channel);
+            var info = msg.author + " has started a new poll: **" + polls[msg.author.id].title + "**";
+            for(var i=0; i<polls[msg.author.id].options.length; i++) {
+                info += "\n\t" + i + ": " + polls[msg.author.id].options[i];
+            }
+            info += "\nYou can vote by typing `" + getPrefix(ch.server) + "vote <no. of choice>`. If you don't include a number, I'll just show results";
+            bot.sendMessage(ch, info);
             return;
         }
 
-        // Stuff that only applies to PMs
-        if(msg.channel.isPrivate) {
-            // Update command from maintainer
-            if(updateconsole && msg.author.id==configs.maintainer && msg.content=="update") {
-                updateBot(msg);
+        // Check if message is a PM command
+        var cmdTxt = msg.content.toLowerCase();
+        var prefixOptions = ["@" + bot.user.username.toLowerCase() + " ", "+", "&", "!", "-", "--", "/", "$", ">", "`", "~", "*", "=", "\\", "'"];
+        for(var i=0; i<prefixOptions.length; i++) {
+            if(cmdTxt.indexOf(prefixOptions[i])==0) {
+                cmdTxt = cmdTxt.slice(prefixOptions[i].length);
             }
-
-            if(msg.author.id!=configs.maintainer && configs.pmforward) {
-                bot.sendMessage(bot.users.get("id", configs.maintainer), "**@" + msg.author.username + "** just sent me this PM:```" + msg.cleanContent + "```");
+        }
+        var suffix;
+        if(cmdTxt.indexOf(" ")>-1) {
+            suffix = cmdTxt.substring(cmdTxt.indexOf(" ")+1).trim();
+            cmdTxt = cmdTxt.substring(0, cmdTxt.indexOf(" ")).toLowerCase();
+        }
+        var cmd = pmcommands[cmdTxt];
+        if(cmd) {
+            if(cmdTxt!="config" || suffix) {
+                logMsg(new Date().getTime(), "INFO", null, msg.author.id, "Treating '" + msg.cleanContent + "' as a PM command");
             }
+            cmd.process(bot, msg, suffix);
+            return;
+        }
+    }
 
-            // Gets poll title from user and asks for poll options
-            if(polls[msg.author.id] && polls[msg.author.id].title=="") {
-                polls[msg.author.id].title = msg.content;
-                saveData("./data/polls.json", function(err) {
-                    if(err) {
-                        logMsg(new Date().getTime(), "ERROR", "General", null, "Failed to save updated polls data");
+    // Stuff that only applies to public messages
+    if(!msg.channel.isPrivate) {
+        // Ready server stats and configs
+        if(!readiedServers[msg.channel.server.id]) {
+            readyServer(msg.channel.server);
+        }
+
+        // Count new message
+        messages[msg.channel.server.id]++;
+        checkStats(msg.author.id, msg.channel.server.id);
+        stats[msg.channel.server.id].members[msg.author.id].messages++;
+        checkRank(msg.author, msg.channel.server);
+        stats[msg.channel.server.id].members[msg.author.id].active = new Date().getTime();
+
+        // Reset timer for room if applicable
+        if(rooms[msg.channel.id]) {
+            clearTimeout(rooms[msg.channel.id]);
+            rooms[msg.channel.id] = setTimeout(function() {
+                bot.deleteChannel(msg.channel, function(err) {
+                    if(!err) {
+                        delete rooms[msg.channel.id];
+                        delete stats[msg.channel.server.id].botOn[msg.channel.id];
+                        logMsg(new Date().getTime(), "INFO", msg.channel.server.id, null, "Auto-deleted room " + msg.channel.name);
+                    } else {
+                        logMsg(new Date().getTime(), "INFO", msg.channel.server.id, null, "Failed to auto-delete room " + msg.channel.name);
                     }
                 });
-                bot.sendMessage(msg.channel, "Enter poll options, separated by commas, or `.` for yes/no:");
-                return;
-            // Gets poll options from user and starts voting
-            } else if(polls[msg.author.id] && polls[msg.author.id].options.length==0) {
-                if(msg.content==".") {
-                    polls[msg.author.id].options = ["No", "Yes"];
-                } else {
-                    var optionsProvided = msg.content.split(",");
-                    for(var i=0; i<optionsProvided.length; i++) {
-                        if(optionsProvided[i] && optionsProvided.indexOf(optionsProvided[i])==-1) {
-                            polls[msg.author.id].options.push(optionsProvided[i]);
-                        }
-                    }
-                    if(polls[msg.author.id].options.length==0) {
-                        polls[msg.author.id].options.push(msg.content);
-                    }
-                }
-                bot.sendMessage(msg.channel, "OK, got it. You can end the poll by sending me `poll close`.");
-                polls[msg.author.id].open = true;
-                saveData("./data/polls.json", function(err) {
-                    if(err) {
-                        logMsg(new Date().getTime(), "ERROR", "General", null, "Failed to save updated polls data");
-                    }
-                });
+            }, 300000);
+        }
 
-                var ch = bot.channels.get("id", polls[msg.author.id].channel);
-                var info = msg.author + " has started a new poll: **" + polls[msg.author.id].title + "**";
-                for(var i=0; i<polls[msg.author.id].options.length; i++) {
-                    info += "\n\t" + i + ": " + polls[msg.author.id].options[i];
+        // Check for message from AFK user
+        if(profileData[msg.author.id] && profileData[msg.author.id].AFK) {
+            delete profileData[msg.author.id].AFK;
+            logMsg(new Date().getTime(), "INFO", null, msg.author.id, "Auto-removed AFK message");
+            saveData("./data/profiles.json", function(err) {
+                if(err) {
+                    logMsg(new Date().getTime(), "ERROR", "General", null, "Failed to save profile data for " + msg.author.username);
                 }
-                info += "\nYou can vote by typing `" + getPrefix(ch.server) + "vote <no. of choice>`. If you don't include a number, I'll just show results";
-                bot.sendMessage(ch, info);
-                return;
-            }
+            });
+        }
 
-            // Check if message is a PM command
-            var cmdTxt = msg.content.toLowerCase();
-            var prefixOptions = ["@" + bot.user.username, "+", "&", "!", "-", "--", "/", "$", ">", "`", "~", "*", "=", "\\", "'"];
-            for(var i=0; i<prefixOptions.length; i++) {
-                if(cmdTxt.indexOf(prefixOptions[i])==0) {
-                    cmdTxt = cmdTxt.slice(prefixOptions[i].length);
+        // If start statement is issued, say hello and begin listening
+        var startcmd = checkCommandTag(msg.content, msg.channel.server.id);
+        if(startcmd && startcmd[0].toLowerCase()=="start" && (configs.servers[msg.channel.server.id].admincommands.indexOf("quiet")==-1 || configs.servers[msg.channel.server.id].admins.indexOf(msg.author.id)>-1) && !stats[msg.channel.server.id].botOn[msg.channel.id]) {
+            var suffix = startcmd[1];
+            var timestr = "";
+            if(suffix.toLowerCase()=="all") {
+                timestr = " in all channels";
+                for(var chid in stats[msg.channel.server.id].botOn) {
+                    stats[msg.channel.server.id].botOn[chid] = true;
                 }
+            } else {
+                stats[msg.channel.server.id].botOn[msg.channel.id] = true;
             }
-            var suffix;
-            if(msg.content.indexOf(" ")>-1) {
-                cmdTxt = msg.content.substring(0, msg.content.indexOf(" ")).toLowerCase();
-                suffix = msg.content.substring(msg.content.indexOf(" ")+1).trim();
-            }
-            var cmd = pmcommands[cmdTxt];
-            if(cmd) {
-                if(cmdTxt!="config" || suffix) {
-                    logMsg(new Date().getTime(), "INFO", null, msg.author.id, "Treating '" + msg.cleanContent + "' as a PM command");
+            logMsg(new Date().getTime(), "INFO", msg.channel.server.id, msg.channel.id, "Bot has been started by an admin" + timestr);
+            bot.sendMessage(msg.channel, "Hello!\n\n*This project is in no way affiliated with Alphabet, Inc., who does not own or endorse this product.*");
+            return;
+        }
+
+        // Check if the bot is off and stop responding
+        if(!stats[msg.channel.server.id].botOn[msg.channel.id]) {
+            return;
+        }
+
+        // Check if using a filtered word
+        if(checkFiltered(msg, false, true) && configs.servers[msg.channel.server.id].admins.indexOf(msg.author.id)==-1 && configs.servers[msg.channel.server.id].servermod) {
+            handleFiltered(msg, "filtered");
+        }
+
+        // Check for spam
+        if(configs.servers[msg.channel.server.id].admins.indexOf(msg.author.id)==-1 && configs.servers[msg.channel.server.id].servermod && configs.servers[msg.channel.server.id].spamfilter[0] && configs.servers[msg.channel.server.id].spamfilter[1].indexOf(msg.channel.id)==-1) {
+            // Tracks spam for a user with each new message, expires after 45 seconds
+            if(!spams[msg.channel.server.id][msg.author.id]) {
+                spams[msg.channel.server.id][msg.author.id] = [];
+                spams[msg.channel.server.id][msg.author.id].push(msg.content);
+                setTimeout(function() {
+                    try {
+                        delete spams[msg.channel.server.id][msg.author.id];
+                    } catch(err) {
+                        ;
+                    }
+                }, 45000);
+            // Add a message to the user's spam list if it is similar to the last one
+            } else if(levenshtein.get(spams[msg.channel.server.id][msg.author.id][spams[msg.channel.server.id][msg.author.id].length-1], msg.content)<3) {
+                logMsg(new Date().getTime(), "INFO", msg.channel.server.id, msg.channel.id, "Adding message from " + msg.author.username + " to their spam list");
+                spams[msg.channel.server.id][msg.author.id].push(msg.content);
+
+                // Minus AwesomePoints!
+                if(!profileData[msg.author.id]) {
+                    profileData[msg.author.id] = {
+                        points: 0
+                    }
                 }
-                cmd.process(bot, msg, suffix);
-                return;
+                var negative;
+
+                // First-time spam warning
+                if(spams[msg.channel.server.id][msg.author.id].length==configs.servers[msg.channel.server.id].spamfilter[2]) {
+                    logMsg(new Date().getTime(), "INFO", msg.channel.server.id, msg.channel.id, "Handling first-time spam from " + msg.author.username);
+                    bot.sendMessage(msg.author, "Stop spamming " + msg.channel.server.name + ". The chat mods have been notified about this.");
+                    adminMsg(false, msg.channel.server, msg.author, " is spamming #" + msg.channel.name + " in " + msg.channel.server.name);
+                    negative = 20;
+                // Second-time spam warning, bans user from using bot
+                } else if(spams[msg.channel.server.id][msg.author.id].length==configs.servers[msg.channel.server.id].spamfilter[2]*2) {
+                    logMsg(new Date().getTime(), "INFO", msg.channel.server.id, msg.channel.id, "Kicking/blocking " + msg.author.username + " after second-time spam");
+                    handleViolation(msg, "continues to spam", "spamming", configs.servers[msg.channel.server.id].spamfilter[3]);
+                    negative = 50;
+                }
+
+                if(negative!=null) {
+                    if(configs.servers[msg.channel.server.id].points) {
+                        profileData[msg.author.id].points -= negative;
+                        saveData("./data/profiles.json", function(err) {
+                            if(err) {
+                                logMsg(new Date().getTime(), "ERROR", "General", null, "Failed to save profile data for " + msg.author.username);
+                            }
+                        });
+                    }
+                    checkStats(msg.author.id, msg.channel.server.id);
+                    stats[msg.channel.server.id].members[msg.author.id].strikes.push(["Automatic", (negative>20 ? "Second" : "First") + "-time spam violation", new Date().getTime()]);
+                }
             }
         }
 
-        // Stuff that only applies to public messages
-        if(!msg.channel.isPrivate) {
-            // Count new message
-            messages[msg.channel.server.id]++;
-            checkStats(msg.author.id, msg.channel.server.id);
-            stats[msg.channel.server.id].members[msg.author.id].messages++;
-            checkRank(msg.author, msg.channel.server);
-            stats[msg.channel.server.id].members[msg.author.id].active = new Date().getTime();
+        // Stop responding if the author is a blocked user
+        if(configs.servers[msg.channel.server.id].blocked.indexOf(msg.author.id)>-1) {
+            return;
+        }
 
-            // Reset timer for room if applicable
-            if(rooms[msg.channel.id]) {
-                clearTimeout(rooms[msg.channel.id]);
-                rooms[msg.channel.id] = setTimeout(function() {
-                    bot.deleteChannel(msg.channel, function(err) {
-                        if(!err) {
-                            delete rooms[msg.channel.id];
-                            logMsg(new Date().getTime(), "INFO", msg.channel.server.id, null, "Auto-deleted room " + msg.channel.name);
-                        } else {
-                            logMsg(new Date().getTime(), "INFO", msg.channel.server.id, null, "Failed to auto-delete room " + msg.channel.name);
-                        }
-                    });
-                }, 300000);
-            }
-
-            // Check for message from AFK user
-            if(profileData[msg.author.id] && profileData[msg.author.id].AFK) {
-                delete profileData[msg.author.id].AFK;
-                logMsg(new Date().getTime(), "INFO", null, msg.author.id, "Auto-removed AFK message");
-                saveData("./data/profiles.json", function(err) {
-                    if(err) {
-                        logMsg(new Date().getTime(), "ERROR", "General", null, "Failed to save profile data for " + msg.author.username);
-                    }
-                });
-            }
-
-            // If start statement is issued, say hello and begin listening
-            var startcmd = checkCommandTag(msg.content, msg.channel.server.id);
-            if(startcmd && startcmd[0].toLowerCase()=="start" && (configs.servers[msg.channel.server.id].admincommands.indexOf("quiet")==-1 || configs.servers[msg.channel.server.id].admins.indexOf(msg.author.id)>-1) && !stats[msg.channel.server.id].botOn[msg.channel.id]) {
-                var suffix = startcmd[1];
-                var timestr = "";
-                if(suffix.toLowerCase()=="all") {
-                    timestr = " in all channels";
-                    for(var chid in stats[msg.channel.server.id].botOn) {
-                        stats[msg.channel.server.id].botOn[chid] = true;
-                    }
+        // Translate message from certain users
+        if(configs.servers[msg.channel.server.id].translated.list.indexOf(msg.author.id)>-1 && configs.servers[msg.channel.server.id].translated.channels[configs.servers[msg.channel.server.id].translated.list.indexOf(msg.author.id)].indexOf(msg.channel.id)>-1) {
+            bingTranslate.translate(msg.cleanContent, configs.servers[msg.channel.server.id].translated.langs[configs.servers[msg.channel.server.id].translated.list.indexOf(msg.author.id)], "EN", function(err, result) {
+                if(err) {
+                    logMsg(new Date().getTime(), "ERROR", msg.channel.server.id, msg.channel.id, "Failed to auto-translate '" + msg.cleanContent + "' from " + msg.author.username);
                 } else {
-                    stats[msg.channel.server.id].botOn[msg.channel.id] = true;
+                    bot.sendMessage(msg.channel, "**@" + getName(msg.channel.server, msg.author) + "** said `" + result.translated_text + "`");
                 }
-                logMsg(new Date().getTime(), "INFO", msg.channel.server.id, msg.channel.id, "Bot has been started by an admin" + timestr);
-                bot.sendMessage(msg.channel, "Hello!\n\n*This project is in no way affiliated with Alphabet, Inc., who does not own or endorse this product.*");
-                return;
+            });
+        }
+
+        // Check if message includes a tag or attempted tag
+        var tagstring = msg.content.slice(0);
+        while(tagstring.length>0 && tagstring.indexOf("@")>-1 && tagstring.substring(tagstring.indexOf("@")+1)) {
+            var usr;
+            tagstring = tagstring.substring(tagstring.indexOf("@")+1);
+            if(tagstring.charAt(0)=='!') {
+                tagstring = tagstring.substring(1);
             }
-
-            // Check if the bot is off and stop responding
-            if(!stats[msg.channel.server.id].botOn[msg.channel.id]) {
-                return;
-            }
-
-            // Check if using a filtered word
-            if(checkFiltered(msg, false, true) && configs.servers[msg.channel.server.id].admins.indexOf(msg.author.id)==-1 && configs.servers[msg.channel.server.id].servermod) {
-                handleFiltered(msg, "filtered");
-            }
-
-            // Check for spam
-            if(configs.servers[msg.channel.server.id].admins.indexOf(msg.author.id)==-1 && configs.servers[msg.channel.server.id].servermod && configs.servers[msg.channel.server.id].spamfilter[0] && configs.servers[msg.channel.server.id].spamfilter[1].indexOf(msg.channel.id)==-1) {
-                // Tracks spam for a user with each new message, expires after 45 seconds
-                if(!spams[msg.channel.server.id][msg.author.id]) {
-                    spams[msg.channel.server.id][msg.author.id] = [];
-                    spams[msg.channel.server.id][msg.author.id].push(msg.content);
-                    setTimeout(function() {
-                        try {
-                            delete spams[msg.channel.server.id][msg.author.id];
-                        } catch(err) {
-                            ;
-                        }
-                    }, 45000);
-                // Add a message to the user's spam list if it is similar to the last one
-                } else if(levenshtein.get(spams[msg.channel.server.id][msg.author.id][spams[msg.channel.server.id][msg.author.id].length-1], msg.content)<3) {
-                    logMsg(new Date().getTime(), "INFO", msg.channel.server.id, msg.channel.id, "Adding message from " + msg.author.username + " to their spam list");
-                    spams[msg.channel.server.id][msg.author.id].push(msg.content);
-
-                    // Minus AwesomePoints!
-                    if(!profileData[msg.author.id]) {
-                        profileData[msg.author.id] = {
-                            points: 0
-                        }
-                    }
-                    var negative;
-
-                    // First-time spam warning
-                    if(spams[msg.channel.server.id][msg.author.id].length==configs.servers[msg.channel.server.id].spamfilter[2]) {
-                        logMsg(new Date().getTime(), "INFO", msg.channel.server.id, msg.channel.id, "Handling first-time spam from " + msg.author.username);
-                        bot.sendMessage(msg.author, "Stop spamming " + msg.channel.server.name + ". The chat mods have been notified about this.");
-                        adminMsg(false, msg.channel.server, msg.author, " is spamming #" + msg.channel.name + " in " + msg.channel.server.name);
-                        negative = 20;
-                    // Second-time spam warning, bans user from using bot
-                    } else if(spams[msg.channel.server.id][msg.author.id].length==configs.servers[msg.channel.server.id].spamfilter[2]*2) {
-                        logMsg(new Date().getTime(), "INFO", msg.channel.server.id, msg.channel.id, "Kicking/blocking " + msg.author.username + " after second-time spam");
-                        handleViolation(msg, "continues to spam", "spamming", configs.servers[msg.channel.server.id].spamfilter[3]);
-                        negative = 50;
-                    }
-
-                    if(negative!=null) {
-                        if(configs.servers[msg.channel.server.id].points) {
-                            profileData[msg.author.id].points -= negative;
-                            saveData("./data/profiles.json", function(err) {
-                                if(err) {
-                                    logMsg(new Date().getTime(), "ERROR", "General", null, "Failed to save profile data for " + msg.author.username);
-                                }
-                            });
-                        }
-                        checkStats(msg.author.id, msg.channel.server.id);
-                        stats[msg.channel.server.id].members[msg.author.id].strikes.push(["Automatic", (negative>20 ? "Second" : "First") + "-time spam violation", new Date().getTime()]);
-                    }
-                }
-            }
-
-            // Stop responding if the author is a blocked user
-            if(configs.servers[msg.channel.server.id].blocked.indexOf(msg.author.id)>-1) {
-                return;
-            }
-
-            // Translate message from certain users
-            if(configs.servers[msg.channel.server.id].translated.list.indexOf(msg.author.id)>-1 && configs.servers[msg.channel.server.id].translated.channels[configs.servers[msg.channel.server.id].translated.list.indexOf(msg.author.id)].indexOf(msg.channel.id)>-1) {
-                bingTranslate.translate(msg.cleanContent, configs.servers[msg.channel.server.id].translated.langs[configs.servers[msg.channel.server.id].translated.list.indexOf(msg.author.id)], "EN", function(err, result) {
-                    if(err) {
-                        logMsg(new Date().getTime(), "ERROR", msg.channel.server.id, msg.channel.id, "Failed to auto-translate '" + msg.cleanContent + "' from " + msg.author.username);
-                    } else {
-                        bot.sendMessage(msg.channel, "**@" + getName(msg.channel.server, msg.author) + "** said `" + result.translated_text + "`");
-                    }
-                });
-            }
-
-            // Check if message includes a tag or attempted tag
-            var tagstring = msg.content.slice(0);
-            while(tagstring.length>0 && tagstring.indexOf("@")>-1 && tagstring.substring(tagstring.indexOf("@")+1)) {
-                var usr;
-                tagstring = tagstring.substring(tagstring.indexOf("@")+1);
-                if(tagstring.charAt(0)=='!') {
-                    tagstring = tagstring.substring(1);
-                }
-                if(tagstring.indexOf(">")) {
-                    var usrid = tagstring.substring(0, tagstring.indexOf(">"));
-                    tagstring = tagstring.substring(tagstring.indexOf(">")+1);
-                    usr = msg.channel.server.members.get("id", usrid);
-                } else {
-                    var usrnm = tagstring.slice(0);
+            if(tagstring.indexOf(">")) {
+                var usrid = tagstring.substring(0, tagstring.indexOf(">"));
+                tagstring = tagstring.substring(tagstring.indexOf(">")+1);
+                usr = msg.channel.server.members.get("id", usrid);
+            } else {
+                var usrnm = tagstring.slice(0);
+                usr = msg.channel.server.members.get("username", usrnm);
+                while(!usr && usrnm.length>0) {
+                    usrnm = usrnm.substring(0, usrnm.lastIndexOf(" "));
                     usr = msg.channel.server.members.get("username", usrnm);
-                    while(!usr && usrnm.length>0) {
-                        usrnm = usrnm.substring(0, usrnm.lastIndexOf(" "));
-                        usr = msg.channel.server.members.get("username", usrnm);
-                    }
-                    tagstring = tagstring.substring(usrnm.length);
                 }
-                if(usr && !usr.bot) {
-                    var mentions = stats[msg.channel.server.id].members[usr.id].mentions;
-                    mentions.stream.push({
-                        timestamp: new Date().getTime(),
-                        author: removeMd(msg.author.username),
-                        message: msg.cleanContent
-                    });
-                    if(mentions.pm && usr.status!="online") {
-                        bot.sendMessage(usr, "__You were mentioned by @" + msg.author.username + " on **" + msg.channel.server.name + "**:__\n" + msg.cleanContent);
-                    }
-                    if(((profileData[usr.id] && profileData[usr.id].AFK) || stats[msg.channel.server.id].members[usr.id] && stats[msg.channel.server.id].members[usr.id].AFK) && configs.servers[msg.channel.server.id].afk) {
-                        bot.sendMessage(msg.channel, "**@" + getName(msg.channel.server, usr) + "** is currently AFK: " + (stats[msg.channel.server.id].members[usr.id].AFK || profileData[usr.id].AFK));
-                    }
+                tagstring = tagstring.substring(usrnm.length);
+            }
+            if(usr && !usr.bot) {
+                var mentions = stats[msg.channel.server.id].members[usr.id].mentions;
+                mentions.stream.push({
+                    timestamp: new Date().getTime(),
+                    author: removeMd(msg.author.username),
+                    message: msg.cleanContent
+                });
+                if(mentions.pm && usr.status!="online") {
+                    bot.sendMessage(usr, "__You were mentioned by @" + msg.author.username + " on **" + msg.channel.server.name + "**:__\n" + msg.cleanContent);
+                }
+                if(((profileData[usr.id] && profileData[usr.id].AFK) || stats[msg.channel.server.id].members[usr.id] && stats[msg.channel.server.id].members[usr.id].AFK) && configs.servers[msg.channel.server.id].afk) {
+                    bot.sendMessage(msg.channel, "**@" + getName(msg.channel.server, usr) + "** is currently AFK: " + (stats[msg.channel.server.id].members[usr.id].AFK || profileData[usr.id].AFK));
+                }
 
-                    if([msg.author.id, bot.user.id].indexOf(usr.id)==-1 && configs.servers[msg.channel.server.id].points && !novoting[msg.author.id] && msg.channel.server.members.length>2) {
-                        var votestrings = [" +!", " +1", " up", " ^"];
-                        var voted;
-                        for(var i=0; i<votestrings.length; i++) {
-                            if(tagstring.indexOf(votestrings[i])==0) {
-                                voted = "upvoted";
-                                if(!profileData[usr.id]) {
-                                    profileData[usr.id] = {
-                                        points: 0
-                                    };
-                                }
-                                profileData[usr.id].points++;
-                                break;
-                            }
-                        }
-                        if(tagstring.indexOf(" gild")==0) {
-                            if(!profileData[msg.author.id]) {
-                                profileData[msg.author.id] = {
-                                    points: 0
-                                }
-                            }
-                            if(profileData[msg.author.id].points<10) {
-                                logMsg(new Date().getTime(), "WARN", msg.channel.server.id, msg.channel.id, msg.author.username + " does not have enough points to gild " + usr.username);
-                                bot.sendMessage(msg.channel, msg.author + " You don't have enough AwesomePoints to gild " + usr);
-                                return;
-                            }
-                            voted = "gilded";
-                            profileData[msg.author.id].points -= 10;
+                if([msg.author.id, bot.user.id].indexOf(usr.id)==-1 && configs.servers[msg.channel.server.id].points && !novoting[msg.author.id] && msg.channel.server.members.length>2) {
+                    var votestrings = [" +!", " +1", " up", " ^"];
+                    var voted;
+                    for(var i=0; i<votestrings.length; i++) {
+                        if(tagstring.indexOf(votestrings[i])==0) {
+                            voted = "upvoted";
                             if(!profileData[usr.id]) {
                                 profileData[usr.id] = {
                                     points: 0
                                 };
                             }
-                            profileData[usr.id].points += 10;
+                            profileData[usr.id].points++;
+                            break;
                         }
-
-                        if(voted) {
-                            logMsg(new Date().getTime(), "INFO", msg.channel.server.id, msg.channel.id, usr.username + " " + voted + " by " + msg.author.username);
-                            novoting[msg.author.id] = true;
-                            setTimeout(function() {
-                                delete novoting[msg.author.id];
-                            }, 3000);
-                            stats[msg.channel.server.id].members[msg.author.id].messages--;
-                            saveData("./data/profiles.json", function(err) {
-                                if(err) {
-                                    logMsg(new Date().getTime(), "ERROR", "General", null, "Failed to save profile data for " + usr.username);
-                                }
-                            });
+                    }
+                    if(tagstring.indexOf(" gild")==0) {
+                        if(!profileData[msg.author.id]) {
+                            profileData[msg.author.id] = {
+                                points: 0
+                            }
+                        }
+                        if(profileData[msg.author.id].points<10) {
+                            logMsg(new Date().getTime(), "WARN", msg.channel.server.id, msg.channel.id, msg.author.username + " does not have enough points to gild " + usr.username);
+                            bot.sendMessage(msg.channel, msg.author + " You don't have enough AwesomePoints to gild " + usr);
                             return;
                         }
+                        voted = "gilded";
+                        profileData[msg.author.id].points -= 10;
+                        if(!profileData[usr.id]) {
+                            profileData[usr.id] = {
+                                points: 0
+                            };
+                        }
+                        profileData[usr.id].points += 10;
                     }
-                }
-            }
-            // Upvote previous message, based on context
-            if((msg.content.indexOf("+1")==0 || msg.content.indexOf("+!")==0 || msg.content.indexOf("^")==0 || msg.content.indexOf("up")==0) && configs.servers[msg.channel.server.id].points && !novoting[msg.author.id] && msg.channel.server.members.length>2) {
-                bot.getChannelLogs(msg.channel, 1, {before: msg}, function(err, messages) {
-                    if(!err && messages[0]) {
-                        if([msg.author.id, bot.user.id].indexOf(messages[0].author.id)==-1) {
-                            if(!profileData[messages[0].author.id]) {
-                                profileData[messages[0].author.id] = {
-                                    points: 0
-                                };
+
+                    if(voted) {
+                        logMsg(new Date().getTime(), "INFO", msg.channel.server.id, msg.channel.id, usr.username + " " + voted + " by " + msg.author.username);
+                        novoting[msg.author.id] = true;
+                        setTimeout(function() {
+                            delete novoting[msg.author.id];
+                        }, 3000);
+                        stats[msg.channel.server.id].members[msg.author.id].messages--;
+                        saveData("./data/profiles.json", function(err) {
+                            if(err) {
+                                logMsg(new Date().getTime(), "ERROR", "General", null, "Failed to save profile data for " + usr.username);
                             }
-                            profileData[messages[0].author.id].points++;
-                            logMsg(new Date().getTime(), "INFO", msg.channel.server.id, msg.channel.id, messages[0].author.username + " upvoted by " + msg.author.username);
-                            stats[msg.channel.server.id].members[msg.author.id].messages--;
-                            saveData("./data/profiles.json", function(err) {
-                                if(err) {
-                                    logMsg(new Date().getTime(), "ERROR", "General", null, "Failed to save profile data for " + messages[0].author.username);
-                                }
-                            });
-                        }
-                    }
-                });
-            }
-
-            // Stop if cooldown is applied
-            if(cooldowns[msg.channel.id]) {
-                return;
-            }
-
-            // Check for active select menu
-            if(selectmenu[msg.channel.id] && msg.author.id==selectmenu[msg.channel.id].usrid) {
-                if(msg.content.toLowerCase()=="quit") {
-                    delete selectmenu[msg.channel.id];
-                } else if(!isNaN(msg.content.trim()) && parseInt(msg.content.trim())>=0 && parseInt(msg.content.trim())<=selectmenu[msg.channel.id].max) {
-                    selectmenu[msg.channel.id].process(parseInt(msg.content.trim()));
-                    delete selectmenu[msg.channel.id];
-                } else {
-                    bot.sendMessage(msg.channel, "Invalid selection. Type a number from 0 to " + selectmenu[msg.channel.id].max + " or `quit`.");
-                }
-                return;
-            }
-
-            // Apply extensions for this server
-            for(var ext in configs.servers[msg.channel.server.id].extensions) {
-                var extension = configs.servers[msg.channel.server.id].extensions[ext];
-                if((extension.channels && extension.channels.length>0 && extension.channels.indexOf(msg.channel.name)==-1) || extension.type=="timer") {
-                    continue;
-                }
-
-                var keywordcontains = contains(extension.key, msg.content, extension.case);
-                if((extension.type.toLowerCase()=="keyword" && keywordcontains>-1) || (extension.type.toLowerCase()=="command" && checkCommandTag(msg.content, msg.channel.server.id) && checkCommandTag(msg.content, msg.channel.server.id)[0].toLowerCase()==extension.key.toLowerCase())) {
-                    logMsg(new Date().getTime(), "INFO", msg.channel.server.id, msg.channel.id, "Treating '" + msg.cleanContent + "' from " + msg.author.username + " as an extension " + configs.servers[msg.channel.server.id].extensions[ext].type);
-                    if(extension.type=="command") {
-                        if(!stats[msg.channel.server.id].commands[extension.key]) {
-                            stats[msg.channel.server.id].commands[extension.key] = 0;
-                        }
-                        stats[msg.channel.server.id].commands[extension.key]++;
-                    }
-
-                    var params = getExtensionParams(configs.servers[msg.channel.server.id].extensions[ext], msg.channel.server, msg.channel, msg, extension.type.toLowerCase()=="keyword" ? keywordcontains : null, extension.type.toLowerCase()=="command" ? checkCommandTag(msg.content, msg.channel.server.id)[1] : null);
-                    try {
-                        var extDomain = domainRoot.create();
-                        extDomain.run(function() {
-                            var context = new vm.createContext(params);
-                            var script = new vm.Script(configs.servers[msg.channel.server.id].extensions[ext].process);
-                            script.runInContext(context);
                         });
-                        extDomain.on("error", function(runError) {
-                            logMsg(new Date().getTime(), "ERROR", msg.channel.server.id, msg.channel.id, "Failed to run extension " + configs.servers[msg.channel.server.id].extensions[ext].type + ": " + runError);
-                        });
-                    } catch(runError) {
-                        logMsg(new Date().getTime(), "ERROR", msg.channel.server.id, msg.channel.id, "Failed to run extension " + configs.servers[msg.channel.server.id].extensions[ext].type + ": " + runError);
+                        return;
                     }
-                    setCooldown(msg.channel);
-                    return;
                 }
             }
         }
-
-        // Check if message is a command (bot tagged and matches commands list)
-        var cmd;
-        if(!msg.channel.isPrivate && checkCommandTag(msg.content, msg.channel.server.id)) {
-            var cmdTxt = checkCommandTag(msg.content, msg.channel.server.id)[0].toLowerCase();
-            var suffix = checkCommandTag(msg.content, msg.channel.server.id)[1].trim();
-            cmd = commands[cmdTxt];
-        }
-
-        // Process commands
-        if(cmd && !msg.channel.isPrivate && stats[msg.channel.server.id].botOn[msg.channel.id]) {
-            if(configs.servers[msg.channel.server.id][cmdTxt]!=null) {
-                if(configs.servers[msg.channel.server.id][cmdTxt]==false) {
-                    return;
-                }
-            }
-            if((configs.servers[msg.channel.server.id].admincommands.indexOf(cmdTxt)>-1 && configs.servers[msg.channel.server.id].admins.indexOf(msg.author.id)==-1) || (configs.servers[msg.channel.server.id].chrestrict[msg.channel.id] && configs.servers[msg.channel.server.id].chrestrict[msg.channel.id].indexOf(cmdTxt)>-1)) {
-                return;
-            }
-            if(checkFiltered(msg, true, false) && configs.servers[msg.channel.server.id].admins.indexOf(msg.author.id)==-1 && configs.servers[msg.channel.server.id].servermod && configs.servers[msg.channel.server.id].nsfwfilter[0] && configs.servers[msg.channel.server.id].nsfwfilter[1].indexOf(msg.channel.id)==-1 && ["image", "youtube", "gif", "search"].indexOf(cmdTxt)>-1) {
-                handleFiltered(msg, "NSFW");
-            } else if(stats[msg.channel.server.id].botOn[msg.channel.id]) {
-                logMsg(new Date().getTime(), "INFO", msg.channel.server.id, msg.channel.id, "Treating '" + msg.cleanContent + "' from " + msg.author.username + " as a command");
-                if(["quiet", "ping", "help", "stats", "trivia", "vote"].indexOf(cmdTxt)==-1) {
-                    if(!stats[msg.channel.server.id].commands[cmdTxt]) {
-                        stats[msg.channel.server.id].commands[cmdTxt] = 0;
+        // Upvote previous message, based on context
+        if((msg.content.indexOf("+1")==0 || msg.content.indexOf("+!")==0 || msg.content.indexOf("^")==0 || msg.content.indexOf("up")==0) && configs.servers[msg.channel.server.id].points && !novoting[msg.author.id] && msg.channel.server.members.length>2) {
+            bot.getChannelLogs(msg.channel, 1, {before: msg}, function(err, messages) {
+                if(!err && messages[0]) {
+                    if([msg.author.id, bot.user.id].indexOf(messages[0].author.id)==-1) {
+                        if(!profileData[messages[0].author.id]) {
+                            profileData[messages[0].author.id] = {
+                                points: 0
+                            };
+                        }
+                        profileData[messages[0].author.id].points++;
+                        logMsg(new Date().getTime(), "INFO", msg.channel.server.id, msg.channel.id, messages[0].author.username + " upvoted by " + msg.author.username);
+                        stats[msg.channel.server.id].members[msg.author.id].messages--;
+                        saveData("./data/profiles.json", function(err) {
+                            if(err) {
+                                logMsg(new Date().getTime(), "ERROR", "General", null, "Failed to save profile data for " + messages[0].author.username);
+                            }
+                        });
                     }
-                    stats[msg.channel.server.id].commands[cmdTxt]++;
-                }
-                cmd.process(bot, msg, suffix);
-            }
-            setCooldown(msg.channel);
-        // Check for matching tag commands
-        } else if(!msg.channel.isPrivate && !suffix && configs.servers[msg.channel.server.id].tags[cmdTxt] && configs.servers[msg.channel.server.id].tagcommands.indexOf(cmdTxt)>-1) {
-            logMsg(new Date().getTime(), "INFO", msg.channel.server.id, msg.channel.id, "Treating '" + msg.cleanContent + "' from " + msg.author.username + " as a tag command");
-            bot.sendMessage(msg.channel, configs.servers[msg.channel.server.id].tags[cmdTxt]);
-            setCooldown(msg.channel);
-        // Process message as chatterbot prompt if not a command
-        } else if((msg.content.indexOf(bot.user.mention())==0 || msg.content.indexOf("<@!" + bot.user.id + ">")==0 || msg.channel.isPrivate) && !msg.author.bot) {
-            if(!msg.channel.isPrivate) {
-                if(!configs.servers[msg.channel.server.id].chatterbot || !stats[msg.channel.server.id].botOn[msg.channel.id]) {
-                    return;
-                }
-                logMsg(new Date().getTime(), "INFO", msg.channel.server.id, msg.channel.id, "Treating '" + msg.cleanContent + "' from " + msg.author.username + " as a chatterbot prompt");
-            } else {
-                logMsg(new Date().getTime(), "INFO", null, msg.author.id, "Treating '" + msg.content + "' as chatterbot prompt");
-            }
-            var prompt = "";
-            if(!msg.channel.isPrivate) {
-                prompt = msg.cleanContent.substring((msg.channel.server.detailsOfUser(bot.user).nick || bot.user.username).length+1);
-                prompt = prompt.substring(prompt.indexOf(" ")+1);
-                setCooldown(msg.channel);
-                if(prompt.toLowerCase().indexOf("help")==0) {
-                    bot.sendMessage(msg.channel, "Use `" + getPrefix(msg.channel.server) + "help` for info about how to use me on this server :smiley:");
-                    return;
-                }
-                if(prompt.toLowerCase().indexOf("join")==0) {
-                    bot.sendMessage(msg.channel, "https://discordapp.com/oauth2/authorize?&client_id=" + AuthDetails.client_id + "&scope=bot&permissions=0");
-                    return;
-                }
-            } else {
-                prompt = msg.cleanContent;
-            }
-
-            if(!bots[msg.author.id]) {
-                bots[msg.author.id] = require("mitsuku-api")();
-            }
-            var ai = bots[msg.author.id];
-            ai.send(prompt).then(function(response) {
-                var res = response.replace("Mitsuku", msg.channel.isPrivate ? bot.user.username : (msg.channel.server.detailsOfUser(bot.user).nick || bot.user.username));
-                if(!msg.channel.isPrivate) {
-                    res = res.replace("Mousebreaker", bot.users.get("id", configs.maintainer) ? bot.users.get("id", configs.maintainer).username : bot.users.get("id", configs.servers[msg.channel.server.id].admins[0]).username);
-                }
-                res = res.replace("(mitsuku@square-bear.co.uk)", "");
-                if(res.indexOf("You have been banned from talking to the chat robot.")>-1) {
-                    res = "I'm not talking to you anymore. Goodbye and good riddance!";
-                }
-                if(msg.channel.isPrivate) {
-                    bot.sendMessage(msg.channel, res);
-                } else {
-                    bot.sendMessage(msg.channel, msg.author + " " + res);
                 }
             });
-        // Otherwise, check if it's a self-message or just does the tag reaction
-        } else {
-            if(msg.author!=bot.user && msg.isMentioned(bot.user) && configs.servers[msg.channel.server.id].tagreaction && (configs.servers[msg.channel.server.id].admincommands.indexOf("tagreaction")==-1 || configs.servers[msg.channel.server.id].admins.indexOf(msg.author.id)>-1) && (!configs.servers[msg.channel.server.id].chrestrict[msg.channel.id] || configs.servers[msg.channel.server.id].chrestrict[msg.channel.id].indexOf("tagreaction")>-1)) {
-                logMsg(new Date().getTime(), "INFO", msg.channel.server.id, msg.channel.id, "Bot tagged by " + msg.author.username);
-                bot.sendMessage(msg.channel,msg.author + ", you called?");
+        }
+
+        // Stop if cooldown is applied
+        if(cooldowns[msg.channel.id]) {
+            return;
+        }
+
+        // Check for active select menu
+        if(selectmenu[msg.channel.id] && msg.author.id==selectmenu[msg.channel.id].usrid) {
+            if(msg.content.toLowerCase()=="quit") {
+                delete selectmenu[msg.channel.id];
+            } else if(!isNaN(msg.content.trim()) && parseInt(msg.content.trim())>=0 && parseInt(msg.content.trim())<=selectmenu[msg.channel.id].max) {
+                selectmenu[msg.channel.id].process(parseInt(msg.content.trim()));
+                delete selectmenu[msg.channel.id];
+            } else {
+                bot.sendMessage(msg.channel, "Invalid selection. Type a number from 0 to " + selectmenu[msg.channel.id].max + " or `quit`.");
+            }
+            return;
+        }
+
+        // Apply extensions for this server
+        for(var ext in configs.servers[msg.channel.server.id].extensions) {
+            var extension = configs.servers[msg.channel.server.id].extensions[ext];
+            if((extension.channels && extension.channels.length>0 && extension.channels.indexOf(msg.channel.name)==-1) || extension.type=="timer") {
+                continue;
+            }
+
+            var keywordcontains = contains(extension.key, msg.content, extension.case);
+            if((extension.type.toLowerCase()=="keyword" && keywordcontains>-1) || (extension.type.toLowerCase()=="command" && checkCommandTag(msg.content, msg.channel.server.id) && checkCommandTag(msg.content, msg.channel.server.id)[0].toLowerCase()==extension.key.toLowerCase())) {
+                logMsg(new Date().getTime(), "INFO", msg.channel.server.id, msg.channel.id, "Treating '" + msg.cleanContent + "' from " + msg.author.username + " as an extension " + configs.servers[msg.channel.server.id].extensions[ext].type);
+                if(extension.type=="command") {
+                    if(!stats[msg.channel.server.id].commands[extension.key]) {
+                        stats[msg.channel.server.id].commands[extension.key] = 0;
+                    }
+                    stats[msg.channel.server.id].commands[extension.key]++;
+                }
+
+                var params = getExtensionParams(configs.servers[msg.channel.server.id].extensions[ext], msg.channel.server, msg.channel, msg, extension.type.toLowerCase()=="keyword" ? keywordcontains : null, extension.type.toLowerCase()=="command" ? checkCommandTag(msg.content, msg.channel.server.id)[1] : null);
+                try {
+                    var extDomain = domainRoot.create();
+                    extDomain.run(function() {
+                        var context = new vm.createContext(params);
+                        var script = new vm.Script(configs.servers[msg.channel.server.id].extensions[ext].process);
+                        script.runInContext(context);
+                    });
+                    extDomain.on("error", function(runError) {
+                        logMsg(new Date().getTime(), "ERROR", msg.channel.server.id, msg.channel.id, "Failed to run extension " + configs.servers[msg.channel.server.id].extensions[ext].type + ": " + runError);
+                    });
+                } catch(runError) {
+                    logMsg(new Date().getTime(), "ERROR", msg.channel.server.id, msg.channel.id, "Failed to run extension " + configs.servers[msg.channel.server.id].extensions[ext].type + ": " + runError);
+                }
+                setCooldown(msg.channel);
+                return;
             }
         }
-    });
-    msgDomain.on("error", function(err) {
-        logMsg(new Date().getTime(), "ERROR", "General", null, "Something went wrong handling message: " + err);
-    });
-});
+    }
+
+    // Check if message is a command (bot tagged and matches commands list)
+    var cmd;
+    if(!msg.channel.isPrivate && checkCommandTag(msg.content, msg.channel.server.id)) {
+        var cmdTxt = checkCommandTag(msg.content, msg.channel.server.id)[0].toLowerCase();
+        var suffix = checkCommandTag(msg.content, msg.channel.server.id)[1].trim();
+        cmd = commands[cmdTxt];
+    }
+
+    // Process commands
+    if(cmd && !msg.channel.isPrivate && stats[msg.channel.server.id].botOn[msg.channel.id]) {
+        if(configs.servers[msg.channel.server.id][cmdTxt]!=null) {
+            if(configs.servers[msg.channel.server.id][cmdTxt]==false) {
+                return;
+            }
+        }
+        if((configs.servers[msg.channel.server.id].admincommands.indexOf(cmdTxt)>-1 && configs.servers[msg.channel.server.id].admins.indexOf(msg.author.id)==-1) || (configs.servers[msg.channel.server.id].chrestrict[msg.channel.id] && configs.servers[msg.channel.server.id].chrestrict[msg.channel.id].indexOf(cmdTxt)>-1)) {
+            return;
+        }
+        if(checkFiltered(msg, true, false) && configs.servers[msg.channel.server.id].admins.indexOf(msg.author.id)==-1 && configs.servers[msg.channel.server.id].servermod && configs.servers[msg.channel.server.id].nsfwfilter[0] && configs.servers[msg.channel.server.id].nsfwfilter[1].indexOf(msg.channel.id)==-1 && ["image", "youtube", "gif", "search"].indexOf(cmdTxt)>-1) {
+            handleFiltered(msg, "NSFW");
+        } else if(stats[msg.channel.server.id].botOn[msg.channel.id]) {
+            logMsg(new Date().getTime(), "INFO", msg.channel.server.id, msg.channel.id, "Treating '" + msg.cleanContent + "' from " + msg.author.username + " as a command");
+            if(["quiet", "ping", "help", "stats", "trivia", "vote"].indexOf(cmdTxt)==-1) {
+                if(!stats[msg.channel.server.id].commands[cmdTxt]) {
+                    stats[msg.channel.server.id].commands[cmdTxt] = 0;
+                }
+                stats[msg.channel.server.id].commands[cmdTxt]++;
+            }
+            cmd.process(bot, msg, suffix);
+        }
+        setCooldown(msg.channel);
+    // Check for matching tag commands
+    } else if(!msg.channel.isPrivate && !suffix && configs.servers[msg.channel.server.id].tags[cmdTxt] && configs.servers[msg.channel.server.id].tagcommands.indexOf(cmdTxt)>-1) {
+        logMsg(new Date().getTime(), "INFO", msg.channel.server.id, msg.channel.id, "Treating '" + msg.cleanContent + "' from " + msg.author.username + " as a tag command");
+        bot.sendMessage(msg.channel, configs.servers[msg.channel.server.id].tags[cmdTxt]);
+        setCooldown(msg.channel);
+    // Process message as chatterbot prompt if not a command
+    } else if((msg.content.indexOf(bot.user.mention())==0 || msg.content.indexOf("<@!" + bot.user.id + ">")==0 || msg.channel.isPrivate) && !msg.author.bot) {
+        if(!msg.channel.isPrivate) {
+            if(!configs.servers[msg.channel.server.id].chatterbot || !stats[msg.channel.server.id].botOn[msg.channel.id]) {
+                return;
+            }
+            logMsg(new Date().getTime(), "INFO", msg.channel.server.id, msg.channel.id, "Treating '" + msg.cleanContent + "' from " + msg.author.username + " as a chatterbot prompt");
+        } else {
+            logMsg(new Date().getTime(), "INFO", null, msg.author.id, "Treating '" + msg.content + "' as chatterbot prompt");
+        }
+        var prompt = "";
+        if(!msg.channel.isPrivate) {
+            prompt = msg.cleanContent.substring((msg.channel.server.detailsOfUser(bot.user).nick || bot.user.username).length+1);
+            prompt = prompt.substring(prompt.indexOf(" ")+1);
+            setCooldown(msg.channel);
+            if(prompt.toLowerCase().indexOf("help")==0) {
+                bot.sendMessage(msg.channel, "Use `" + getPrefix(msg.channel.server) + "help` for info about how to use me on this server :smiley:");
+                return;
+            }
+            if(prompt.toLowerCase().indexOf("join")==0) {
+                bot.sendMessage(msg.channel, "https://discordapp.com/oauth2/authorize?&client_id=" + AuthDetails.client_id + "&scope=bot&permissions=0");
+                return;
+            }
+        } else {
+            prompt = msg.cleanContent;
+        }
+
+        bot.startTyping(msg.channel, function() {
+            unirest.get("http://api.program-o.com/v2/chatbot/?bot_id=6&say=" + encodeURI(prompt.replace(/&/g, '')) + "&convo_id=" + msg.author.id + "&format=json")
+            .headers({
+                "Accept": "application/json",
+                "User-Agent": "Unirest Node.js"
+            })
+            .end(function(response) {
+                var res = "I don't feel like talking rn >:(";
+                if(response.status==200) {
+                    res = JSON.parse(response.body).botsay.replace("Program-O", bot.user.username);
+                }
+                if(!msg.channel.isPrivate) {
+                    res = msg.author + " " + res;
+                }
+                bot.sendMessage(msg.channel, res, function() {
+                    bot.stopTyping(msg.channel);
+                });
+            });
+        });
+    // Otherwise, check if it's a self-message or just does the tag reaction
+    } else {
+        if(msg.author!=bot.user && msg.isMentioned(bot.user) && configs.servers[msg.channel.server.id].tagreaction && (configs.servers[msg.channel.server.id].admincommands.indexOf("tagreaction")==-1 || configs.servers[msg.channel.server.id].admins.indexOf(msg.author.id)>-1) && (!configs.servers[msg.channel.server.id].chrestrict[msg.channel.id] || configs.servers[msg.channel.server.id].chrestrict[msg.channel.id].indexOf("tagreaction")>-1)) {
+            logMsg(new Date().getTime(), "INFO", msg.channel.server.id, msg.channel.id, "Bot tagged by " + msg.author.username);
+            bot.sendMessage(msg.channel,msg.author + ", you called?");
+        }
+    }
+}
 
 // Set a cooldown for the next command if necessary
 function setCooldown(ch) {
@@ -4291,6 +4372,8 @@ bot.on("serverCreated", function(svr) {
 });
 
 function readyServer(svr) {
+    readiedServers[svr.id] = true;
+
     // Configure new server
     if(!configs.servers[svr.id]) {
         newServer(svr);
@@ -4323,24 +4406,30 @@ function readyServer(svr) {
             }
         }, configs.servers[svr.id].countdowns[event].timestamp - new Date().getTime());
     }
-
-    // Run timer extensions
-    domain.run(runTimerExtensions);
 }
 
 function newServer(svr) {
     defaultConfig(svr);
-    adminMsg(false, svr, {username: bot.user.username}, " (me) has been added to " + svr.name + ". You're one of my admins. You can manage me in this server by PMing me `config " + svr.name + "`. Check out http://awesomebot.xyz to learn more.");
-    bot.sendMessage(svr.defaultChannel, "Hi, I'm " + (svr.detailsOfUser(bot.user).nick || bot.user.username) + "! Use `" + getPrefix(svr) + "help` to learn more or check out http://awesomebot.xyz");
+    adminMsg(false, svr, {username: bot.user.username}, " (me) has been added to " + svr.name + ". You're one of my admins. You can manage me in this server by PMing me `config " + svr.name + "`. Check out http://awesomebot.xyz/ to learn more.");
+    bot.sendMessage(svr.defaultChannel, "Hi, I'm " + (svr.detailsOfUser(bot.user).nick || bot.user.username) + "! Use `" + getPrefix(svr) + "help` to learn more or check out http://awesomebot.xyz/");
     postData();
 }
 
 function postData() {
-    postCarbon();
-    unirest.post("http://awesome.awesomebot.xyz/botdata?token=" + AuthDetails.awesome_token + "&svrcount=" + bot.servers.length + "&usrcount=" + bot.users.length)
+    // Authorize AwesomeBot
+    unirest.post("http://awesome.awesomebot.xyz/botauth?token=" + AuthDetails.awesome_token)
     .end(function(response) {
         if(response.status==200) {
-            logMsg(new Date().getTime(), "INFO", "General", null, "Successfully POSTed to Awesome");
+            postCarbon();
+            unirest.post("http://awesome.awesomebot.xyz/botdata?token=" + AuthDetails.awesome_token + "&svrcount=" + bot.servers.length + "&usrcount=" + bot.users.length)
+            .end(function(response) {
+                if(response.status==200) {
+                    logMsg(new Date().getTime(), "INFO", "General", null, "Successfully POSTed to Awesome");
+                }
+            });
+        } else if(response.status==401) {
+            logMsg(new Date().getTime(), "ERROR", "General", null, "Unauthorized self-hosted AwesomeBot running, exiting. Please see https://github.com/BitQuote/AwesomeBot/wiki/Setup#getting-started");
+            process.exit();
         }
     });
 }
@@ -4365,6 +4454,9 @@ function postCarbon() {
 // Turn bot on in a new channel
 bot.on("channelCreated", function(ch) {
     if(!ch.isPrivate) {
+        if(!readiedServers[ch.server.id]) {
+            readyServer(ch.server);
+        }
         stats[ch.server.id].botOn[ch.id] = true;
         logMsg(new Date().getTime(), "INFO", ch.server.id, null, "New channel created: " + ch.name);
         saveData("./data/stats.json", function(err) {
@@ -4410,10 +4502,14 @@ function deleteServerData(svrid) {
     delete spams[svrid];
     delete filterviolations[svrid];
     delete stats[svrid];
+    delete readiedServers[svrid];
 }
 
 // New server member handling
 bot.on("serverMemberUpdated", function(svr, usr) {
+    if(!readiedServers[svr.id]) {
+        readyServer(svr);
+    }
     if(svr.rolesOfUser(usr)) {
         for(var j=0; j<svr.rolesOfUser(usr).length; j++) {
             if(svr.rolesOfUser(usr)[j].hasPermission("banMembers") && configs.servers[svr.id].admins.indexOf(usr.id)==-1 && configs.servers[svr.id].blocked.indexOf(usr.id)==-1 && configs.botblocked.indexOf(usr.id)==-1 && usr.id!=bot.user.id && !usr.bot) {
@@ -4438,6 +4534,10 @@ bot.on("serverMemberUpdated", function(svr, usr) {
 });
 
 bot.on("serverNewMember", function(svr, usr) {
+    if(!readiedServers[svr.id]) {
+        readyServer(svr);
+    }
+
     // Check if this has been enabled in admin console and the bot is listening
     if(configs.servers[svr.id].servermod) {
         if(configs.servers[svr.id].newmembermsg[0]) {
@@ -4479,7 +4579,11 @@ bot.on("serverNewMember", function(svr, usr) {
 
 // Updates voice counter when user joins voice channel
 bot.on("voiceJoin", function(ch, usr) {
-    if(stats[ch.server.id] && !usr.bot && (!ch.server.afkChannel || (ch.server.afkChannel && ch.id!=ch.server.afkChannel.id)) && !voice[usr.id]) {
+    if(openedweb && !usr.bot && (!ch.server.afkChannel || (ch.server.afkChannel && ch.id!=ch.server.afkChannel.id)) && !voice[usr.id]) {
+        if(!readiedServers[ch.server.id]) {
+            readyServer(ch.server);
+        }
+
         checkStats(usr.id, ch.server.id);
         voice[usr.id] = new Date().getTime();
         stats[ch.server.id].members[usr.id].active = new Date().getTime();
@@ -4488,7 +4592,11 @@ bot.on("voiceJoin", function(ch, usr) {
 
 // Updates user stats when user deafens
 bot.on("voiceStateUpdate", function(ch, usr, oldprops, newprops) {
-    if(stats[ch.server.id] && !usr.bot && (!ch.server.afkChannel || (ch.server.afkChannel && ch.id!=ch.server.afkChannel.id))) {
+    if(openedweb && !usr.bot && (!ch.server.afkChannel || (ch.server.afkChannel && ch.id!=ch.server.afkChannel.id))) {
+        if(!readiedServers[ch.server.id]) {
+            readyServer(ch.server);
+        }
+
         checkStats(usr.id, ch.server.id);
         if(((oldprops.deaf==false && newprops.deaf==true) || (oldprops.selfDeaf==false && newprops.selfDeaf==true)) && voice[usr.id]) {
             stats[ch.server.id].members[usr.id].voice += (((new Date().getTime() - voice[usr.id])/1000)/60) * 0.02;
@@ -4503,7 +4611,11 @@ bot.on("voiceStateUpdate", function(ch, usr, oldprops, newprops) {
 
 // Updates user stats when user leaves voice channel
 bot.on("voiceLeave", function(ch, usr) {
-    if(stats[ch.server.id] && !usr.bot && (!ch.server.afkChannel || (ch.server.afkChannel && ch.id!=ch.server.afkChannel.id)) && voice[usr.id]) {
+    if(openedweb && !usr.bot && (!ch.server.afkChannel || (ch.server.afkChannel && ch.id!=ch.server.afkChannel.id)) && voice[usr.id]) {
+        if(!readiedServers[ch.server.id]) {
+            readyServer(ch.server);
+        }
+
         checkStats(usr.id, ch.server.id);
         stats[ch.server.id].members[usr.id].voice += (((new Date().getTime() - voice[usr.id])/1000)/60) * 0.02;
         delete voice[usr.id];
@@ -4609,6 +4721,10 @@ bot.on("serverMemberRemoved", function(svr, usr) {
     });
 });
 function serverMemberRemovedHandler(svr, usr) {
+    if(!readiedServers[svr.id]) {
+        readyServer(svr);
+    }
+
     delete stats[svr.id].members[usr.id];
     try {
         delete filterviolations[svr.id][usr.id];
@@ -4649,15 +4765,23 @@ function serverMemberRemovedHandler(svr, usr) {
 };
 
 bot.on("messageUpdated", function(oldmsg, newmsg) {
-    if(oldmsg && newmsg && oldmsg.cleanContent && newmsg.cleanContent && oldmsg.cleanContent!=newmsg.cleanContent && !oldmsg.channel.isPrivate && configs.servers[oldmsg.channel.server.id].editmembermsg[0] && configs.servers[oldmsg.channel.server.id].servermod && stats[msg.channel.server.id].botOn[msg.channel.id] && !oldmsg.author.bot && !newmsg.author.bot) {
-        logMsg(new Date().getTime(), "INFO", msg.channel.server.id, null, "Message by " + msg.author.username + " edited");
-        bot.sendMessage(oldmsg.channel, "Message by **@" + getName(oldmsg.channel.server, oldmsg.author) + "** edited. Original:\n```" + oldmsg.cleanContent + "```Updated:\n```" + newmsg.cleanContent + "```");
+    if(oldmsg && newmsg && oldmsg.cleanContent && newmsg.cleanContent && oldmsg.cleanContent!=newmsg.cleanContent && !oldmsg.channel.isPrivate && !oldmsg.author.bot && !newmsg.author.bot) {
+        if(!readiedServers[oldmsg.channel.server.id]) {
+            readyServer(oldmsg.channel.server);
+        }
+        if(configs.servers[oldmsg.channel.server.id].editmembermsg[0] && configs.servers[oldmsg.channel.server.id].servermod && stats[msg.channel.server.id].botOn[msg.channel.id]) {
+            logMsg(new Date().getTime(), "INFO", msg.channel.server.id, null, "Message by " + msg.author.username + " edited");
+            bot.sendMessage(oldmsg.channel, "Message by **@" + getName(oldmsg.channel.server, oldmsg.author) + "** edited. Original:\n```" + oldmsg.cleanContent + "```Updated:\n```" + newmsg.cleanContent + "```");
+        }
     }
 });
 
 // Reduces activity score when message is publicly deleted, removes upvote, and/or shows membermsg
 bot.on("messageDeleted", function(msg) {
     if(msg && !msg.channel.isPrivate && !msg.author.bot) {
+        if(!readiedServers[msg.channel.server.id]) {
+            readyServer(msg.channel.server);
+        }
         if(stats[msg.channel.server.id].members[msg.author.id] && stats[msg.channel.server.id].members[msg.author.id].messages>0 && msg.timestamp>stats.timestamp) {
             stats[msg.channel.server.id].members[msg.author.id].messages--;
         }
@@ -4687,6 +4811,9 @@ bot.on("messageDeleted", function(msg) {
 
 // Message on user banned
 bot.on("userBanned", function(usr, svr) {
+    if(!readiedServers[svr.id]) {
+        readyServer(svr);
+    }
     if(configs.servers[svr.id].servermod && configs.servers[svr.id].banmembermsg[0]) {
         logMsg(new Date().getTime(), "INFO", svr.id, null, "User " + usr.username + " has been banned");
         var ch = svr.channels.get("id", configs.servers[svr.id].banmembermsg[2]);
@@ -4698,6 +4825,9 @@ bot.on("userBanned", function(usr, svr) {
 
 // Message on user unbanned
 bot.on("userUnbanned", function(usr, svr) {
+    if(!readiedServers[svr.id]) {
+        readyServer(svr);
+    }
     if(configs.servers[svr.id].servermod && configs.servers[svr.id].unbanmembermsg[0]) {
         logMsg(new Date().getTime(), "INFO", svr.id, null, "User " + usr.username + " has been unbanned");
         var ch = svr.channels.get("id", configs.servers[svr.id].unbanmembermsg[2]);
@@ -4709,9 +4839,12 @@ bot.on("userUnbanned", function(usr, svr) {
 
 // Update lastSeen status on presence change and messages
 bot.on("presence", function(oldusr, newusr) {
-    if(newusr.id!=bot.user.id && !oldusr.bot && !newusr.bot) {
+    if(newusr.id!=bot.user.id && !oldusr.bot && !newusr.bot && openedweb) {
         for(var i=0; i<bot.servers.length; i++) {
             if(stats[bot.servers[i].id] && bot.servers[i].members.get("id", newusr.id)) {
+                if(!readiedServers[bot.servers[i].id]) {
+                    readyServer(bot.servers[i]);
+                }
                 checkStats(oldusr.id, bot.servers[i].id);
 
                 if(newusr.game && newusr.game.type==1 && (!oldusr.game || oldusr.game.type!=1) && configs.servers[bot.servers[i].id].twitchmembermsg[0] && configs.servers[bot.servers[i].id].servermod && bot.servers[i].channels.get("id", configs.servers[bot.servers[i].id].twitchmembermsg[1]) && stats[bot.servers[i].id].botOn(bot.servers[i].channels.get("id", configs.servers[bot.servers[i].id].twitchmembermsg[1]).id)) {
@@ -4850,10 +4983,14 @@ function triviaQ(ch, tset) {
                 info += q;
                 stats[ch.server.id].trivia[ch.id].done.push(q);
                 logMsg(new Date().getTime(), "INFO", ch.server.id, ch.id, "New trivia question");
-            } else if(stats[ch.server.id].trivia[ch.id].done.length==3041) {
+            } else if(stats[ch.server.id].trivia[ch.id].done.length>=3041) {
                 return;
             } else {
-                return triviaQ(ch, tset);
+                try {
+                    return triviaQ(ch, tset);
+                } catch(err) {
+                    return;
+                }
             }
         });
         getLine("./trivia/trivia" + n + ".txt", (r * 4)-1, function(err, line) {
@@ -4969,7 +5106,7 @@ function populateStats(svr) {
     }
     // Turn on bot
     for(var i=0; i<svr.channels.length; i++) {
-        if(!stats[svr.id].botOn[svr.channels[i].id]) {
+        if(stats[svr.id].botOn[svr.channels[i].id]==null) {
             stats[svr.id].botOn[svr.channels[i].id] = true;
         }
     }
@@ -5088,11 +5225,8 @@ function maxIndex(arr) {
 
 // Tally number of messages every 24 hours
 function clearMessageCounter() {
-    for(var svrid in configs.servers) {
-        var svr = bot.servers.get("id", svrid);
-        if(svr) {
-            messages[svrid] = 0;
-        }
+    for(var i=0; i<bot.servers.length; i++) {
+        messages[bot.servers[i].id] = 0;
     }
     setTimeout(function() {
         clearMessageCounter();
@@ -5157,15 +5291,8 @@ function clearStatCounter() {
         }
     } else {
         for(var i=0; i<bot.servers.length; i++) {
-            if(!stats[bot.servers[i].id]) {
-                stats[bot.servers[i].id] = {
-                    members: {},
-                    games: {},
-                    commands: {},
-                    botOn: {},
-                    cools: {},
-                    trivia: {}
-                };
+            if(!readiedServers[bot.servers[i].id]) {
+                readyServer(bot.servers[i]);
             }
             for(var j=0; j<bot.servers[i].members.length; j++) {
                 if(bot.servers[i].members[j].id!=bot.user.id && !bot.servers[i].members[j].bot) {
@@ -5299,47 +5426,25 @@ function getExtensionParams(extension, svr, ch, msg, keywordcontains, suffix) {
             name: svr.name,
             id: svr.id,
             icon: svr.iconURL,
+            channels: getExtensionServerChannels(svr),
             owner: getExtensionUser(svr.owner, svr),
             admins: configs.servers[svr.id].admins,
             members: getExtensionSvrMembers(svr),
             roles: {
                 list: getExtensionSvrRoles(svr),
-                create: function(options, callback) {
-                    bot.createRole(svr, options, callback);
+                create: function(options) {
+                    bot.createRole(svr, options);
                 }
             },
             userSearch: function(str) {
                 var r = userSearch(str, svr);
                 return r ? getExtensionUser(r, svr) : null;
+            },
+            createChannel: function(name) {
+                bot.createChannel(svr, name);
             }
         },
-        ch: {
-            name: ch.name,
-            id: ch.id,
-            overwritePermissions: function(type, id, options, callback) {
-                if(type=="user") {
-                    bot.overwritePermissions(ch, svr.members.get("id", id), options, callback);
-                } else if(type=="role") {
-                    bot.overwritePermissions(ch, svr.roles.get("id", id), options, callback);
-                }
-            },
-            muteUser: function(usrid, callback) {
-                var usr = svr.members.get("id", usrid);
-                if(usr) {
-                    muteUser(ch, usr, function(err) {
-                        if(!err) {
-                            logMsg(new Date().getTime(), "INFO", svr.id, ch.id, "Toggled mute for " + usr.username);
-                        }
-                        callback(err);
-                    });
-                } else {
-                    callback(true);
-                }
-            },
-            createSelectMenu: function(callback, usrid, max) {
-                return selectMenu(ch, usrid, callback, max);
-            }
-        },
+        ch: getExtensionChannel(ch),
         parseTime: parseTime,
         prettyDate: prettyDate,
         secondsToString: secondsToString,
@@ -5366,6 +5471,8 @@ function getExtensionParams(extension, svr, ch, msg, keywordcontains, suffix) {
             for(var i=0; i<mentions.length; i++) {
                 if(mentions[i].id==bot.user.id) {
                     mentions.splice(i, 1);
+                } else {
+                    mentions[i] = getExtensionUser(mentions[i], svr);
                 }
             }
         } else {
@@ -5376,6 +5483,7 @@ function getExtensionParams(extension, svr, ch, msg, keywordcontains, suffix) {
             cleancontent: msg.cleanContent,
             mentions: mentions,
             author: getExtensionUser(msg.author, svr),
+            attachments: msg.attachments,
             delete: function() {
                 bot.deleteMessage(msg);
             }
@@ -5388,6 +5496,60 @@ function getExtensionParams(extension, svr, ch, msg, keywordcontains, suffix) {
         params.message.suffix = suffix.trim();
     }
     return params;
+}
+
+// Get data for a server'c channels to pass to an extension
+function getExtensionServerChannels(svr) {
+    var svrChannels = [];
+    for(var i=0; i<svr.channels.length; i++) {
+        if(!(svr.channels[i] instanceof Discord.VoiceChannel)) {
+            svrChannels.push(getExtensionChannel(svr.channels[i]));
+        }
+    }
+    svrChannels.sort(function(a, b) {
+        return a.position - b.position;
+    });
+}
+
+// Get data for a channel to pass to an extension
+function getExtensionChannel(ch) {
+    return {
+        name: ch.name,
+        id: ch.id,
+        mention: ch.mention(),
+        position: ch.position,
+        topic: ch.topic,
+        overwritePermissions: function(type, id, options, callback) {
+            if(type=="user") {
+                bot.overwritePermissions(ch, svr.members.get("id", id), options, callback);
+            } else if(type=="role") {
+                bot.overwritePermissions(ch, svr.roles.get("id", id), options, callback);
+            }
+        },
+        muteUser: function(usrid, callback) {
+            var usr = svr.members.get("id", usrid);
+            if(usr) {
+                muteUser(ch, usr, function(err) {
+                    if(!err) {
+                        logMsg(new Date().getTime(), "INFO", svr.id, ch.id, "Toggled mute for " + usr.username);
+                    }
+                    callback(err);
+                });
+            } else {
+                callback(true);
+            }
+        },
+        createSelectMenu: function(callback, usrid, max) {
+            return selectMenu(ch, usrid, callback, max);
+        },
+        setName: function(name) {
+            bot.setChannelName(ch, name);
+        },
+        setTopic: function(topic) {
+            bot.setChannelTopic(ch, topic);
+        },
+        delete: ch.delete
+    };
 }
 
 // Get data for a server's members to pass to an extension
@@ -5418,6 +5580,7 @@ function getExtensionUser(usr, svr) {
         id: usr.id,
         mention: usr.mention(),
         avatar: usr.avatarURL,
+        status: usr.status,
         roles: getExtensionMemberRoles(usr, svr),
         profileData: profileData[usr.id] || {},
         statsData: stats[svr.id].members[usr.id] || {},
@@ -6327,7 +6490,7 @@ function parseAdminConfig(delta, svr, consoleid, callback) {
                 }
                 break;
             case "filter":
-                if(delta[key].toLowerCase().indexOf("action-")==0 && ["action-kick", "action-block", "action-mute"].indexOf(delta[key].toLowerCase())>-1) {
+                if(typeof(delta[key])=="string" && delta[key].toLowerCase().indexOf("action-")==0 && ["action-kick", "action-block", "action-mute"].indexOf(delta[key].toLowerCase())>-1) {
                     configs.servers[svr.id].filter[1] = delta[key].toLowerCase().substring(delta[key].indexOf("-")+1);
                     logMsg(new Date().getTime(), "INFO", svr.id, null, "Set " + key + " action to " + delta[key].toLowerCase().substring(delta[key].indexOf("-")+1) + " (@" + consoleusr.username + ")");
                     break;
@@ -6336,6 +6499,7 @@ function parseAdminConfig(delta, svr, consoleid, callback) {
                     callback(true);
                     return;
                 }
+                logMsg(new Date().getTime(), "INFO", svr.id, null, "Set " + key + " to '" + delta[key] + "' (@" + consoleusr.username + ")");
                 configs.servers[svr.id][key][0] = delta[key];
                 break;
             case "closepoll":
@@ -6787,6 +6951,9 @@ function checkConfig(svr) {
         if(!stats[svrid].cools) {
             stats[svrid].cools = {};
         }
+        if(!stats[svrid].trivia) {
+            stats[svrid].trivia = {};
+        }
     }
 
     if(changed) {
@@ -6953,7 +7120,7 @@ function handleViolation(msg, desc1, desc2, action) {
             });
             break;
         case "mute":
-            muteUser(msg.channel, usr, function(err, state) {
+            muteUser(msg.channel, msg.author, function(err, state) {
                 if(err) {
                     blockUser(msg, desc1, desc2);
                 } else {
@@ -7072,31 +7239,38 @@ function userSearch(str, svr) {
 
 // Searches for a server based on name, ID, or shortcut
 function serverSearch(str, usr) {
-    var svr = bot.servers.get("name", str);
-    if(checkServer(svr, usr)) {
-        return svr;
-    }
-
-    svr = bot.servers.get("id", str);
-    if(checkServer(svr, usr)) {
-        return svr;
-    }
-
-    for(var i=0; i<bot.servers.length; i++) {
-        if(str.toLowerCase()==bot.servers[i].name.toLowerCase() && checkServer(bot.servers[i], usr)) {
-            return bot.servers[i];
-        }
-    }
-
-    if(profileData[usr.id] && profileData[usr.id].svrnicks && profileData[usr.id].svrnicks[str.toLowerCase()]) {
-        svr = bot.servers.get("id", profileData[usr.id].svrnicks[str.toLowerCase()]);
+    var findServer = function() {
+        var svr = bot.servers.get("name", str);
         if(checkServer(svr, usr)) {
             return svr;
         }
-    }
 
-    logMsg(new Date().getTime(), "WARN", null, usr.id, "User provided invalid server '" + str + "'");
-    return;
+        svr = bot.servers.get("id", str);
+        if(checkServer(svr, usr)) {
+            return svr;
+        }
+
+        for(var i=0; i<bot.servers.length; i++) {
+            if(str.toLowerCase()==bot.servers[i].name.toLowerCase() && checkServer(bot.servers[i], usr)) {
+                return bot.servers[i];
+            }
+        }
+
+        if(profileData[usr.id] && profileData[usr.id].svrnicks && profileData[usr.id].svrnicks[str.toLowerCase()]) {
+            svr = bot.servers.get("id", profileData[usr.id].svrnicks[str.toLowerCase()]);
+            if(checkServer(svr, usr)) {
+                return svr;
+            }
+        }
+
+        logMsg(new Date().getTime(), "WARN", null, usr.id, "User provided invalid server '" + str + "'");
+        return;
+    }
+    var result = findServer();
+    if(result && !readiedServers[result.id]) {
+        readyServer(result);
+    }
+    return result;
 }
 
 // Checks if a server is fine
@@ -7399,7 +7573,7 @@ function getProfile(usr, svr) {
     var details = svr.detailsOfUser(usr);
     var svrinfo = {};
     if(details) {
-        if(details.roles.length>0) {
+        if(details.roles && details.roles.length>0) {
             svrinfo["Roles"] = "";
             for(var i=0; i<details.roles.length; i++) {
                 if(details.roles[i]) {
@@ -7407,7 +7581,9 @@ function getProfile(usr, svr) {
                 }
             }
         }
-        svrinfo["Joined"] = prettyDate(new Date(details.joinedAt));
+        if(details.joinedAt) {
+            svrinfo["Joined"] = prettyDate(new Date(details.joinedAt));
+        }
     }
     checkStats(usr.id, svr.id);
     if(configs.servers[svr.id].stats) {
@@ -7502,30 +7678,38 @@ function cleanMessages(ch, usr, num, callback) {
 
 // Archives messages in a channel
 function archiveMessages(ch, count, callback) {
-    bot.getChannelLogs(ch, count, function(error, messages) {
-        if(!error) {
-            var archive = [];
-            for(var i=0; i<messages.length; i++) {
-                archive.push({
-                    timestamp: messages[i].timestamp,
-                    id: messages[i].id,
-                    edited: messages[i].editedTimestamp!=null,
-                    content: messages[i].content,
-                    clean_content: messages[i].cleanContent,
-                    attachments: messages[i].attachments,
-                    author: {
-                        username: messages[i].author.username,
-                        discriminator: messages[i].author.username,
-                        avatar: messages[i].author.avatar
-                    }
-                });
+    var archive = [];
+    var doArchive = function(num) {
+        bot.getChannelLogs(ch, num, function(error, messages) {
+            if(!error) {
+                for(var i=0; i<messages.length; i++) {
+                    archive.push({
+                        timestamp: messages[i].timestamp,
+                        id: messages[i].id,
+                        edited: messages[i].editedTimestamp!=null,
+                        content: messages[i].content,
+                        clean_content: messages[i].cleanContent,
+                        attachments: messages[i].attachments,
+                        author: {
+                            username: messages[i].author.username,
+                            discriminator: messages[i].author.username,
+                            avatar: messages[i].author.avatar
+                        }
+                    });
+                }
+                if(archive.length==count || messages.length<num) {
+                    callback(false, archive);
+                } else {
+                    var nextcount = count - messages.length;
+                    doArchive(nextcount>100 ? 100 : nextcount);
+                }
+            } else {
+                logMsg(new Date().getTime(), "ERROR", ch.server.id, ch.id, "Failed to fetch old messages for archival");
+                callback(true);
             }
-            callback(false, archive);
-        } else {
-            logMsg(new Date().getTime(), "ERROR", ch.server.id, ch.id, "Failed to fetch old messages for archival");
-            callback(true);
-        }
-    });
+        });
+    };
+    doArchive(count>100 ? 100 : count);
 }
 
 // Set reminder from natural language command
@@ -7646,7 +7830,7 @@ function getMessages(ch, option, callback) {
     } else {
         bot.getChannelLogs(ch, function(error, messages) {
             callback(error, messages);
-        })
+        });
     }
 }
 
@@ -7777,23 +7961,21 @@ function getHelp(svr, usr) {
         info = "";
     }
 
-    info = "";
+    info = [];
     for(var cmd in pmcommands) {
-        info += "\n" + cmd;
+        var tmpinfo = "\n" + cmd;
         if(pmcommands[cmd].usage) {
-            info += " " + pmcommands[cmd].usage.replace("<server>", svr.name);
+            tmpinfo += " " + pmcommands[cmd].usage.replace("<server>", svr.name);
         }
+        info.push(tmpinfo);
     }
-    if(info) {
-        help.push("The following commands are also available via PM:```" + info + "```");
-        info = "";
-    }
+    help.push("The following commands are also available via PM:```" + info.sort().join("") + "```");
 
     if(configs.servers[svr.id].points) {
         help.push("\nFinally: *AwesomePoints*, a karma system for Discord. You can upvote someone with `@user <\"^\", \"+1\", or \"up\">`, and give 10 of your own points with `@user gild`. You'll lose points for doing bad things, and get a reward for being the most active user at the end of the week.");
     }
 
-    help.push("\nOn top of all this, you can talk to me about anything privately or in the main chat (by tagging me). Learn more on my wiki: http://wiki.awesomebot.xyz/ \n\nVersion " + version + " by **@BitQuote**, http://awesomebot.xyz. *This project is in no way affiliated with Alphabet, Inc., who does not own or endorse this product.*");
+    help.push("\nOn top of all this, you can talk to me about anything privately or in the main chat (by tagging me). Learn more on my wiki: http://wiki.awesomebot.xyz/ \n\nVersion " + version + " by **@BitQuote**, http://awesomebot.xyz/. *This project is in no way affiliated with Alphabet, Inc., who does not own or endorse this product.*");
     return help;
 }
 
@@ -7974,7 +8156,7 @@ function checkVersion() {
                         send += response.body[i][1];
                     }
                 }
-                send += "\nLearn more at http://awesomebot.xyz";
+                send += "\nLearn more at http://awesomebot.xyz/";
 
                 if(configs.maintainer && configs.maintainer!="") {
                     var usr = bot.users.get("id", configs.maintainer);
@@ -8139,5 +8321,7 @@ function setup(i) {
 setup(0);
 
 domain.on("error", function(err) {
+    console.log(err.stack);
     logMsg(new Date().getTime(), "ERROR", "General", null, "Something went seriously wrong: " + err);
+    return true;
 });

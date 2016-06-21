@@ -10,6 +10,8 @@ function doAdminSetup() {
     $("#admins-body").collapse("show");
     switchBlocked();
     $("#blocked-body").collapse("show");
+    switchMuted();
+    $("#muted-body").collapse("show");
     switchStrikes();
     $("#strikes-body").collapse("show");
     switchRss();
@@ -84,33 +86,12 @@ function switchBlocked() {
     var blockedtablebody = "";
     for(var i=0; i<botData.configs.blocked.length; i++) {
         blacklist.push(botData.configs.blocked[i][2]);
-        blockedtablebody += "<tr id=\"blockedentry-" + botData.configs.blocked[i][2] + "\"><td><img class=\"profilepic\" width=25 src=\"" + botData.configs.blocked[i][0] + "\" /></td><td>" + botData.configs.blocked[i][1] + "</td><td>" + botData.configs.blocked[i][2] + "</td><td><button type=\"button\" class=\"btn btn-primary btn-xs blockedmute\" id=\"blockedentry-"+ i + "-mute\"><span class=\"glyphicon glyphicon-volume-off\" aria-hidden=\"true\"></span> Mute</button>&nbsp;" + (botData.configs.blocked[i][3] ? "" : "<button type=\"button\" class=\"btn btn-danger btn-xs\" onclick=\"javascript:config('blocked', this.parentNode.parentNode.id.substring(13), function() {switchAdmins();switchBlocked();switchStrikes();});\"><span class=\"glyphicon glyphicon-remove\" aria-hidden=\"true\"></span> Unblock</button>") + "</td></tr>";
+        blockedtablebody += "<tr id=\"blockedentry-" + botData.configs.blocked[i][2] + "\"><td><img class=\"profilepic\" width=25 src=\"" + botData.configs.blocked[i][0] + "\" /></td><td>" + botData.configs.blocked[i][1] + "</td><td>" + botData.configs.blocked[i][2] + "</td><td>" + (botData.configs.blocked[i][3] ? "" : "<button type=\"button\" class=\"btn btn-danger btn-xs\" onclick=\"javascript:config('blocked', this.parentNode.parentNode.id.substring(13), function() {switchAdmins();switchBlocked();switchStrikes();});\"><span class=\"glyphicon glyphicon-remove\" aria-hidden=\"true\"></span> Unblock</button>") + "</td></tr>";
     }
     document.getElementById("blockedtablebody").innerHTML = blockedtablebody;
     if(botData.configs.blocked.length==0) {
         document.getElementById("blockedtable").style.display = "none";
     }
-    
-    $("#blockedtable").popover({
-        html: true,
-        title: function() {
-            i = parseInt(this.id.substring(this.id.indexOf("-")+1, this.id.lastIndexOf("-")));
-            return "<button type=\"button\" class=\"close\" id=\"blockedentry-" + botData.configs.blocked[i][2] + "-popoverclose\" onclick=\"$('#" + this.id + "').popover('hide');\" aria-label=\"Close\"><span aria-hidden=\"true\">&times;</span></button><h4 class=\"modal-title\">Mute @" + botData.configs.blocked[i][1] + "</h4>";
-        },
-        content: function() {
-            i = parseInt(this.id.substring(this.id.indexOf("-")+1, this.id.lastIndexOf("-")));
-            var popovercontent = "Block sending messages in:";
-            for(var j=0; j<botData.channels.length; j++) {
-                popovercontent += "<div class=\"checkbox\"><input type=\"checkbox\" id=\"blockedentry-mute-" + j + "\" onclick=\"javascript:newMute(['" + botData.configs.blocked[i][2] + "', '" + botData.channels[j][1] + "'], " + i + ");\"" + (botData.configs.blocked[i][4][botData.channels[j][1]] ? " checked" : "") + "><label for=\"blockedentry-mute-" + j + "\">#" + botData.channels[j][0] + "</label></div>";
-            }
-            popovercontent += "<button type=\"button\" class=\"btn btn-default\" onclick=\"javascript:newMute(['" + botData.configs.blocked[i][2] + "', 'all'], " + i + ");\">Toggle All</button>";
-            return popovercontent;
-        },
-        selector: ".blockedmute",
-        placement: "bottom",
-        container: "body",
-        trigger: "click"
-    });
     
     for(var i=0; i<botData.configs.admins.length; i++) {
         blacklist.push(botData.configs.admins[i][2]);
@@ -132,9 +113,57 @@ function switchBlocked() {
     $("#blockedselector-role").selectpicker("refresh");
 }
 
+function switchMuted() {
+    document.getElementById("mutedtable").style.display = "";
+    
+    var blacklist = [];
+    var mutedtablebody = "";
+    for(var i=0; i<botData.configs.muted.length; i++) {
+        blacklist.push(botData.configs.muted[i][2]);
+        mutedtablebody += "<tr id=\"mutedentry-" + botData.configs.muted[i][2] + "\"><td><img class=\"profilepic\" width=25 src=\"" + botData.configs.muted[i][0] + "\" /></td><td>" + botData.configs.muted[i][1] + "</td><td>" + botData.configs.muted[i][2] + "</td><td><button type=\"button\" class=\"btn btn-primary btn-xs mutedmute\" id=\"mutedentry-"+ i + "-mute\"><span class=\"glyphicon glyphicon-volume-off\" aria-hidden=\"true\"></span> Channels</button></td></tr>";
+    }
+    document.getElementById("mutedtablebody").innerHTML = mutedtablebody;
+    if(botData.configs.muted.length==0) {
+        document.getElementById("mutedtable").style.display = "none";
+    }
+    
+    $("#mutedtable").popover({
+        html: true,
+        title: function() {
+            i = parseInt(this.id.substring(this.id.indexOf("-")+1, this.id.lastIndexOf("-")));
+            return "<button type=\"button\" class=\"close\" id=\"mutedentry-" + botData.configs.muted[i][2] + "-popoverclose\" onclick=\"$('#" + this.id + "').popover('hide');\" aria-label=\"Close\"><span aria-hidden=\"true\">&times;</span></button><h4 class=\"modal-title\">Mute @" + botData.configs.muted[i][1] + "</h4>";
+        },
+        content: function() {
+            i = parseInt(this.id.substring(this.id.indexOf("-")+1, this.id.lastIndexOf("-")));
+            var popovercontent = "Block sending messages in:";
+            for(var j=0; j<botData.channels.length; j++) {
+                popovercontent += "<div class=\"checkbox\"><input type=\"checkbox\" id=\"mutedentry-mute-" + j + "\" onclick=\"javascript:newMute(['" + botData.configs.muted[i][2] + "', '" + botData.channels[j][1] + "'], " + i + ");\"" + (botData.configs.muted[i][3][botData.channels[j][1]] ? " checked" : "") + "><label for=\"mutedentry-mute-" + j + "\">#" + botData.channels[j][0] + "</label></div>";
+            }
+            popovercontent += "<button type=\"button\" class=\"btn btn-default\" onclick=\"javascript:newMute(['" + botData.configs.muted[i][2] + "', 'all'], " + i + ");\">Toggle All</button>";
+            return popovercontent;
+        },
+        selector: ".mutedmute",
+        placement: "bottom",
+        container: "body",
+        trigger: "click"
+    });
+    
+    for(var i=0; i<botData.configs.admins.length; i++) {
+        blacklist.push(botData.configs.admins[i][2]);
+    }
+    filterMembers(blacklist, function(possiblemuted) {
+        var mutedselector = "";
+        for(var i=0; i<possiblemuted.data.length; i++) {
+            mutedselector += "<option value=\"" + possiblemuted.data[i][1] + "\"" + (possiblemuted.data[i][2] ? (" data-tokens=\"" + possiblemuted.data[i][2] + "\"") : "" ) + ">" + possiblemuted.data[i][0] + "</option>";
+        }
+        document.getElementById("mutedselector").innerHTML = mutedselector;
+        $("#mutedselector").selectpicker("refresh");
+    });
+}
+
 function newMute(data, i) {
-    $("#blockedentry-" + i + "-mute").popover("hide");
-    config("mute", data, switchBlocked);
+    $("#mutedentry-" + i + "-mute").popover("hide");
+    config("mute", data, switchMuted);
 }
 
 function switchStrikes() {
@@ -455,7 +484,8 @@ function switchCommands() {
         "e621": "Searches by tag on e621.net",
         "rule34": "Searches by tag on rule34.xxx",
         "safebooru": "Searches by tag on safebooru.org",
-        "xkcd": "Fetches today's XKCD comic or by ID"
+        "xkcd": "Fetches today's XKCD comic or by ID",
+        "imgur": "Uploads an image to Imgur"
     }
     var newcmds = ["kick", "ban", "nuke", "list", "avatar", "archive", "mute", "anime", "manga", "room", "giveaway", "calc", "countdown", "ddg", "imdb", "8ball", "fortune", "catfact", "numfact", "e621", "rule34", "safebooru"];
     var nsfwcmds = ["e621", "rule34", "safebooru"];
@@ -469,7 +499,7 @@ function switchCommands() {
     var commands = [];
     for(var cmd in botData.configs) {
         if(blacklist.indexOf(cmd)==-1) {
-            commands.push("<div class=\"checkbox\"><input style=\"height: auto;\" id=\"commandsentry-" + cmd + "\" type=\"checkbox\" onclick=\"javascript:config(this.id.substring(14), this.checked, switchCommands);\" " + ((cmd=="rss" ? botData.configs[cmd][0] : botData.configs[cmd]) ? "checked " : "") + "/><label for=\"commandsentry-" + cmd + "\">" + cmd + "&nbsp;" + (nsfwcmds.indexOf(cmd)>-1 ? "<span class=\"label label-danger newlabel\">NSFW</span>&nbsp;" : "") + (newcmds.indexOf(cmd)>-1 ? "<span class=\"label label-info newlabel\">New</span>&nbsp;" : "") + "&nbsp;<p class=\"help-block\" style=\"display:inline\">" + descs[cmd] + "</p></label>&nbsp;&nbsp;<select id=\"" + cmd + "-admincommands-select\" onChange=\"javascript:config('admincommands', '" + cmd + "', switchCommands);\" class=\"selectpicker show-tick\" data-width=\"fit\"><option" + (botData.configs.admincommands.indexOf(cmd)==-1 ? " selected" : "") + ">Everyone</option><option" + (botData.configs.admincommands.indexOf(cmd)>-1 ? " selected" : "") + ">Admins only</option></select>&nbsp;<select id=\"" + cmd + "-chrestrict-select\" onChange=\"javascript:config('chrestrict', ['" + cmd + "', $('#' + this.id).val()], switchCommands);\" title=\"Select Channels\" class=\"selectpicker show-tick\" data-width=\"auto\" data-selected-text-format=\"static\" multiple  data-actions-box=\"true\">" + cmdchannelselect + "</select></div>");
+            commands.push("<div class=\"checkbox\"><input style=\"height: auto;\" id=\"commandsentry-" + cmd + "\" type=\"checkbox\" onclick=\"javascript:config(this.id.substring(14), this.checked, switchCommands);\" " + ((cmd=="rss" ? botData.configs[cmd][0] : botData.configs[cmd]) ? "checked " : "") + "/><label for=\"commandsentry-" + cmd + "\">" + cmd + "&nbsp;" + (nsfwcmds.indexOf(cmd)>-1 ? "<span class=\"label label-danger newlabel\">NSFW</span>&nbsp;" : "") + (newcmds.indexOf(cmd)>-1 ? "<span class=\"label label-info newlabel\">New</span>&nbsp;" : "") + "&nbsp;<p class=\"help-block\" style=\"display:inline\">" + descs[cmd] + "</p></label>&nbsp;&nbsp;<select id=\"" + cmd + "-admincommands-select\" onChange=\"javascript:config('admincommands', '" + cmd + "', switchCommands);\" class=\"selectpicker show-tick\" data-width=\"fit\"><option" + (botData.configs.admincommands.indexOf(cmd)==-1 ? " selected" : "") + ">Everyone</option><option" + (botData.configs.admincommands.indexOf(cmd)>-1 ? " selected" : "") + ">Admins only</option></select>&nbsp;<select id=\"" + cmd + "-chrestrict-select\" onChange=\"javascript:config('chrestrict', ['" + cmd + "', $('#' + this.id).val()], switchCommands);\" title=\"Select Channels\" class=\"selectpicker show-tick\" data-width=\"auto\" data-selected-text-format=\"count\" multiple  data-actions-box=\"true\">" + cmdchannelselect + "</select></div>");
         }
     }
     commands.sort();
@@ -692,7 +722,7 @@ function switchManage() {
         document.getElementById("newgreetinginput").value = "";
     }
     
-    var filterstr = filterToString(botData.configs.filter[0]);
+    var filterstr = botData.configs.filter[0].join();
     document.getElementById("manageentry-filter").style.display = "";
     document.getElementById("manageentry-filter-action").value = botData.configs.filter[1];
     $("#manageentry-filter-action").selectpicker("refresh");
@@ -718,7 +748,7 @@ function switchManage() {
             for(var i=botData.roles.length-1; i>=0; i--) {
                 customroles_block += "<div class=\"checkbox\">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type=\"checkbox\" id=\"manageentry-customroles-" + botData.roles[i][1] + "\" onclick=\"javascript:config('customroles', this.id.substring(24), function() {});\"" + (botData.configs.customroles[1].indexOf(botData.roles[i][1])>-1 ? " checked" : "") + "><label style=\"color: " + botData.roles[i][3] + ";\" for=\"manageentry-customroles-" + botData.roles[i][1] + "\">" + botData.roles[i][0] + "</label></div>";
             }
-            customroles_block += "<div class=\"checkbox\">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input id=\"manageentry-customroles-custom\" type=\"checkbox\" onclick=\"javascript:config('customroles', 'custom', function() {});\"" + (botData.configs.customroles[2] ? " checked" : "") + "><label for=\"manageentry-customroles-custom\">Custom roles</label></div>"
+            customroles_block += "<div class=\"checkbox\">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input id=\"manageentry-customroles-custom\" type=\"checkbox\" onclick=\"javascript:config('customroles', 'custom', function() {});\"" + (botData.configs.customroles[2] ? " checked" : "") + "><label for=\"manageentry-customrkoles-custom\">Custom roles</label></div>"
             document.getElementById("manageentry-customroles-block").innerHTML = customroles_block;
         }
         $("#manageentry-customroles-body").collapse("show");
@@ -814,7 +844,7 @@ function configNewgreeting(content) {
 function configFilter(content) {
     var words;
     if(content) {
-        words = content.split[","];
+        words = content.split(",");
         if(words) {
             for(var i=0; i<words.length; i++) {
                 words[i] = words[i].trim();
@@ -826,14 +856,6 @@ function configFilter(content) {
         words = [];
     }
     config("filter", words, function() {});
-}
-
-function filterToString(filter) {
-    var filterstr = "";
-    for(var i=0; i<filter.length; i++) {
-        filterstr += filter[i] + (i==filter.length-1 ? "" : ", ");
-    }
-    return filterstr;
 }
 
 function configCA(type) {
@@ -854,7 +876,7 @@ function configCA(type) {
     } else if(type=="archive") {
         NProgress.start();
         getJSON("archive?auth=" + authtoken + "&type=" + authtype + "&svrid=" + JSON.parse(localStorage.getItem("auth")).svrid + "&chid=" + document.getElementById("caselector").value + "&num=" + parseInt(document.getElementById("cainput").value), function(archive) {
-            window.open("data:text/json;charset=utf-8," + escape(JSON.stringify(archive)));
+            window.open("data:text/json;charset=utf-8," + escape(JSON.stringify(archive, null, 2)));
             NProgress.done();
         });
     }
@@ -925,6 +947,29 @@ function switchExtensions() {
     if(botData.configs.extensions.length==0) {
         document.getElementById("extensionstable").style.display = "none";
     }
+}
+
+function launchBuilder(ext) {
+    if(!ext) {
+        $("#extensionbuilder").modal("show");
+
+        var extensionbuilder_saved_dropdown = "";
+        for(var extnm in botData.configs.savedextensions) {
+            extensionbuilder_saved_dropdown += "<li><a href=\"javascript:switchBuilderContent('" + extnm + "');\">" + extnm + "</a></li>";
+        }
+        document.getElementById("extensionbuilder-saved-dropdown").innerHTML = extensionbuilder_saved_dropdown;
+
+        var extensionbuilder_select_channels = "";
+        for(var i=0; i<botData.channels.length; i++) {
+            extensionbuilder_select_channels += "<option id=\"translatedch-" + botData.channels[i][1] + "\" value=\"" + botData.channels[i][1] + "\">#" + botData.channels[i][0] + "</option>";
+        }
+        document.getElementById("extensionbuilder-select-channels").innerHTML = extensionbuilder_select_channels;
+        $("#extensionbuilder-select-channels").selectpicker("refresh");
+    }
+}
+
+function switchBuilderType(type) {
+    document.getElementById("extensionbuilder-type-block").innerHTML = document.getElementById("extensionbuilder-type-" + type).innerHTML;
 }
 
 function showExtension(i) {
