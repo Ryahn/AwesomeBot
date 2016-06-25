@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="AwesomeBot: the best Discord bot!">
     <meta name="author" content="BitQuote">
-    <title>Bot Status</title>
+    <title>Bot Info</title>
 
     <link id="theme" href="./css/bootstrap-default.min.css" rel="stylesheet">
     <link href="./css/bootstrap-select.min.css" rel="stylesheet">
@@ -53,7 +53,7 @@
                     <span class="icon-bar"></span>
                     <span class="icon-bar"></span>
                 </button>
-                <a class="navbar-brand" href="#" style="padding-left:0px">Bot Status</a>
+                <a class="navbar-brand" href="#" style="padding-left:0px">Bot Info</a>
             </div>
             <div id="navbar" class="navbar-collapse collapse">
                 <ul class="nav navbar-nav">
@@ -169,6 +169,7 @@
                     <option id="level-WARN" value="WARN">Warning</option>
                     <option id="level-ERROR" value="ERROR">Error</option>
                 </select>
+                <button class="btn btn-default" onclick="javascript:switchLog(false);" type="button" style="float:right;"><span class="glyphicon glyphicon-refresh" aria-hidden="true"></span></button>
                 <br><br>
                 <div id="activity-body">
                     <pre id="console"></pre>
@@ -178,7 +179,7 @@
         
         <div class="row">
             <div class="col-lg-12">
-                <br><i>Created by @BitQuote, <a href="http://awesomebot.xyz">http://awesomebot.xyz</a>. This project is in no way affiliated with Alphabet, Inc., who does not own or endorse this product.</i><br><br>
+                <br><i>Created by @BitQuote, <a href="http://awesomebot.xyz">http://awesomebot.xyz</a>. This project is in no way affiliated with Alphabet, Inc., who does not own or endorse this product.</i> Themes provided by <a href="https://bootswatch.com/">Bootswatch</a><br><br>
             </div>
         </div>
     </div>

@@ -41,7 +41,7 @@ function writeInterface() {
     NProgress.start();
 
     getJSON("data?section=list&type=bot", function(data) {
-        document.title = data.username + " Status";
+        document.title = data.username + " Info";
         document.getElementById("botname").innerHTML = data.username;
         document.getElementById("profilepic").src = data.avatar;
         setFavicon(data.avatar);

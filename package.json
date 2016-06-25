@@ -20,7 +20,6 @@
     "google-images": "0.1.x",
     "wikijs": "*",
     "cheerio": "*",
-    "mitsuku-api": "*",
     "fs": "*",
     "express": "*",
     "body-parser": "*",

@@ -16,6 +16,8 @@ function doAdminSetup() {
     $("#strikes-body").collapse("show");
     switchRss();
     $("#rss-body").collapse("show");
+    switchTags();
+    $("#tags-body").collapse("show");
     switchTranslated();
     $("#translated-body").collapse("show");
     switchStatspoints();
@@ -323,6 +325,87 @@ function newRss() {
     }
 }
 
+function newRssUrl(site) {
+    var url = "";
+    switch(site) {
+        case "github":
+            url = "https://github.com/USERNAME/REPO/commits/master.atom";
+            break;
+        case "reddit":
+            url = "https://www.reddit.com/r/SUBREDDIT/.rss";
+            break;
+        case "twitter":
+            url = "http://twitrss.me/twitter_user_to_rss/?user=USERNAME";
+            break;
+    }
+    document.getElementById("rssnewurl").value = url;
+}
+
+function switchTags() {
+    document.getElementById("tags-tag").checked = botData.configs.tag;
+    document.getElementById("tags-select-tag").value = botData.configs.admincommands.indexOf("tag")>-1 ? "admins" : "everyone";
+    if(botData.configs.tag) {
+        document.getElementById("tags-select-tag").removeAttribute("disabled");
+    } else {
+        document.getElementById("tags-select-tag").setAttribute("disabled", "disable");
+    }
+    $("#tags-select-tag").selectpicker("refresh");
+
+    var tagsections = ["add", "remove"];
+    for(var i=0; i<tagsections.length; i++) {
+        document.getElementById("tags-select-" + tagsections[i] + "tag").value = botData.configs[tagsections[i] + "tagadmin"] ? "admins" : "everyone";
+        if(botData.configs.tag && document.getElementById("tags-select-tag").value=="everyone") {
+            document.getElementById("tags-select-" + tagsections[i] + "tag").removeAttribute("disabled");
+        } else {
+            document.getElementById("tags-select-" + tagsections[i] + "tag").setAttribute("disabled", "disable");
+        }
+        $("#tags-select-" + tagsections[i] + "tag").selectpicker("refresh");
+
+        document.getElementById("tags-select-" + tagsections[i] + "tagcommand").value = botData.configs[tagsections[i] + "tagcommandadmin"] ? "admins" : "everyone";
+        if(!botData.configs[tagsections[i] + "tagadmin"] && botData.configs.tag && document.getElementById("tags-select-tag").value=="everyone") {
+            document.getElementById("tags-select-" + tagsections[i] + "tagcommand").removeAttribute("disabled");
+        } else {
+            document.getElementById("tags-select-" + tagsections[i] + "tagcommand").setAttribute("disabled", "disable");
+        }
+        $("#tags-select-" + tagsections[i] + "tagcommand").selectpicker("refresh");
+    }
+
+    document.getElementById("tagstable-block").style.display = "";
+    document.getElementById("tagstable").style.display = "";
+
+    var tagstablebody = "";
+    for(var i=0; i<botData.configs.tags.length; i++) {
+        tagstablebody += "<tr id=\"tagsentry-" + botData.configs.tags[i][0] + "\"><td>" + botData.configs.tags[i][0] + "</td><td>" + micromarkdown.parse(botData.configs.tags[i][1]) + "</td><td>" + (botData.configs.tags[i][2] ? "Command" : "Text") + "</td><td><button type=\"button\" class=\"btn btn-primary btn-xs\" onclick=\"javascript:config('tags', ['lock', '" + botData.configs.tags[i][0] + "'], switchTags);\"><span class=\"glyphicon glyphicon-lock\" aria-hidden=\"true\"></span> " + (botData.configs.tags[i][3] ? "Unlock" : "Lock") + "</button>&nbsp;&nbsp;<button type=\"button\" class=\"btn btn-danger btn-xs\" onclick=\"javascript:config('tags', ['" + botData.configs.tags[i][0] + "'], switchTags);\"><span class=\"glyphicon glyphicon-remove\" aria-hidden=\"true\"></span> Remove</button></td></tr>"
+    }
+    document.getElementById("tagstablebody").innerHTML = tagstablebody;
+    if(botData.configs.tags.length==0) {
+        document.getElementById("tagstable").style.display = "none";
+    }
+    if(!botData.configs.tag) {
+        document.getElementById("tagstable-block").style.display = "none";
+    }
+}
+
+function newTag() {
+    if(!document.getElementById("tagsinput").value || !document.getElementById("tagsvalue").value) {
+        if(!document.getElementById("tagsinput").value) {
+            $("#tagsinput-block").addClass("has-error");
+        }
+        if(!document.getElementById("tagsvalue").value) {
+            $("#tagsvalue-block").addClass("has-error");
+        }
+    } else {
+        $("#tagsinput-block").removeClass("has-error");
+        $("#tagsvalue-block").removeClass("has-error");
+        config("tags", [document.getElementById("tagsinput").value, document.getElementById("tagsvalue").value, document.getElementById("tagsselect").value], function() {
+            document.getElementById("tagsinput").value = "";
+            document.getElementById("tagsvalue").value = "";
+            document.getElementById("tagsselect").value = "text";
+            switchTags();
+        });
+    }
+}
+
 function switchTranslated() {
     document.getElementById("translatedtable").style.display = "";
     
@@ -360,7 +443,6 @@ function switchTranslated() {
 
 function newTranslate() {
     if(!document.getElementById("translatedselector").value || !document.getElementById("translatedinput").value || !$("#translatedchannels").val()) {
-        console.log("hi");
         if(!document.getElementById("translatedselector").value) {
             richModal("Select a member");
             return;
@@ -384,6 +466,22 @@ function switchStatspoints() {
     for(var i=0; i<statspoints.length; i++) {
         document.getElementById("statspoints-" + statspoints[i]).checked = botData.configs[statspoints[i]];
     }
+    var statspoints_statsexclude = "";
+    var statschannels = [];
+    for(var i=0; i<botData.channels.length; i++) {
+        if(botData.configs.statsexclude.indexOf(botData.channels[i][1])==-1) {
+            statschannels.push(botData.channels[i][1]);
+        }
+        statspoints_statsexclude += "<option value=\"" + botData.channels[i][1] + "\">#" + botData.channels[i][0] + "</option>";
+    }
+    document.getElementById("statspoints-statsexclude").innerHTML = statspoints_statsexclude;
+    $("#statspoints-statsexclude").val(statschannels);
+    if(botData.configs.stats && botData.configs.messages) {
+        document.getElementById("statspoints-statsexclude").removeAttribute("disabled");
+    } else {
+        document.getElementById("statspoints-statsexclude").setAttribute("disabled", "disable");
+    }
+    $("#statspoints-statsexclude").selectpicker("refresh");
     disableBlock("statspoints-stats-block", !botData.configs.stats);
     disableBlock("statspoints-points-block", !botData.configs.points);
 
@@ -428,7 +526,6 @@ function newRank() {
 function switchCommands() {
     var descs = {
         "rss": "Fetches entries from an <a href='#rss'>RSS feed</a>",
-        "tag": "Quick snippet respnse system", 
         "stats": "Shows the most active members, richest users, most played games, and most used commands on the server for this week",
         "lottery": "Hourly point giveaways in the <code>points</code> command", 
         "linkme": "Searches the Google Play Store for one or more apps", 
@@ -485,11 +582,12 @@ function switchCommands() {
         "rule34": "Searches by tag on rule34.xxx",
         "safebooru": "Searches by tag on safebooru.org",
         "xkcd": "Fetches today's XKCD comic or by ID",
-        "imgur": "Uploads an image to Imgur"
+        "imgur": "Uploads an image to Imgur",
+        "cat": "Random picture of a cat!"
     }
-    var newcmds = ["kick", "ban", "nuke", "list", "avatar", "archive", "mute", "anime", "manga", "room", "giveaway", "calc", "countdown", "ddg", "imdb", "8ball", "fortune", "catfact", "numfact", "e621", "rule34", "safebooru"];
+    var newcmds = ["kick", "ban", "nuke", "list", "avatar", "archive", "mute", "anime", "manga", "room", "giveaway", "calc", "countdown", "ddg", "imdb", "8ball", "fortune", "catfact", "numfact", "e621", "rule34", "safebooru", "cat", "info", "imgur", "xkcd"];
     var nsfwcmds = ["e621", "rule34", "safebooru"];
-    var blacklist = ["admins", "blocked", "extensions", "newgreeting", "nsfwfilter", "servermod", "spamfilter", "customroles", "customcolors", "customkeys", "cmdtag", "newmembermsg", "onmembermsg", "offmembermsg", "changemembermsg", "rankmembermsg", "twitchmembermsg", "editmembermsg", "deletemembermsg", "rmmembermsg", "banmembermsg", "unbanmembermsg", "triviasets", "newrole", "showpub", "defaultcount", "maxcount", "autoprune", "translated", "filter", "usenicks", "usediscriminators", "listsrc", "listing", "tagcommands", "cooldown", "stats", "points", "ranks", "rankslist", "messages", "games", "lottery", "admincommands", "showsvr", "chrestrict", "newmemberpm", "role"];
+    var blacklist = ["admins", "blocked", "extensions", "newgreeting", "nsfwfilter", "servermod", "spamfilter", "customroles", "customcolors", "customkeys", "cmdtag", "newmembermsg", "onmembermsg", "offmembermsg", "changemembermsg", "rankmembermsg", "twitchmembermsg", "editmembermsg", "deletemembermsg", "rmmembermsg", "banmembermsg", "unbanmembermsg", "triviasets", "newrole", "showpub", "defaultcount", "maxcount", "autoprune", "translated", "filter", "usenicks", "usediscriminators", "listsrc", "listing", "tagcommands", "cooldown", "stats", "points", "ranks", "rankslist", "messages", "games", "lottery", "admincommands", "showsvr", "chrestrict", "newmemberpm", "role", "addtagadmin", "addtagcommandadmin", "muted", "removetagadmin", "removetagcommandadmin", "tag", "tags", "deletecommands"];
 
     var cmdchannelselect = "";
     for(var i=0; i<botData.channels.length; i++) {
@@ -607,12 +705,14 @@ function switchManage() {
             for(var j=0; j<botData.channels.length; j++) {
                 manageentry_select += "<option value=\"" + botData.channels[j][1] + "\">#" + botData.channels[j][0] + "</option>";
             }
-            if(["editmembermsg", "deletemembermsg"].indexOf(membermsg[i])==-1) {
-                document.getElementById("manageentry-select-" + membermsg[i]).innerHTML = manageentry_select;
+            document.getElementById("manageentry-select-" + membermsg[i]).innerHTML = manageentry_select;
+            if(["editmembermsg", "deletemembermsg"].indexOf(membermsg[i])>-1) {
+                $("#manageentry-select-" + membermsg[i]).val(botData.configs[membermsg[i]][1]);
+            } else {
                 document.getElementById("manageentry-select-" + membermsg[i]).value = (["changemembermsg", "twitchmembermsg", "rankmembermsg"].indexOf(membermsg[i])>-1 ? botData.configs[membermsg[i]][1] : botData.configs[membermsg[i]][2]);
-                document.getElementById("manageentry-select-" + membermsg[i]).removeAttribute("disabled");
-                $("#manageentry-select-" + membermsg[i]).selectpicker("refresh");
             }
+            document.getElementById("manageentry-select-" + membermsg[i]).removeAttribute("disabled");
+            $("#manageentry-select-" + membermsg[i]).selectpicker("refresh");
 
             if(membermsg[i]=="rankmembermsg") {
                 document.getElementById("manageentry-select-pm-" + membermsg[i]).value = botData.configs.rankmembermsg[2] ? "pms" : "messages";
@@ -630,10 +730,8 @@ function switchManage() {
                 $("#manageentry-" + membermsg[i] + "-body").collapse("show");
             }
         } else {
-            if(["editmembermsg", "deletemembermsg"].indexOf(membermsg[i])==-1) {
-                document.getElementById("manageentry-select-" + membermsg[i]).setAttribute("disabled", "disable");
-                $("#manageentry-select-" + membermsg[i]).selectpicker("refresh");
-            }
+            document.getElementById("manageentry-select-" + membermsg[i]).setAttribute("disabled", "disable");
+            $("#manageentry-select-" + membermsg[i]).selectpicker("refresh");
             if(membermsg[i]=="rankmembermsg") {
                 document.getElementById("manageentry-select-pm-" + membermsg[i]).setAttribute("disabled", "disable");
                 $("#manageentry-select-pm-" + membermsg[i]).selectpicker("refresh");
@@ -679,7 +777,13 @@ function switchManage() {
             break;
     }
     document.getElementById("manageentry-spamfilter-action").value = botData.configs.spamfilter[3];
-    
+    var spamfilter_role = "<option value=\"role-\">Role for violators</option>";
+    for(var i=botData.roles.length-1; i>=0; i--) {
+        spamfilter_role += "<option value=\"role-" + botData.roles[i][1] + "\" style=\"color: " + botData.roles[i][3] + ";\">" + botData.roles[i][0] + "</option>";
+    }
+    document.getElementById("manageentry-spamfilter-role").innerHTML = spamfilter_role;
+    document.getElementById("manageentry-spamfilter-role").value = "role-" + botData.configs.spamfilter[4];
+    document.getElementById("manageentry-spamfilter-delete").checked = botData.configs.spamfilter[5];
     
     document.getElementById("manageentry-nsfwfilter").checked = botData.configs.nsfwfilter[0];
     if(botData.configs.nsfwfilter[0]) {
@@ -695,21 +799,39 @@ function switchManage() {
         $("#manageentry-nsfwfilter-body").collapse("hide");
     }
     document.getElementById("manageentry-nsfwfilter-action").value = botData.configs.nsfwfilter[2];
-    
+    var nsfwfilter_role = "<option value=\"role-\">Role for violators</option>";
+    for(var i=botData.roles.length-1; i>=0; i--) {
+        nsfwfilter_role += "<option value=\"role-" + botData.roles[i][1] + "\" style=\"color: " + botData.roles[i][3] + ";\">" + botData.roles[i][0] + "</option>";
+    }
+    document.getElementById("manageentry-nsfwfilter-role").innerHTML = nsfwfilter_role;
+    document.getElementById("manageentry-nsfwfilter-role").value = "role-" + botData.configs.nsfwfilter[3];
+    document.getElementById("manageentry-nsfwfilter-delete").checked = botData.configs.nsfwfilter[4];
     
     disableBlock("manageentry-servermod-block", !botData.configs.servermod);
     if(!botData.configs.servermod) {
         document.getElementById("manageentry-spamfilter-selector").setAttribute("disabled", "disable");
         document.getElementById("manageentry-spamfilter-action").setAttribute("disabled", "disable");
+        document.getElementById("manageentry-spamfilter-role").setAttribute("disabled", "disable");
         document.getElementById("manageentry-nsfwfilter-action").setAttribute("disabled", "disable");
+        document.getElementById("manageentry-nsfwfilter-role").setAttribute("disabled", "disable");
     } else {
         document.getElementById("manageentry-spamfilter-selector").removeAttribute("disabled");
         document.getElementById("manageentry-spamfilter-action").removeAttribute("disabled");
+        document.getElementById("manageentry-spamfilter-role").removeAttribute("disabled");
         document.getElementById("manageentry-nsfwfilter-action").removeAttribute("disabled");
+        document.getElementById("manageentry-nsfwfilter-role").removeAttribute("disabled");
+    }
+    if(!botData.configs.spamfilter[0]) {
+        document.getElementById("manageentry-spamfilter-action").setAttribute("disabled", "disable");
+    }
+    if(!botData.configs.nsfwfilter[0]) {
+        document.getElementById("manageentry-nsfwfilter-action").setAttribute("disabled", "disable");
     }
     $("#manageentry-spamfilter-selector").selectpicker("refresh");
     $("#manageentry-spamfilter-action").selectpicker("refresh");
+    $("#manageentry-spamfilter-role").selectpicker("refresh");
     $("#manageentry-nsfwfilter-action").selectpicker("refresh");
+    $("#manageentry-nsfwfilter-role").selectpicker("refresh");
     
     document.getElementById("manageentry-newgreeting").style.display = "";
     if(botData.configs.newgreeting && botData.configs.newmemberpm && botData.configs.servermod) {
@@ -726,6 +848,14 @@ function switchManage() {
     document.getElementById("manageentry-filter").style.display = "";
     document.getElementById("manageentry-filter-action").value = botData.configs.filter[1];
     $("#manageentry-filter-action").selectpicker("refresh");
+    var filter_role = "<option value=\"role-\">Role for violators</option>";
+    for(var i=botData.roles.length-1; i>=0; i--) {
+        filter_role += "<option value=\"role-" + botData.roles[i][1] + "\" style=\"color: " + botData.roles[i][3] + ";\">" + botData.roles[i][0] + "</option>";
+    }
+    document.getElementById("manageentry-filter-role").innerHTML = filter_role;
+    document.getElementById("manageentry-filter-role").value = "role-" + botData.configs.filter[2];
+    $("#manageentry-filter-role").selectpicker("refresh");
+    document.getElementById("manageentry-filter-delete").checked = botData.configs.filter[3];
     if(filterstr && botData.configs.servermod) {
         document.getElementById("filterremove").style.display = "";
         document.getElementById("filterinput").value = filterstr;
@@ -925,86 +1055,344 @@ function newTriviaSet(uploads) {
     document.getElementById("triviasetsupload").value = null;
 }
 
-function switchExtensions() {
-    document.getElementById("extensionstable").style.display = "";
-    
-    var extensionstablebody = "";
-    for(var i=0; i<botData.configs.extensions.length; i++) {
-        var info = "<tr id=\"extensionsentry-" + encodeURI(botData.configs.extensions[i][0]) + "\"><td>" + botData.configs.extensions[i][0] + "</td><td>" + botData.configs.extensions[i][1] + "</td><td>";
-        if(botData.configs.extensions[i][2] && botData.configs.extensions[i][2].length>0) {
-            var chinfo = "";
-            for(var j=0; j<botData.configs.extensions[i][2].length; j++) {
-                chinfo += "#" + botData.configs.extensions[i][2][j] + ", ";
-            }
-            info += chinfo.substring(0, chinfo.length-2);
-        } else {
-            info += "All";
-        }
-        info += "</td><td><button type=\"button\" class=\"btn btn-default btn-xs\" onclick=\"javascript:showExtension(" + i + ");\"><span class=\"glyphicon glyphicon-eye-open\" aria-hidden=\"true\"></span> View Code</button>&nbsp;<button type=\"button\" class=\"btn btn-danger btn-xs\" onclick=\"javascript:config('extensions', this.parentNode.parentNode.id.substring(16), switchExtensions);\"><span class=\"glyphicon glyphicon-remove\" aria-hidden=\"true\"></span> Delete</button></td></tr>";
-        extensionstablebody += info;
-    }
-    document.getElementById("extensionstablebody").innerHTML = extensionstablebody;
-    if(botData.configs.extensions.length==0) {
-        document.getElementById("extensionstable").style.display = "none";
-    }
-}
-
-function launchBuilder(ext) {
-    if(!ext) {
-        $("#extensionbuilder").modal("show");
-
-        var extensionbuilder_saved_dropdown = "";
-        for(var extnm in botData.configs.savedextensions) {
-            extensionbuilder_saved_dropdown += "<li><a href=\"javascript:switchBuilderContent('" + extnm + "');\">" + extnm + "</a></li>";
-        }
-        document.getElementById("extensionbuilder-saved-dropdown").innerHTML = extensionbuilder_saved_dropdown;
-
-        var extensionbuilder_select_channels = "";
-        for(var i=0; i<botData.channels.length; i++) {
-            extensionbuilder_select_channels += "<option id=\"translatedch-" + botData.channels[i][1] + "\" value=\"" + botData.channels[i][1] + "\">#" + botData.channels[i][0] + "</option>";
-        }
-        document.getElementById("extensionbuilder-select-channels").innerHTML = extensionbuilder_select_channels;
-        $("#extensionbuilder-select-channels").selectpicker("refresh");
-    }
-}
-
-function switchBuilderType(type) {
-    document.getElementById("extensionbuilder-type-block").innerHTML = document.getElementById("extensionbuilder-type-" + type).innerHTML;
-}
-
-function showExtension(i) {
-    window.open("data:text/json;charset=utf-8," + escape(JSON.stringify(botData.configs.extensions[i][3])));
-}
-
-function newExtension(uploads) {
-    if(!uploads) {
-        richModal("Upload a file and enter a name");
-        return;
-    }
-    
-    var reader = new FileReader();
-    reader.onload = function(event) {
-        try {
-            var extension = JSON.parse(event.target.result);
-            config("extensions", extension, function(err) {
-                if(err) {
-                    richModal("Error adding extension, see logs for details");
-                } else {
-                    switchExtensions();
-                }
-            });
-        } catch(err) {
-            richModal("File must be JSON format");
-        }
-    };
-    reader.readAsText(uploads[0]);
-    
-    document.getElementById("extensionsupload").value = null;
-}
-
 function leaveServer() {
     config("leave", true, function(err) {
         localStorage.removeItem("auth");
         document.location.replace("");
     });
+}
+
+function switchExtensions() {
+    document.getElementById("extensionstable").style.display = "";
+    
+    var extensionstablebody = "";
+    for(var ext in botData.configs.extensions) {
+        extensionstablebody += "<tr id=\"extensionsentry-" + encodeURI(botData.configs.extensions[ext].name) + "\"><td>" + botData.configs.extensions[ext].name + "</td><td>" + botData.configs.extensions[ext].type.charAt(0).toUpperCase() + botData.configs.extensions[ext].type.slice(1) + "</td><td>" + botData.configs.extensions[ext].channels.length + "</td><td><button type=\"button\" class=\"btn btn-default btn-xs\" onclick=\"javascript:launchBuilder('" + ext + "');\"><span class=\"glyphicon glyphicon-pencil\" aria-hidden=\"true\"></span> Edit</button>&nbsp;<button type=\"button\" class=\"btn btn-danger btn-xs\" onclick=\"javascript:config('extensions', this.parentNode.parentNode.id.substring(16), switchExtensions);\"><span class=\"glyphicon glyphicon-remove\" aria-hidden=\"true\"></span> Remove</button></td></tr>";
+    }
+    document.getElementById("extensionstablebody").innerHTML = extensionstablebody;
+    if(Object.keys(botData.configs.extensions).length==0) {
+        document.getElementById("extensionstable").style.display = "none";
+    }
+}
+
+function launchBuilder(ext) {
+    $("#extensionbuilder").modal("show");
+
+    var extensionbuilder_select_channels = "";
+    for(var i=0; i<botData.channels.length; i++) {
+        extensionbuilder_select_channels += "<option id=\"extensionbuilder-channel-" + botData.channels[i][1] + "\" value=\"" + botData.channels[i][1] + "\">#" + botData.channels[i][0] + "</option>";
+    }
+    document.getElementById("extensionbuilder-select-channels").innerHTML = extensionbuilder_select_channels;
+    $("#extensionbuilder-select-channels").selectpicker("refresh");
+
+    if(ext) {
+        ext = botData.configs.extensions[ext];
+        document.getElementById("extensionbuilder-input-name").value = ext.name;
+        document.getElementById("extensionbuilder-input-name").setAttribute("disabled", "disable");
+        $("#extensionbuilder-select-channels").val(ext.channels);
+        $("#extensionbuilder-select-channels").selectpicker("refresh");
+        document.getElementById("extensionbuilder-select-type").value = ext.type;
+        $("#extensionbuilder-select-type").selectpicker("refresh");
+        switchBuilderType(ext.type);
+        switch(ext.type) {
+            case "command":
+                document.getElementById("extensionbuilder-input-commandkey").value = ext.key;
+                document.getElementById("extensionbuilder-input-usage").value = ext.usage || "";
+                document.getElementById("extensionbuilder-input-extended").value = ext.usage || "";
+                break;
+            case "keyword":
+                document.getElementById("extensionbuilder-input-keywordkey").value = ext.key.join();
+                document.getElementById("extensionbuilder-select-case").checked = ext.case;
+                break;
+            case "timer":
+                document.getElementById("extensionbuilder-input-interval").value = ext.interval;
+                break;
+        }
+        cm.getDoc().setValue(ext.process.replaceAll("<!--AWESOME_EXTENSION_NEWLINE-->", "\n"));
+        setTimeout(function() {
+            cm.refresh();
+        }, 1000);
+    } else {
+        document.getElementById("extensionbuilder-input-name").removeAttribute("disabled");
+    }
+}
+
+String.prototype.replaceAll = function(target, replacement) {
+    return this.split(target).join(replacement);
+};
+
+function switchBuilderType(type) {
+    document.getElementById("extensionbuilder-type-block").innerHTML = document.getElementById("extensionbuilder-type-" + type).innerHTML;
+}
+
+function uploadToBuilder(uploads) {
+    if(uploads) {
+        var reader = new FileReader();
+        reader.onload = function(event) {
+            cm.getDoc().setValue(event.target.result);
+        };
+        reader.readAsText(uploads[0]);
+        document.getElementById("extensionbuilder-file").value = null;
+    }
+}
+
+function downloadFromBuilder() {
+    window.open("data:application/javascript;charset=utf-8," + escape(cm.getValue()));
+}
+
+function insertBuilderShortcut(type) {
+    var codeToInsert = "";
+    switch(type) {
+        case "writeStore":
+            codeToInsert += "store = writeStore(\"/*key*/\", /*value*/);";
+            break;
+        case "sendMessage":
+            codeToInsert += "ch.sendMessage(\"/*message*/\");";
+            break;
+        case "sendUser":
+            codeToInsert += "bot.sendUser(\"/*user id*/\", \"/*message*/\");";
+            break;
+        case "image":
+            codeToInsert += "image(\"/*query*/\", /*num*/, function(image) {\n    //code\n});";
+            break;
+        case "gif":
+            codeToInsert += "gif(\"/*query*/\", null, function(imageid) {\n    //code\n});";
+            break;
+        case "rss":
+            codeToInsert += "rss(\"/*url*/\", /*count*/, function(error, articles) {\n    //code\n});";
+            break;
+        case "unirest":
+            codeToInsert += "unirest.get(\"/*url*/\").header(\"Accept\", \"application/json\").end(function(response) {\n    //code\n});";
+            break;
+        case "userSearch":
+            codeToInsert += "svr.userSearch(\"/*string*/\");";
+            break;
+        case "svr.members":
+            codeToInsert += "svr.members[\"/*user id*/\"]";
+            break;
+        case "svr.createChannel":
+            codeToInsert += "svr.createChannel(\"/*name*/\");";
+            break;
+        case "svr.roles.create":
+            codeToInsert += "svr.roles.create({\n    //options\n});";
+            break;
+    }
+    cm.replaceSelection(codeToInsert);
+    cm.focus();
+}
+
+function packageBuilderContent() {
+    var isComplete = true;
+    if(!document.getElementById("extensionbuilder-input-name").value) {
+        isComplete = false;
+        $("#extensionbuilder-input-name-block").addClass("has-error");
+    } else {
+        $("#extensionbuilder-input-name-block").removeClass("has-error");
+    }
+    if(!$("#extensionbuilder-select-channels").val() || $("#extensionbuilder-select-channels").val().length==0) {
+        isComplete = false;
+        richModal("Select at least one channel");
+    }
+    switch(document.getElementById("extensionbuilder-select-type").value) {
+        case "command":
+            if(!document.getElementById("extensionbuilder-input-commandkey").value || document.getElementById("extensionbuilder-input-commandkey").value.indexOf(" ")>-1 || !(new RegExp("^[a-zA-Z0-9.]*$").test(document.getElementById("extensionbuilder-input-commandkey").key))) {
+                isComplete = false;
+                $("#extensionbuilder-input-commandkey-block").addClass("has-error");
+            } else {
+                $("#extensionbuilder-input-commandkey-block").removeClass("has-error");
+            }
+            break;
+        case "keyword":
+            var keywordkeyIsComplete = true;
+            for(var i=0; i<document.getElementById("extensionbuilder-input-keywordkey").value.split(",").length; i++) {
+                if(!document.getElementById("extensionbuilder-input-keywordkey").value.split(",")[i] || document.getElementById("extensionbuilder-input-keywordkey").value.split(",").lastIndexOf(document.getElementById("extensionbuilder-input-keywordkey").value.split(",")[i])!=i) {
+                    keywordkeyIsComplete = false;
+                }
+            }
+            if(!document.getElementById("extensionbuilder-input-keywordkey").value || !keywordkeyIsComplete) {
+                isComplete = false;
+                $("#extensionbuilder-input-keywordkey-block").addClass("has-error");
+            } else {
+                $("#extensionbuilder-input-keywordkey-block").removeClass("has-error");
+            }
+            break;
+        case "timer":
+            if(!document.getElementById("extensionbuilder-input-interval").value) {
+                isComplete = false;
+                $("#extensionbuilder-input-interval-block").addClass("has-error");
+            } else {
+                $("#extensionbuilder-input-interval-block").removeClass("has-error");
+            }
+            break;
+        default:
+            isComplete = false;
+            richModal("Select a type");
+            break;
+    }
+    if(!cm.getValue()) {
+        isComplete = false;
+        richModal("Type some code or upload a JS file");
+    }
+    if(isComplete) {
+        var packagedExtension = {
+            name: document.getElementById("extensionbuilder-input-name").value,
+            type: document.getElementById("extensionbuilder-select-type").value,
+            channels: $("#extensionbuilder-select-channels").val(),
+            process: cm.getValue().replaceAll(";\n", ";<!--AWESOME_EXTENSION_NEWLINE-->")
+        }
+        switch(document.getElementById("extensionbuilder-select-type").value) {
+            case "command":
+                packagedExtension.key = document.getElementById("extensionbuilder-input-commandkey").value;
+                packagedExtension.usage = document.getElementById("extensionbuilder-input-usage").value;
+                packagedExtension.extended = document.getElementById("extensionbuilder-input-extended").value;
+                break;
+            case "keyword":
+                packagedExtension.key = document.getElementById("extensionbuilder-input-keywordkey").value.split(",");
+                packagedExtension.case = document.getElementById("extensionbuilder-select-case").checked;
+                break;
+            case "timer":
+                packagedExtension.interval = parseInt(document.getElementById("extensionbuilder-input-interval").value);
+                break;
+        }
+        return packagedExtension;
+    }
+    return;
+}
+
+function runBuilderContent() {
+    var packagedExtension = packageBuilderContent();
+    if(packagedExtension) {
+        var extensionbuilder_run_channel = "";
+        for(var i=0; i<packagedExtension.channels.length; i++) {
+            for(var j=0; j<botData.channels.length; j++) {
+                if(botData.channels[j][1]==packagedExtension.channels[i]) {
+                    extensionbuilder_run_channel += "<option value=\"" + botData.channels[j][1] + "\">#" + botData.channels[j][0] + "</option>";
+                }
+            }
+        }
+        document.getElementById("extensionbuilder-run-channel").innerHTML = extensionbuilder_run_channel;
+        document.getElementById("extensionbuilder-run-channel").value = packagedExtension.channels[0];
+        $("#extensionbuilder-run-channel").selectpicker("refresh");
+        if(packagedExtension.type=="timer") {
+            document.getElementById("extensionbuilder-run-input").style.display = "none";
+        } else {
+            document.getElementById("extensionbuilder-run-input").style.display = "";
+            document.getElementById("extensionbuilder-run-prefix").innerHTML = botData.configs.cmdtag=="tag" ? ("@" + botData.botnm) : botData.configs.cmdtag;
+            document.getElementById("extensionbuilder-run-message").value = "";
+        }
+        document.getElementById("extensionbuilder-run-content").style.display = "inline";
+        document.getElementById("extensionbuilder-button-run").onclick = function() {
+            runExtension(document.getElementById("extensionbuilder-run-message").value)
+        };
+    }
+}
+
+function runExtension(message) {
+    var packagedExtension = packageBuilderContent();
+    if(packagedExtension) {
+        if(!message && packagedExtension.type!="timer") {
+            $("#extensionbuilder-run-message-block").addClass("has-error");
+        } else {
+            document.getElementById("extensionbuilder-run-content").style.display = "none";
+            NProgress.start();
+            $("#extensionbuilder-run-message-block").removeClass("has-error");
+            document.getElementById("extensionbuilder-button-run").setAttribute("disabled", "disable");
+
+            postExtension({
+                extension: packagedExtension,
+                message: packagedExtension.type!="timer" ? {
+                    content: (botData.configs.cmdtag=="tag" ? ("<@" + botData.usrid + "> ") : botData.configs.cmdtag) + document.getElementById("extensionbuilder-run-message").value,
+                    cleanContent: (botData.configs.cmdtag=="tag" ? ("@" + botData.botnm + " ") : botData.configs.cmdtag) + document.getElementById("extensionbuilder-run-message").value
+                } : null
+            }, "test", document.getElementById("extensionbuilder-run-channel").value, function(response) {
+                if(!response) {
+                    response = {
+                        isValid: false,
+                        extensionLog: ["FATAL: Something went wrong"]
+                    }
+                }
+
+                document.getElementById("extensionbuilder-button-run").removeAttribute("disabled");
+                document.getElementById("extensionbuilder-button-run").onclick = runBuilderContent;
+                document.getElementById("extensionbuilder-output-body").innerHTML = response.extensionLog.join("<br>");
+                $("#extensionbuilder-button-output").removeClass("btn-default");
+                $("#extensionbuilder-button-output").addClass(response.isValid ? "btn-success" : "btn-danger");
+                $("#extensionbuilder-button-output").tooltip("show");
+                if(response.isValid) {
+                    document.getElementById("extensionbuilder-button-save").style.display = "";
+                } else {
+                    document.getElementById("extensionbuilder-button-save").style.display = "none";
+                }
+                NProgress.done();
+            });
+        }
+    }
+}
+
+function addExtension() {
+    var packagedExtension = packageBuilderContent();
+    if(packagedExtension) {
+        NProgress.start();
+        document.getElementById("extensionbuilder-button-save").setAttribute("disabled", "disable");
+
+        postExtension({
+            extension: packagedExtension
+        }, "final", null, function(response) {
+            if(!response) {
+                response = {
+                    isValid: false,
+                    extensionLog: ["FATAL: Something went wrong"]
+                }
+            }
+
+            document.getElementById("extensionbuilder-button-save").removeAttribute("disabled");
+            document.getElementById("extensionbuilder-output-body").innerHTML = response.extensionLog.join("<br>");
+            $("#extensionbuilder-button-output").removeClass("btn-default");
+            $("#extensionbuilder-button-output").addClass(response.isValid ? "btn-success" : "btn-danger");
+            $("#extensionbuilder-button-output").tooltip("show");
+            if(response.isValid) {
+                document.getElementById("extensionbuilder-button-save").style.display = "none";
+                getJSON("data/?auth=" + authtoken + "&type=" + authtype, function(mData) {
+                    if(Object.keys(mData).length>0) {
+                        clearTimeout(consoletimer);
+                        setAuthTimer();
+                        botData = mData;
+                        switchExtensions();
+                    } else {
+                        leaveConsole("Session timeout");
+                    }
+                    NProgress.done();
+                });
+            } else {
+                NProgress.done();
+            }
+        });
+    }
+}
+
+function postExtension(data, type, chid, callback) {
+    var xhr = new XMLHttpRequest();
+    xhr.open("post", "extension?auth=" + authtoken + "&svrid=" + JSON.parse(localStorage.getItem("auth")).svrid + "&type=" + type + (type=="test" ? ("&chid=" + chid) : ""), true);
+    xhr.setRequestHeader("Content-Type", "application/json; charset=UTF-8");
+    xhr.send(JSON.stringify(data));
+    xhr.onloadend = function() {
+        if(xhr.status==200) {
+            callback(JSON.parse(xhr.response));
+        } else {
+            callback(null);
+        }
+    };
+}
+
+function closeBuilder() {
+    $("#extensionbuilder-button-output").popover("hide");
+    $("#extensionbuilder").modal("hide");
+    document.getElementById("extensionbuilder-input-name").value = "";
+    $("#extensionbuilder-select-channels").val([]);
+    document.getElementById("extensionbuilder-select-type").value = "";
+    document.getElementById("extensionbuilder-type-block").innerHTML = "<p class=\"help-block\">Upload a JS file or select a type to get started</p>";
+    cm.getDoc().setValue("");
+    setTimeout(function() {
+        cm.refresh();
+    }, 1000);
 }

@@ -32,6 +32,7 @@
     <script src="./js/index.js"></script>
     <script src="./js/config.js"></script>
     <script src="./js/admin.js"></script>
+    <script src="./js/micromarkdown.min.js"></script>
     <script src="./js/codemirror.js"></script>
 </head>
 <body onload="switchColors();doAuth();">
@@ -40,48 +41,48 @@
         <div id="sidebar-wrapper">
             <ul class="sidebar-nav">
                 <li class="sidebar-brand">
-                    <a href="/">
+                    <a href="javascript:goToSection();">
                         Admin Console
                     </a>
                 </li>
-                <li>
-                    <a href="#overview">Overview</a>
+                <li id="admins-entry">
+                    <a href="javascript:goToSection('admins')">Admins</a>
                 </li>
-                <li>
-                    <a href="#admins">Admins</a>
+                <li id="blocked-entry">
+                    <a href="javascript:goToSection('blocked')">Blocklist</a>
                 </li>
-                <li>
-                    <a href="#blocked">Blocklist</a>
+                <li id="muted-entry">
+                    <a href="javascript:goToSection('muted')">Muted <span class="label label-info newlabel">New</span></a>
                 </li>
-                <li>
-                    <a href="#muted">Muted <span class="label label-info newlabel">New</span></a>
+                <li id="strikes-entry">
+                    <a href="javascript:goToSection('strikes')">Strikes</a>
                 </li>
-                <li>
-                    <a href="#strikes">Strikes</a>
+                <li id="statspoints-entry">
+                    <a href="javascript:goToSection('statspoints')">Stats &amp; Points <span class="label label-info newlabel">New</span></a>
                 </li>
-                <li>
-                    <a href="#rss">RSS Feeds</a>
+                <li id="commands-entry">
+                    <a href="javascript:goToSection('commands')">Commands</a>
                 </li>
-                <li>
-                    <a href="#translated">Auto-Translation</a>
+                <li id="rss-entry">
+                    <a href="javascript:goToSection('rss')">RSS Feeds</a>
                 </li>
-                <li>
-                    <a href="#statspoints">Stats &amp; Points <span class="label label-info newlabel">New</span></a>
+                <li id="tags-entry">
+                    <a href="javascript:goToSection('tags')">Tags <span class="label label-info newlabel">New</span></a>
                 </li>
-                <li>
-                    <a href="#commands">Commands</a>
+                <li id="translated-entry">
+                    <a href="javascript:goToSection('translated')">Auto-Translation</a>
                 </li>
-                <li>
-                    <a href="#public">Public Data <span class="label label-info newlabel">New</span></a>
+                <li id="public-entry">
+                    <a href="javascript:goToSection('public')">Public Data <span class="label label-info newlabel">New</span></a>
                 </li>
-                <li>
-                    <a href="#manage">Management</a>
+                <li id="manage-entry">
+                    <a href="javascript:goToSection('manage')">Management</a>
                 </li>
-                <li>
-                    <a href="#triviasets">Trivia Sets</a>
+                <li id="triviasets-entry">
+                    <a href="javascript:goToSection('triviasets')">Trivia Sets</a>
                 </li>
-                <li>
-                    <a href="#extensions">Extensions</a>
+                <li id="extensions-entry">
+                    <a href="javascript:goToSection('extensions')">Extensions</a>
                 </li>
             </ul>
         </div>
@@ -102,7 +103,7 @@
                             <option id="theme-superhero" value="superhero">Superhero</option>
                         </select>&nbsp;
                         <a target="_blank" href="https://github.com/BitQuote/AwesomeBot/wiki/Configuration#admin-console" class="btn btn-default" id="help-button" data-toggle="tooltip" data-placement="bottom" title="Admin console wiki page"><span class="glyphicon glyphicon-question-sign" aria-hidden="true"></span> Help</a>&nbsp;
-                        <a href="#menu-toggle" class="btn btn-primary" id="logout-button" data-toggle="modal" data-target="#logout-modal"><span class="glyphicon glyphicon-log-out" aria-hidden="true"></span> Logout</a>
+                        <a href="#" class="btn btn-primary" id="logout-button" data-toggle="modal" data-target="#logout-modal"><span class="glyphicon glyphicon-log-out" aria-hidden="true"></span> Logout</a>
                     </div>
                 </div>
                 
@@ -127,7 +128,9 @@
         </div>
               
         <div id="page-content-wrapper">
-            <div class="container-fluid">  
+            <div class="container-fluid">
+                <button type="button" class="btn btn-default btn-lg" id="back-button" onclick="javascript:goToSection();" style="display:none;"><span class="glyphicon glyphicon-arrow-left" aria-hidden="true"></span> Back to Overview</button>
+
                 <div class="row">
                     <div class="col-lg-12">
                         <h2 class="section-head" id="admins" data-toggle="collapse" data-target="#admins-body" aria-expanded="false" aria-controls="collapseadmins">Bot Admins</h2>
@@ -154,7 +157,7 @@
                 
                 <div class="row">
                     <div class="col-lg-12">
-                        <h2 id="blocked" data-toggle="collapse" data-target="#blocked-body" aria-expanded="false" aria-controls="collapseblocked">Blocklist</h2>
+                        <h2 class="section-head" id="blocked" data-toggle="collapse" data-target="#blocked-body" aria-expanded="false" aria-controls="collapseblocked">Blocklist</h2>
                         <div id="blocked-body" class="collapse">
                             <p class="help-block">Blocked members will not be able to use the bot anywhere on the server. Entries marked with <code>(global)</code> have been blocked by the bot maintainer.</p>
                             <div class="table-responsive">
@@ -178,7 +181,7 @@
 
                 <div class="row">
                     <div class="col-lg-12">
-                        <h2 id="muted" data-toggle="collapse" data-target="#muted-body" aria-expanded="false" aria-controls="collapsemuted">Muted <span class="label label-info newlabel">New</span></h2>
+                        <h2 class="section-head" id="muted" data-toggle="collapse" data-target="#muted-body" aria-expanded="false" aria-controls="collapsemuted">Muted <span class="label label-info newlabel">New</span></h2>
                         <div id="muted-body" class="collapse">
                             <p class="help-block">Muted members cannot send messages in the channels you select.</p>
                             <div class="table-responsive">
@@ -201,7 +204,7 @@
                 
                 <div class="row">
                     <div class="col-lg-12">
-                        <h2 id="strikes" data-toggle="collapse" data-target="#strikes-body" aria-expanded="false" aria-controls="collapsestrikes">Strikes</h2>
+                        <h2 class="section-head" id="strikes" data-toggle="collapse" data-target="#strikes-body" aria-expanded="false" aria-controls="collapsestrikes">Strikes</h2>
                         <div id="strikes-body" class="collapse">
                             <p class="help-block">Strikes are a way of marking when a user has violated the rules of the server. This gives admins a way to know who needs to be warned/kicked/banned. Strikes are automatically added for spamming or fetching NSFW content (if enabled below).</p>
                             <div class="table-responsive">
@@ -232,7 +235,7 @@
 
                 <div class="row">
                     <div class="col-lg-12">
-                        <h2 id="statspoints" data-toggle="collapse" data-target="#statspoints-body" aria-expanded="false" aria-controls="collapsestatspoints">Stats &amp; Points <span class="label label-info newlabel">New</span></h2>
+                        <h2 class="section-head" id="statspoints" data-toggle="collapse" data-target="#statspoints-body" aria-expanded="false" aria-controls="collapsestatspoints">Stats &amp; Points <span class="label label-info newlabel">New</span></h2>
                         <div id="statspoints-body" class="collapse">
                             <div class="checkbox">
                                 <input id="statspoints-stats" type="checkbox" onclick="javascript:config(this.id.substring(12), this.checked, switchStatspoints);">
@@ -261,6 +264,7 @@
                                         </p>
                                     </label>
                                 </div>
+                                Channels for message stats: <select id="statspoints-statsexclude" class="selectpicker show-tick" data-width="fit" data-actions-box="true" onchange="javascript:config(this.id.substring(12), $('#statspoints-statsexclude').val(), switchStatspoints);" multiple></select>
                                 <div class="checkbox">
                                     <input id="statspoints-ranks" type="checkbox" onclick="javascript:config(this.id.substring(12), this.checked, switchStatspoints);">
                                     <label for="statspoints-ranks">
@@ -291,7 +295,7 @@
                                     <div id="ranksmax-block" style="display:inline-block;">
                                         <input id="ranksmax" class="form-control" type="number" placeholder="Max score" min="1" style="width:150px;" data-toggle="tooltip" data-placement="bottom" title="Score is calculated by adding the number of messages and 5-minute voice intervals, then dividing by 10"></input>
                                     </div>
-                                    <select id="ranksselect" class="selectpicker show-tick" data-width="fit" data-live-search="true" title="Select Role"></select>
+                                    <select id="ranksselect" class="selectpicker show-tick" data-width="fit" title="Select Role"></select>
                                     <input type="submit" class="btn btn-default" value="Add">
                                 </form>
                             </span>
@@ -317,7 +321,7 @@
                 
                 <div class="row">
                     <div class="col-lg-12">
-                        <h2 id="commands" data-toggle="collapse" data-target="#commands-body" aria-expanded="false" aria-controls="collapsecommands">Commands</h2>
+                        <h2 class="section-head" id="commands" data-toggle="collapse" data-target="#commands-body" aria-expanded="false" aria-controls="collapsecommands">Commands</h2>
                         <div id="commands-body" class="collapse">
                             Command Prefix:
                             &nbsp;&nbsp;
@@ -338,6 +342,12 @@
                                 <option id="commandtag-backslash" value="\\">\</option>
                                 <option id="commandtag-quote" value="''">'</option>
                             </select>
+                            <div class="checkbox">
+                                <input id="commands-deletecommands" type="checkbox" onclick="javascript:config('deletecommands', this.checked, switchCommands);">
+                                <label for="commands-deletecommands">
+                                    Delete command messages
+                                </label>
+                            </div>          
                             
                             <br>
                             <h3 id="command-list">Command List</h3>
@@ -345,11 +355,11 @@
                             
                             Apply Preset:
                             &nbsp;&nbsp;
-                            <div class="btn-group" role="group" aria-label="...">
-                                <button type="button" class="btn btn-default btn-sm" id="presetentry-full" onclick="javascript:config('preset', 'full', switchCommands);" data-toggle="tooltip" data-placement="bottom" title="The whole 9 yards">Full</button>
-                                <button type="button" class="btn btn-default btn-sm" id="presetentry-lite" onclick="javascript:config('preset', 'lite', switchCommands);" data-toggle="tooltip" data-placement="bottom" title="Lightweight and easy to understand">Lite</button>
-                                <button type="button" class="btn btn-default btn-sm" id="presetentry-sense" onclick="javascript:config('preset', 'sense', switchCommands);" data-toggle="tooltip" data-placement="bottom" title="Just Right&trade;">Sense</button>
-                                <button type="button" class="btn btn-danger btn-sm" id="presetentry-default" onclick="javascript:resetConfigs();" data-toggle="tooltip" data-placement="bottom" title="Resets all configs"><span class="glyphicon glyphicon-remove-sign" aria-hidden="true"></span>  Default</button>
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-default" id="presetentry-full" onclick="javascript:config('preset', 'full', switchCommands);" data-toggle="tooltip" data-placement="bottom" title="The whole 9 yards">Full</button>
+                                <button type="button" class="btn btn-default" id="presetentry-lite" onclick="javascript:config('preset', 'lite', switchCommands);" data-toggle="tooltip" data-placement="bottom" title="Lightweight and easy to understand">Lite</button>
+                                <button type="button" class="btn btn-default" id="presetentry-sense" onclick="javascript:config('preset', 'sense', switchCommands);" data-toggle="tooltip" data-placement="bottom" title="Just Right&trade;">Sense</button>
+                                <button type="button" class="btn btn-danger" id="presetentry-default" onclick="javascript:resetConfigs();" data-toggle="tooltip" data-placement="bottom" title="Resets all configs"><span class="glyphicon glyphicon-remove-sign" aria-hidden="true"></span>  Default</button>
                             </div>
                             <br><br>
 
@@ -384,6 +394,7 @@
                                     <option value="60000">1 minute</option>
                                     <option value="120000">2 minutes</option>
                                 </select>
+                                <span class="label label-info newlabel">New</span>
                             </div>
                             
                             <h3 id="api-keys">API Keys</h3>
@@ -409,7 +420,7 @@
                 
                 <div id="rssrow" class="row">
                     <div class="col-lg-12">
-                        <h2 id="rss" data-toggle="collapse" data-target="#rss-body" aria-expanded="false" aria-controls="collapserss">RSS Feeds</h2>
+                        <h2 class="section-head" id="rss" data-toggle="collapse" data-target="#rss-body" aria-expanded="false" aria-controls="collapserss">RSS Feeds</h2>
                         <div id="rss-body" class="collapse">
                             <p class="help-block">The feeds in this list will be quickly accessible with the <code>rss</code> command.</p>
                             <div class="table-responsive">
@@ -428,18 +439,110 @@
                                 <div id="rssnewname-block" style="display:inline-block;">
                                     <input type="text" class="form-control" id="rssnewname" style="width:150x;" maxlength="50" placeholder="Feed name">
                                 </div>
-                                <div id="rssnewurl-block" style="display:inline-block;">
-                                    <input type="text" class="form-control" id="rssnewurl" style="width:350px;" placeholder="RSS URL">
+                                <div id="rssnewurl-block" style="display:inline-block;" onchange="newRssUrl(this.value);">
+                                    <input type="text" class="form-control" id="rssnewurl" style="width:350px;display:inline-block;" placeholder="RSS URL">
+                                </div>
+                                <div class="btn-group" role="group">
+                                    <button type="button" class="btn btn-default" onclick="newRssUrl('github');">GitHub</button>
+                                    <button type="button" class="btn btn-default" onclick="newRssUrl('reddit');">Reddit</button>
+                                    <button type="button" class="btn btn-default" onclick="newRssUrl('twitter');">Twitter</button>
                                 </div>
                                 <input type="submit" class="btn btn-default" value="Add">
                             </form>
                         </div>
                     </div>
                 </div>
+
+                <div id="tagsrow" class="row">
+                    <div class="col-lg-12">
+                        <h2 class="section-head" id="tags" data-toggle="collapse" data-target="#tags-body" aria-expanded="false" aria-controls="collapsetranslated">Tags <span class="label label-info newlabel">New</span></h2>
+                        <div id="tags-body" class="collapse">
+                            <div class="checkbox">
+                                <input id="tags-tag" type="checkbox" onclick="javascript:config('tag', this.checked, switchTags);">
+                                <label for="tags-tag">
+                                    tag
+                                    &nbsp;
+                                    <p class="help-block" style="display: inline">
+                                        Quick snippet response system
+                                    </p>
+                                </label>
+                                &nbsp;&nbsp;
+                                <select id="tags-select-tag" onchange="javascript:config('admincommands', 'tag', switchTags);" class="selectpicker show-tick" data-width="fit">
+                                    <option value="everyone">Everyone</option>
+                                    <option value="admins">Admins only</option>
+                                </select>
+                            </div>
+                            <span id="tags-tag-block">
+                                Add tags:
+                                &nbsp;&nbsp;
+                                <select id="tags-select-addtag" onchange="javascript:config(this.id.substring(this.id.lastIndexOf('-')+1) + 'admin', this.value=='admins', switchTags);" class="selectpicker show-tick" data-width="fit">
+                                    <option value="everyone">Everyone</option>
+                                    <option value="admins">Admins only</option>
+                                </select>
+                                <br>
+                                <span id="tags-add-block">
+                                    Add tag commands:
+                                    &nbsp;&nbsp;
+                                    <select id="tags-select-addtagcommand" onchange="javascript:config(this.id.substring(this.id.lastIndexOf('-')+1) + 'admin', this.value=='admins', switchTags);" class="selectpicker show-tick" data-width="fit">
+                                        <option value="everyone">Everyone</option>
+                                        <option value="admins">Admins only</option>
+                                    </select>
+                                    <br>
+                                </span>
+                                <br>
+                                Remove tags:
+                                &nbsp;&nbsp;
+                                <select id="tags-select-removetag" onchange="javascript:config(this.id.substring(this.id.lastIndexOf('-')+1) + 'admin', this.value=='admins', switchTags);" class="selectpicker show-tick" data-width="fit">
+                                    <option value="everyone">Everyone</option>
+                                    <option value="admins">Admins only</option>
+                                </select>
+                                <br>
+                                <span id="tags-remove-block">
+                                    Remove tag commands:
+                                    &nbsp;&nbsp;
+                                    <select id="tags-select-removetagcommand" onchange="javascript:config(this.id.substring(this.id.lastIndexOf('-')+1) + 'admin', this.value=='admins', switchTags);" class="selectpicker show-tick" data-width="fit">
+                                        <option value="everyone">Everyone</option>
+                                        <option value="admins">Admins only</option>
+                                    </select>
+                                </span>
+                            </span>
+
+                            <br><br>
+                            <span id="tagstable-block">
+                                <div class="table-responsive">
+                                    <table class="table table-striped" id="tagstable">
+                                        <thead>
+                                            <tr>
+                                                <th>Key</th>
+                                                <th>Value</th>
+                                                <th>Type</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tagstablebody"></tbody>
+                                    </table>
+                                </div>
+                                <form class="form-inline" id="newtagform">
+                                    <div id="tagsinput-block" style="display:inline-block;">
+                                        <input type="text" class="form-control" id="tagsinput" style="width:175px;" maxlength="50" placeholder="Tag name">
+                                    </div>
+                                    <div id="tagsvalue-block" style="display:inline-block;">
+                                        <input id="tagsvalue" class="form-control" type="text" placeholder="Value, in markdown" maxlength="1900" style="width:400px;"></input>
+                                    </div>
+                                    <select id="tagsselect" class="selectpicker show-tick" data-width="fit">
+                                        <option value="text">Text</option>
+                                        <option value="command">Command</option>
+                                    </select>
+                                    <input type="submit" class="btn btn-default" value="Add">
+                                </form>
+                            </span>
+                        </div>
+                    </div>
+                </div>
                 
                 <div id="translatedrow" class="row">
                     <div class="col-lg-12">
-                        <h2 id="translated" data-toggle="collapse" data-target="#translated-body" aria-expanded="false" aria-controls="collapsetranslated">Auto-Translation</h2>
+                        <h2 class="section-head" id="translated" data-toggle="collapse" data-target="#translated-body" aria-expanded="false" aria-controls="collapsetranslated">Auto-Translation</h2>
                         <div id="translated-body" class="collapse">
                             <p class="help-block">Message from these users will be automatically translated into English.</p>
                             <div class="table-responsive">
@@ -464,7 +567,7 @@
                                     <input type="text" class="form-control" id="translatedinput" style="width:200px;" maxlength="2" placeholder="Source language">
                                 </div>
                                 <div id="translatedchannels-block" style="display:inline-block;">
-                                    <select id="translatedchannels" class="selectpicker show-tick" data-width="fit" title="Select Channel(s)" multiple></select>
+                                    <select id="translatedchannels" class="selectpicker show-tick" data-width="fit" title="Select Channel(s)" data-actions-box="true" multiple></select>
                                 </div>
                                 <input type="submit" class="btn btn-default" value="Add">
                             </form>
@@ -474,7 +577,7 @@
 
                 <div class="row">
                     <div class="col-lg-12">
-                        <h2 id="public" data-toggle="collapse" data-target="#public-body" aria-expanded="false" aria-controls="collapsepublic">Public Data <span class="label label-info newlabel">New</span></h2>
+                        <h2 class="section-head" id="public" data-toggle="collapse" data-target="#public-body" aria-expanded="false" aria-controls="collapsepublic">Public Data <span class="label label-info newlabel">New</span></h2>
                         <div id="public-body" class="collapse">
                             <div class="checkbox">
                                 <input id="publicentry-showsvr" type="checkbox" onclick="javascript:config(this.id.substring(12), this.checked, switchPublic);">
@@ -506,7 +609,7 @@
                 
                 <div class="row">
                     <div class="col-lg-12">
-                        <h2 id="manage" data-toggle="collapse" data-target="#manage-body" aria-expanded="false" aria-controls="collapsemanage">Management</h2>
+                        <h2 class="section-head" id="manage" data-toggle="collapse" data-target="#manage-body" aria-expanded="false" aria-controls="collapsemanage">Management</h2>
                         <div id="manage-body" class="collapse">
                             <div class="checkbox">
                                 <input id="manageentry-servermod" type="checkbox" onclick="javascript:config(this.id.substring(12), this.checked, function() {});">
@@ -623,6 +726,7 @@
                                     <label for="manageentry-editmembermsg">
                                         Message edited messages <span class="label label-info newlabel">New</span>
                                     </label>
+                                    <select id="manageentry-select-editmembermsg" class="selectpicker show-tick" data-width="fit" title="Select Channel(s)" onchange="javascript:config(this.id.substring(19), $('#' + this.id).val() || [], function() {});" data-actions-box="true" multiple></select>
                                 </div>
 
                                 <div class="checkbox">
@@ -630,6 +734,7 @@
                                     <label for="manageentry-deletemembermsg">
                                         Message deleted messages <span class="label label-info newlabel">New</span>
                                     </label>
+                                    <select id="manageentry-select-deletemembermsg" class="selectpicker show-tick" data-width="fit" title="Select Channel(s)" onchange="javascript:config(this.id.substring(19), $('#' + this.id).val() || [], function() {});" data-actions-box="true" multiple></select>
                                 </div>
                                 
                                 <div class="checkbox">
@@ -718,6 +823,14 @@
                                         <option id="spamfilter-medium" value="medium">Medium</option>
                                         <option id="spamfilter-low" value="low">Low</option>
                                     </select>
+                                    <select id="manageentry-spamfilter-role" onchange="javascript:config('spamfilter', this.value, function() {});" class="selectpicker show-tick" data-width="fit"></select>
+                                    <div class="checkbox">
+                                        &nbsp;&nbsp;&nbsp;&nbsp;
+                                        <input id="manageentry-spamfilter-delete" type="checkbox" onclick="javascript:config('spamfilter', 'delete', function() {});">
+                                        <label for="manageentry-spamfilter-delete">
+                                            Delete offending messages <span class="label label-info newlabel">New</span>
+                                        </label>
+                                    </div>
                                 </span>
                                 
                                 <br>
@@ -735,6 +848,15 @@
                                 </div>
                                 <span id="manageentry-nsfwfilter-body" class="collapse">
                                     <span id="manageentry-nsfwfilter-block"></span>
+                                    &nbsp;&nbsp;&nbsp;&nbsp;
+                                    <select id="manageentry-nsfwfilter-role" onchange="javascript:config('nsfwfilter', this.value, function() {});" class="selectpicker show-tick" data-width="fit"></select>
+                                    <div class="checkbox">
+                                        &nbsp;&nbsp;&nbsp;&nbsp;
+                                        <input id="manageentry-nsfwfilter-delete" type="checkbox" onclick="javascript:config('nsfwfilter', 'delete', function() {});">
+                                        <label for="manageentry-nsfwfilter-delete">
+                                            Delete offending command message <span class="label label-info newlabel">New</span>
+                                        </label>
+                                    </div>
                                 </span>
                                 
                                 <br>
@@ -749,10 +871,17 @@
                                     <option id="filter-mute" value="mute">Mute Violators</option>
                                     <option id="filter-block" value="block">Block Violators</option>
                                 </select>
+                                <select id="manageentry-filter-role" onchange="javascript:config('filter', this.value, function() {});" class="selectpicker show-tick" data-width="fit"></select>
+                                <div class="checkbox">
+                                    <input id="manageentry-filter-delete" type="checkbox" onclick="javascript:config('filter', 'delete', function() {});">
+                                    <label for="manageentry-filter-delete">
+                                        Delete offending message <span class="label label-info newlabel">New</span>
+                                    </label>
+                                </div>
                             </span>
 
                             <br>
-                            <h3 id="name-diplay">Name Display</h3>
+                            <h3 id="name-diplay">Name Display <span class="label label-info newlabel">New</span></h3>
                             <div class="checkbox">
                                 <input id="manageentry-usenicks" type="checkbox" onclick="javascript:config(this.id.substring(12), this.checked, function() {});">
                                 <label for="manageentry-usenicks">
@@ -829,7 +958,7 @@
                 </div>
                 <div class="row">
                     <div class="col-lg-12">
-                        <h2 id="triviasets" data-toggle="collapse" data-target="#triviasets-body" aria-expanded="false" aria-controls="collapsetriviasets">Trivia Sets</h2>
+                        <h2 class="section-head" id="triviasets" data-toggle="collapse" data-target="#triviasets-body" aria-expanded="false" aria-controls="collapsetriviasets">Trivia Sets</h2>
                         <div id="triviasets-body" class="collapse">
                             <p class="help-block">Custom trivia sets are be available to all users on this server. Learn more <a href="https://github.com/BitQuote/AwesomeBot/wiki/Configuration#trivia-sets" target="_blank" data-toggle="tooltip" data-placement="bottom" title="Custom trivia sets wiki page">here</a>.</p>
                             <div class="table-responsive">
@@ -847,14 +976,13 @@
                             <label class="btn btn-default btn-file">
                                 <span class="glyphicon glyphicon-plus" aria-hidden="true"></span> Upload New<input id="triviasetsupload" type="file" style="display: none;"accept="application/json" onchange="javascript:newTriviaSet(this.files)" />
                             </label>
-                            
                         </div>
                     </div>
                 </div>
                 
                 <div class="row">
                     <div class="col-lg-12">
-                        <h2 id="extensions" data-toggle="collapse" data-target="#extensions-body" aria-expanded="false" aria-controls="collapseextensions">Extensions <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true" data-toggle="tooltip" data-placement="top" style="font-size: 0.7em;" title="We've recently added the extension builder, which is in beta and may have bugs. Please file issues on our GitHub repo."></span></h2>
+                        <h2 class="section-head" id="extensions" data-toggle="collapse" data-target="#extensions-body" aria-expanded="false" aria-controls="collapseextensions">Extensions <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true" data-toggle="tooltip" data-placement="top" style="font-size: 0.7em;" title="We've recently added the extension builder, which is in beta and may have bugs. Please file issues on our GitHub repo."></span></h2>
                         <div id="extensions-body" class="collapse">
                             <p class="help-block">Extensions allow you to add server-specific functionality to the bot. Learn more <a href="https://git.io/vVHfT" target="_blank" data-toggle="tooltip" data-placement="bottom" title="Extensions wiki page">here</a>.</p>
                             <div class="table-responsive">
@@ -870,18 +998,18 @@
                                     <tbody id="extensionstablebody"></tbody>
                                 </table>
                             </div>
-                            <!--<label class="btn btn-default btn-file">
-                                Upload New<input id="extensionsupload" type="file" style="display: none;" accept="application/json" onchange="javascript:newExtension(this.files)" />
-                            </label>
-                            <br><br>-->
                             <a role="button" href="javascript:launchBuilder();" target="_blank" class="btn btn-default" data-toggle="tooltip" data-placement="bottom" title="Easily build and test AwesomeBot extensions"><span class="glyphicon glyphicon-wrench" aria-hidden="true"></span> Extension Builder</a>
+                            &nbsp;
+                            <a role="button" href="http://awesome.awesomebot.xyz/extensions" target="_blank" class="btn btn-default"><span class="glyphicon glyphicon-eye-open" aria-hidden="true"></span> Discover Extensions</a>
+                            &nbsp;
+                            <span class="label label-info newlabel">New</span>
                         </div>
                     </div>
                 </div>
                 
                 <div class="row">
                     <div class="col-lg-12">
-                        <br><i>Created by @BitQuote, <a href="http://awesomebot.xyz">http://awesomebot.xyz</a>. This project is in no way affiliated with Alphabet, Inc., who does not own or endorse this product.</i>
+                        <br><i>Created by @BitQuote, <a href="http://awesomebot.xyz">http://awesomebot.xyz</a>. This project is in no way affiliated with Alphabet, Inc., who does not own or endorse this product.</i> Themes provided by <a href="https://bootswatch.com/">Bootswatch</a>
                     </div>
                 </div>
             </div>
@@ -889,86 +1017,129 @@
 
         <!-- Extension Builder Modal -->
         <div class="modal fade" id="extensionbuilder" tabindex="-1" data-backdrop="static" data-keyboard="false" role="dialog">
-            <div class="modal-dialog modal-lg" role="document" style="width:85%">
+            <div class="modal-dialog modal-lg" role="document" style="width:1200px;">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                        <h4 class="modal-title">Extension Builder&nbsp;&nbsp;<a target="_blank" href="https://github.com/BitQuote/AwesomeBot/wiki/Extensions" class="btn btn-default"><span class="glyphicon glyphicon-question-sign" aria-hidden="true"></span> Help</a></h4>
+                        <button type="button" class="close" onclick="closeBuilder();" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                        <h4 class="modal-title">Extension Builder</h4>
                     </div>
                     <div class="modal-body">
-                        <ul class="nav nav-tabs" role="tablist">
-                            <li class="active">
-                                <a href="#new" role="tab" data-toggle="tab" id="extensionbuilder-current-label">New</a>
-                            </li>
-                            <li class="dropdown">
-                                <a href="#" id="myTabDrop1" class="dropdown-toggle" data-toggle="dropdown">
-                                    Saved <span class="caret"></span>
-                                </a> 
-                                <ul class="dropdown-menu" aria-labelledby="myTabDrop1" id="extensionbuilder-saved-dropdown"></ul>
-                            </li>
-                        </ul>
-
-                        <div class="tab-content">
-                            <div role="tabpanel" class="tab-pane active" id="new"><br>
-                                <div class="container-fluid">
-                                    <div class="row">
-                                        <div class="col-xs-4">
-                                            <input type="text" id="extensionbuilder-input-name" class="form-control" placeholder="Name">
-                                            <br>
-                                            <select id="extensionbuilder-select-channels" class="selectpicker show-tick" data-width="100%" title="Channels" data-selected-text-format="values" data-actions-box="true" multiple></select>
-                                            <br><br>
-                                            <select id="extensionbuilder-select-type" class="selectpicker show-tick" data-width="100%" title="Type" onchange="switchBuilderType(this.value);">
-                                                <option value="command">Command</option>
-                                                <option value="keyword">Keyword</option>
-                                                <option value="timer">Timer</option>
-                                            </select>
-                                            <br><br>
-                                            <div id="extensionbuilder-type-block">
-                                                <p class="help-block">Write some code or select a type to get started</p>
-                                            </div>
-                                            <br>
-                                            <label class="btn btn-default btn-file">
-                                                <span class="glyphicon glyphicon-open" aria-hidden="true"></span> Upload<input id="extensionbuilder-file" type="file" style="display: none;"accept="application/javascript" onchange="javascript:uploadToBuilder();" />
-                                            </label>
+                        <div class="container-fluid">
+                            <div class="row">
+                                <div class="col-xs-4">
+                                    <div id="extensionbuilder-input-name-block">
+                                        <input type="text" id="extensionbuilder-input-name" class="form-control" placeholder="Name" maxlength="200">
+                                    </div>
+                                    <br>
+                                    <select id="extensionbuilder-select-channels" class="selectpicker show-tick" data-width="100%" title="Channels" data-selected-text-format="values" data-actions-box="true" multiple></select>
+                                    <br><br>
+                                    <select id="extensionbuilder-select-type" class="selectpicker show-tick" data-width="100%" title="Type" onchange="switchBuilderType(this.value);">
+                                        <option value="command">Command</option>
+                                        <option value="keyword">Keyword</option>
+                                        <option value="timer">Timer</option>
+                                    </select>
+                                    <br><br>
+                                    <div id="extensionbuilder-type-block">
+                                        <p class="help-block">Upload a JS file or select a type to get started</p>
+                                    </div>
+                                    <br>
+                                    <label class="btn btn-default btn-file">
+                                        <span class="glyphicon glyphicon-open" aria-hidden="true"></span> Upload<input id="extensionbuilder-file" type="file" style="display: none;"accept="application/javascript" onchange="javascript:uploadToBuilder(this.files);" />
+                                    </label>
+                                    &nbsp;
+                                    <button type="button" id="extensionbuilder-button-download" class="btn btn-default" onclick="downloadFromBuilder();"><span class="glyphicon glyphicon-download-alt" aria-hidden="true"></span> Download</button>
 
 
-                                            <div id="extensionbuilder-type-command" class="hide">
-                                                <input type="text" id="extensionbuilder-input-key" class="form-control" placeholder="Key (no spaces)">
-                                                <br>
-                                                <input type="text" id="extensionbuilder-input-usage" class="form-control" placeholder="Usage">
-                                                <br>
-                                                <textarea id="extensionbuilder-input-extended" class="form-control custom-control" rows="3" style="resize:none" placeholder="Extended help" maxlength="500"></textarea>
-                                            </div>
-                                            <div id="extensionbuilder-type-keyword" class="hide">
-                                                <input type="text" id="extensionbuilder-input-key" class="form-control" placeholder="Keywords (comma-separated)">
-                                            </div>
-                                            <div id="extensionbuilder-type-timer" class="hide">
-                                                <input type="number" id="extensionbuilder-input-interval" class="form-control" placeholder="Interval (seconds)" min="10" max="86400">
-                                            </div>
+                                    <div id="extensionbuilder-type-command" class="hide">
+                                        <div id="extensionbuilder-input-commandkey-block">
+                                            <input type="text" id="extensionbuilder-input-commandkey" class="form-control" placeholder="Key (no spaces)" maxlength="50">
                                         </div>
-                                        <div class="col-xs-8" id="extensionbuilder-code-block">
-                                            <textarea id="extensionbuilder-code" class="form-control custom-control" style="resize:none" ></textarea>
-                                            <script type="text/javascript">
-                                                var cm = CodeMirror.fromTextArea(document.getElementById("extensionbuilder-code"), {
-                                                    mode: "javascript",
-                                                    lineWrapping: true,
-                                                    lineNumbers: true,
-                                                    fixedGutter: true,
-                                                    styleActiveLine: true,
-                                                    theme: "base16-dark"
-                                                });
-                                                cm.refresh();
-                                            </script>
+                                        <br>
+                                        <input type="text" id="extensionbuilder-input-usage" class="form-control" placeholder="Usage" maxlength="150">
+                                        <br>
+
+                                        <textarea id="extensionbuilder-input-extended" class="form-control custom-control" rows="3" style="resize:none" placeholder="Extended help" maxlength="500"></textarea>
+                                    </div>
+                                    <div id="extensionbuilder-type-keyword" class="hide">
+                                        <div id="extensionbuilder-input-keywordkey-block">
+                                            <input type="text" id="extensionbuilder-input-keywordkey" class="form-control" placeholder="Keywords (comma-separated)">
+                                        </div>
+                                        <div class="checkbox">
+                                            <input id="extensionbuilder-select-case" type="checkbox">
+                                            <label for="extensionbuilder-select-case">
+                                                Case-sensitive
+                                            </label>
                                         </div>
                                     </div>
+                                    <div id="extensionbuilder-type-timer" class="hide">
+                                        <div id="extensionbuilder-input-interval-block">
+                                            <input type="number" id="extensionbuilder-input-interval" class="form-control" placeholder="Interval (seconds)" min="10" max="86400">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-xs-8" id="extensionbuilder-code-block">
+                                    <textarea id="extensionbuilder-code" class="form-control custom-control" style="resize:none" ></textarea>
+                                    <br>
+                                    <script type="text/javascript">
+                                        var cm = CodeMirror.fromTextArea(document.getElementById("extensionbuilder-code"), {
+                                            mode: "javascript",
+                                            lineWrapping: true,
+                                            lineNumbers: true,
+                                            fixedGutter: true,
+                                            styleActiveLine: true,
+                                            theme: "base16-dark"
+                                        });
+                                        cm.refresh();
+                                    </script>
+
+                                    <button type="button" class="btn btn-default" onclick="insertBuilderShortcut('writeStore');" data-toggle="tooltip" data-placement="bottom" title="Save to extension storage"><span class="glyphicon glyphicon-floppy-save" aria-hidden="true"></span></button>
+                                    &nbsp;&nbsp;
+                                    <div class="btn-group" role="group">
+                                        <button type="button" class="btn btn-default" onclick="insertBuilderShortcut('sendMessage');" data-toggle="tooltip" data-placement="bottom" title="Send a message in the public channel"><span class="glyphicon glyphicon-envelope" aria-hidden="true"></span></button>
+                                        <button type="button" class="btn btn-default" onclick="insertBuilderShortcut('sendUser');" data-toggle="tooltip" data-placement="bottom" title="Send a PM to a user"><span class="glyphicon glyphicon-send" aria-hidden="true"></span></button>
+                                    </div>
+                                    &nbsp;&nbsp;
+                                    <div class="btn-group" role="group">
+                                        <button type="button" class="btn btn-default" onclick="insertBuilderShortcut('image');" data-toggle="tooltip" data-placement="bottom" title="Fetch an image from Google Images"><span class="glyphicon glyphicon-picture" aria-hidden="true"></span></button>
+                                        <button type="button" class="btn btn-default" onclick="insertBuilderShortcut('gif');" data-toggle="tooltip" data-placement="bottom" title="Fetch a GIF from Giphy"><span class="glyphicon glyphicon-facetime-video" aria-hidden="true"></span></button>
+                                        <button type="button" class="btn btn-default" onclick="insertBuilderShortcut('rss');" data-toggle="tooltip" data-placement="bottom" title="Fetch entries in an RSS feed"><span class="glyphicon glyphicon-refresh" aria-hidden="true"></span></button>
+                                        <button type="button" class="btn btn-default" onclick="insertBuilderShortcut('unirest');" data-toggle="tooltip" data-placement="bottom" title="Make a GET request with Unirest"><span class="glyphicon glyphicon-cloud-download" aria-hidden="true"></span></button>
+                                    </div>
+                                    &nbsp;&nbsp;
+                                    <div class="btn-group" role="group">
+                                        <button type="button" class="btn btn-default" onclick="insertBuilderShortcut('userSearch');" data-toggle="tooltip" data-placement="bottom" title="Search for a user"><span class="glyphicon glyphicon-search" aria-hidden="true"></span></button>
+                                        <button type="button" class="btn btn-default" onclick="insertBuilderShortcut('svr.members');" data-toggle="tooltip" data-placement="bottom" title="Get list of server members"><span class="glyphicon glyphicon-user" aria-hidden="true"></span></button>
+                                        <button type="button" class="btn btn-default" onclick="insertBuilderShortcut('svr.createChannel');" data-toggle="tooltip" data-placement="bottom" title="Create a text channel"><span class="glyphicon glyphicon-plus" aria-hidden="true"></span></button>
+                                        <button type="button" class="btn btn-default" onclick="insertBuilderShortcut('svr.roles.create');" data-toggle="tooltip" data-placement="bottom" title="Create a server role"><span class="glyphicon glyphicon-star" aria-hidden="true"></span></button>
+                                    </div>
+                                    &nbsp;&nbsp;
+                                    <a target="_blank" href="https://github.com/BitQuote/AwesomeBot/wiki/Extensions" class="btn btn-default" data-toggle="tooltip" data-placement="bottom" title="Extension documentation on our wiki"><span class="glyphicon glyphicon-question-sign" aria-hidden="true"></span> Help</a>
                                 </div>
                             </div>
                         </div>
                     </div>
                     <div class="modal-footer">
                         <button id="extensionbuilder-button-output" type="button" class="btn btn-default" style="float:left;"><span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span> Output</button>
-                        <button id="extensionbuilder-button-save" type="button" class="btn btn-default"><span class="glyphicon glyphicon-saved" aria-hidden="true" onclick="saveBuilderContent();"></span> Save</button>
-                        <button id="extensionbuilder-button-run" type="button" class="btn btn-primary"><span class="glyphicon glyphicon-play" aria-hidden="true" onclick="runBuilderContent();"></span> Run</button>
+                        <div id="extensionbuilder-output-title" class="hide">
+                            <h5 class="modal-title">Extension Testing Output</h5>
+                        </div>
+                        <div id="extensionbuilder-output-content" class="hide">
+                            <pre id="extensionbuilder-output-body"><i>Nothing here at the moment. Run the extension to produce output.</i></pre>
+                        </div>
+
+                        <button id="extensionbuilder-button-save" type="button" class="btn btn-default" style="display:none;" onclick="addExtension();"><span class="glyphicon glyphicon-saved" aria-hidden="true"></span> Save</button>
+
+                        <div id="extensionbuilder-run-content" class="form-inline" style="display:none;">
+                            <select id="extensionbuilder-run-channel" class="selectpicker show-tick" data-width="fit"></select>
+                            <div class="input-group" id="extensionbuilder-run-input">
+                                <span class="input-group-addon" id="extensionbuilder-run-prefix"></span>
+                                <div id="extensionbuilder-run-message-block">
+                                    <input type="text" class="form-control" id="extensionbuilder-run-message" aria-describedby="extensionbuilder-run-prefix" placeholder="Test message content" onkeydown="if(event.keyCode==13){runExtension(this.value);}else if(event.keyCode==27){document.getElementById('extensionbuilder-run-content').style.display = 'none';document.getElementById('extensionbuilder-button-run').onclick = runBuilderContent;}" style="width:300px;">
+                                </div>
+                            </div>
+                        </div>
+
+                        <button id="extensionbuilder-button-run" type="button" class="btn btn-primary" onclick="runBuilderContent();"><span class="glyphicon glyphicon-play" aria-hidden="true"></span> Run</button>
                     </div>
                 </div>
             </div>
@@ -1052,12 +1223,42 @@
         newRss();
         return false;
     });
+    $("#newtagform").submit(function() {
+        newTag();
+        return false;
+    });
     $("#newtranslateform").submit(function() {
         newTranslate();
         return false;
     });
     $("#caform").submit(function() {
         configCA(document.getElementById('catypeselector').value);
+        return false;
+    });
+    $("#extensionbuilder-button-output").tooltip({
+        html: true,
+        title: function() {
+            return "<b>New extension output!</b> Click here to view";
+        },
+        trigger: "manual"
+    });
+    $("#extensionbuilder-button-output").popover({
+        html: true,
+        title: function() {
+            return $("#extensionbuilder-output-title").html();
+        },
+        content: function() {
+            $("#extensionbuilder-button-output").removeClass("btn-success");
+            $("#extensionbuilder-button-output").removeClass("btn-danger");
+            $("#extensionbuilder-button-output").addClass("btn-default");
+            $("#extensionbuilder-button-output").tooltip("hide");
+            return $("#extensionbuilder-output-content").html();
+        },
+        placement: "top",
+        container: "body",
+        trigger: "click"
+    });
+    $("#extensionbuilder-run-content").submit(function() {
         return false;
     });
     </script>

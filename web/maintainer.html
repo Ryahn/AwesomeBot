@@ -31,27 +31,24 @@
         <div id="sidebar-wrapper">
             <ul class="sidebar-nav">
                 <li class="sidebar-brand">
-                    <a href="/">
+                    <a href="javascript:goToSection();">
                         Maintainer Console
                     </a>
                 </li>
-                <li>
-                    <a href="#overview">Overview</a>
+                <li id="commandusage-entry">
+                    <a href="javascript:goToSection('commandusage')">Command Usage</a>
                 </li>
-                <li>
-                    <a href="#commandusage">Command Usage</a>
+                <li id="servers-entry">
+                    <a href="javascript:goToSection('servers')">Servers</a>
                 </li>
-                <li>
-                    <a href="#servers">Servers</a>
+                <li id="botblocked-entry">
+                    <a href="javascript:goToSection('botblocked')">Global Blocklist</a>
                 </li>
-                <li>
-                    <a href="#botblocked">Global Blocklist</a>
+                <li id="files-entry">
+                    <a href="javascript:goToSection('files')">Data Files</a>
                 </li>
-                <li>
-                    <a href="#files">Data Files</a>
-                </li>
-                <li>
-                    <a href="#bigmessage">BigMessage&trade;</a>
+                <li id="bigmessage-entry">
+                    <a href="javascript:goToSection('bigmessage')">BigMessage&trade;</a>
                 </li>
             </ul>
         </div>
@@ -61,7 +58,7 @@
             <div class="container-fluid">
                 <div class="row">
                     <div class="col-xs-2">
-                        <a style="position:fixed;z-index:1000;" href="#menu-toggle" class="btn btn-default" id="menu-toggle"><span class="glyphicon glyphicon-menu-hamburger" aria-hidden="true"></span></a>
+                        <a style="position:fixed;z-index:1000;box-shadow: 0 0 5px #333;" href="#menu-toggle" class="btn btn-default" id="menu-toggle"><span class="glyphicon glyphicon-menu-hamburger" aria-hidden="true"></span></a>
                     </div>
                     <div class="col-xs-10" style="text-align:right;">
                         <select id="themeswitcher" class="selectpicker show-tick" data-width="fit" onChange="javascript:switchColors(this.value);">
@@ -117,9 +114,11 @@
 
         <div id="page-content-wrapper" class="header">
             <div class="container-fluid">
+                <button type="button" class="btn btn-default btn-lg" id="back-button" onclick="javascript:goToSection();" style="display:none;"><span class="glyphicon glyphicon-arrow-left" aria-hidden="true"></span> Back to Overview</button>
+
                 <div class="row">
                     <div class="col-lg-12">
-                        <h2 id="commandusage" data-toggle="collapse" data-target="#commandusage-body" aria-expanded="false" aria-controls="collapsecommandusage">Command Usage</h2>
+                        <h2 class="section-head" id="commandusage" data-toggle="collapse" data-target="#commandusage-body" aria-expanded="false" aria-controls="collapsecommandusage">Command Usage</h2>
                         <div id="commandusage-body" class="collapse">
                             
                         </div>
@@ -153,7 +152,7 @@
                 
                 <div class="row">
                     <div class="col-lg-12">
-                        <h2 id="botblocked" data-toggle="collapse" data-target="#botblocked-body" aria-expanded="false" aria-controls="botblockedservers">Global Blocklist</h2>
+                        <h2 class="section-head" id="botblocked" data-toggle="collapse" data-target="#botblocked-body" aria-expanded="false" aria-controls="botblockedservers">Global Blocklist</h2>
                         <div id="botblocked-body" class="collapse">
                             <p class="help-block">Globally blocked users will not be able to use the bot <i>anywhere</i>. Other bots will be automatically added to this list.</p>
                             <div class="table-responsive">
@@ -176,7 +175,7 @@
                 
                 <div class="row">
                     <div class="col-lg-12">
-                        <h2 id="files" data-toggle="collapse" data-target="#files-body" aria-expanded="false" aria-controls="collapsefiles">Data Files</h2>
+                        <h2 class="section-head" id="files" data-toggle="collapse" data-target="#files-body" aria-expanded="false" aria-controls="collapsefiles">Data Files</h2>
                         <div id="files-body" class="collapse">
                             <ul class="nav nav-tabs" role="tablist">
                                 <li role="presentation" class="active"><a href="#files-stats" aria-controls="home" role="tab" data-toggle="tab">stats.json</a></li>
@@ -234,7 +233,7 @@
                 
                 <div class="row">
                     <div class="col-lg-12">
-                        <h2 id="bigmessage" data-toggle="collapse" data-target="#bigmessage-body" aria-expanded="false" aria-controls="collapsebigmessage">BigMessage&trade;</h2>
+                        <h2 class="section-head" id="bigmessage" data-toggle="collapse" data-target="#bigmessage-body" aria-expanded="false" aria-controls="collapsebigmessage">BigMessage&trade;</h2>
                         <div id="bigmessage-body" class="collapse">
                             <form>
                                 <div class="input-group">
@@ -254,7 +253,7 @@
                 
                 <div class="row">
                     <div class="col-lg-12">
-                        <br><i>Created by @BitQuote, <a href="http://awesomebot.xyz">http://awesomebot.xyz</a>. This project is in no way affiliated with Alphabet, Inc., who does not own or endorse this product.</i>
+                        <br><i>Created by @BitQuote, <a href="http://awesomebot.xyz">http://awesomebot.xyz</a>. This project is in no way affiliated with Alphabet, Inc., who does not own or endorse this product.</i> Themes provided by <a href="https://bootswatch.com/">Bootswatch</a>
                     </div>
                 </div>
             </div>

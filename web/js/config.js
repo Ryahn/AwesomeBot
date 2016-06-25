@@ -2,6 +2,29 @@ var authtoken;
 var authtype;
 var botData;
 var consoletimer;
+var extendedSession = false;
+
+window.onscroll = function(e) {
+    document.getElementById("menu-toggle").style.boxShadow = window.scrollY!=0 ? "0 6px 12px rgba(0,0,0,.175)" : "";
+};
+
+function goToSection(section) {
+    if(section) {
+        document.getElementById("back-button").style.display = "";
+    } else {
+        document.getElementById("back-button").style.display = "none";
+    }
+    var sections = document.getElementsByClassName("section-head");
+    for(var i=0; i<sections.length; i++) {
+        sections[i].parentNode.parentNode.style.display = (!section || sections[i].id==section) ? "" : "none";
+        if(sections[i].id==section) {
+            $("#" + sections[i].id + "-entry").addClass("entry-highlighted");
+        } else {
+            $("#" + sections[i].id + "-entry").removeClass("entry-highlighted");
+        }
+    }
+    $("html, body").animate({ scrollTop: 0 }, "fast");
+}
 
 function getHelp() {
     var u = window.open("https://github.com/BitQuote/AwesomeBot/wiki/Configuration#" + authtype + "-console");
@@ -43,6 +66,8 @@ function checkAuth(extend) {
             $("#extender-modal").modal("hide");
             if(response!=200) {
                 leaveConsole("Session timeout");
+            } else {
+                extendedSession = true;
             }
         });
     } else {
@@ -52,10 +77,18 @@ function checkAuth(extend) {
 
 function setAuthTimer() {
     consoletimer = setTimeout(function() {
-        $("#extender-modal").modal("show");
-        setTimeout(function() {
-            checkAuth();
-        }, 30000);
+        extendedSession = false;
+        if(authtype=="admin" && ($("#extensionbuilder").data("bs.modal") || {}).isShown) {
+            checkAuth(true);
+        } else {
+            $("#extender-modal").modal("show");
+            setTimeout(function() {
+                if(!extendedSession) {
+                    $("#extender-modal").modal("hide");
+                    leaveConsole("Session timeout");
+                }
+            }, 30000);
+        }
     }, 270000);
 }
 
@@ -85,7 +118,7 @@ function postJSON(data, callback) {
 }
 
 function config(key, value, callback) {
-    if((typeof value=="string" && value=="" && key!="newgreeting") || (key=="chrestrict" && value[1].length==0)) {
+    if((typeof value=="string" && value=="" && key!="newgreeting") || (key=="chrestrict" && value[1].length==0) || (key=="statsexclude" && value.length==0)) {
         return;
     }
     
@@ -104,7 +137,6 @@ function config(key, value, callback) {
                     setAuthTimer();
                     botData = mData;
                     if(authtype=="admin") {
-                        document.getElementById("rssrow").style.display = botData.configs.rss[0] ? "" : "none";
                         switchManage();
                     }
                     callback(false);
